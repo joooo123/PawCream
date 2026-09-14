@@ -26,21 +26,24 @@ type SceneState = 'idle' | 'awake' | 'entering'
 type TuneHandleKind = 'spawn' | 'curve' | 'end'
 type NumericTuningKey = Exclude<keyof StarTuning, 'tracks'>
 
-const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v2'
-const LEGACY_TUNING_STORAGE_KEY = 'pawcream-star-tuning-v1'
+const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v3'
+const LEGACY_TUNING_STORAGE_KEYS = [
+  'pawcream-star-tuning-v2',
+  'pawcream-star-tuning-v1',
+] as const
 
 const NUMERIC_TUNING_KEYS: NumericTuningKey[] = [
   'spawnX',
   'spawnY',
   'sizeMin',
   'sizeMax',
-  'birthScale',
   'pathDurationMs',
   'wobbleAmp',
   'wobbleFreq',
   'laneSpread',
   'spawnMinMs',
   'spawnMaxMs',
+  'burstStars',
   'maxStars',
 ]
 
@@ -59,7 +62,11 @@ function readFiniteNumber(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
 }
 
-function readTrack(value: unknown, fallback: StarTrack): StarTrack {
+function readTrack(
+  value: unknown,
+  fallback: StarTrack,
+  legacyBirthScale: number,
+): StarTrack {
   const record = value && typeof value === 'object'
     ? value as Record<string, unknown>
     : {}
@@ -69,6 +76,8 @@ function readTrack(value: unknown, fallback: StarTrack): StarTrack {
     curveY: readFiniteNumber(record.curveY, fallback.curveY),
     endX: readFiniteNumber(record.endX, fallback.endX),
     endY: readFiniteNumber(record.endY, fallback.endY),
+    startScale: readFiniteNumber(record.startScale, legacyBirthScale),
+    endScale: readFiniteNumber(record.endScale, fallback.endScale),
   }
 }
 
@@ -124,9 +133,13 @@ function loadStoredTuning(enabled: boolean): StarTuning {
   }
 
   try {
-    const raw =
-      window.localStorage.getItem(TUNING_STORAGE_KEY) ??
-      window.localStorage.getItem(LEGACY_TUNING_STORAGE_KEY)
+    let raw = window.localStorage.getItem(TUNING_STORAGE_KEY)
+    if (!raw) {
+      for (const key of LEGACY_TUNING_STORAGE_KEYS) {
+        raw = window.localStorage.getItem(key)
+        if (raw) break
+      }
+    }
     if (!raw) return cloneDefaults()
 
     const parsed = JSON.parse(raw) as Record<string, unknown>
@@ -139,6 +152,8 @@ function loadStoredTuning(enabled: boolean): StarTuning {
       }
     }
 
+    const legacyBirthScale = readFiniteNumber(parsed.birthScale, 0.38)
+
     if (Array.isArray(parsed.tracks) && parsed.tracks.length > 0) {
       next.tracks = parsed.tracks
         .slice(0, MAX_STAR_TRACKS)
@@ -146,7 +161,7 @@ function loadStoredTuning(enabled: boolean): StarTuning {
           const fallback =
             STAR_TUNING_DEFAULTS.tracks[index] ??
             STAR_TUNING_DEFAULTS.tracks[0]
-          return readTrack(track, fallback)
+          return readTrack(track, fallback, legacyBirthScale)
         })
     } else {
       // Migrate the original single-trajectory tune data into track 1 while
@@ -157,6 +172,8 @@ function loadStoredTuning(enabled: boolean): StarTuning {
         curveY: readFiniteNumber(parsed.pathCurveY, first.curveY),
         endX: readFiniteNumber(parsed.pathEndX, first.endX),
         endY: readFiniteNumber(parsed.pathEndY, first.endY),
+        startScale: legacyBirthScale,
+        endScale: first.endScale,
       }
     }
 
