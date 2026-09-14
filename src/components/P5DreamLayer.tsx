@@ -37,9 +37,9 @@ type StarParticle = {
 }
 
 const STAR_VISUAL_SCALE = [
-  0.64, 0.62, 0.58, 0.64, 0.72,
-  0.50, 0.52, 0.50, 0.58, 0.48,
-  0.56, 0.54, 0.45, 0.46, 0.46,
+  0.84, 0.82, 0.78, 0.84, 0.92,
+  0.72, 0.74, 0.72, 0.78, 0.70,
+  0.76, 0.74, 0.68, 0.70, 0.70,
 ] as const
 
 // Zero-based asset indexes. 12 === star-13.png (the wreath/ring composition).
@@ -80,16 +80,16 @@ export default function P5DreamLayer({
         s.pixelDensity(Math.min(window.devicePixelRatio || 1, 2))
         s.imageMode(s.CENTER)
         s.clear()
-        nextStarSpawnAt = s.millis() + s.random(900, 1400)
+        nextStarSpawnAt = s.millis() + s.random(350, 650)
       }
 
       const getEmitterPosition = () => {
         const state = stateRef.current
         if (!state.chimney) return null
 
-        const lift = s.constrain((state.homeRect?.height ?? 514) * 0.15, 54, 78)
+        const lift = s.constrain((state.homeRect?.height ?? 514) * 0.10, 38, 54)
         return {
-          x: state.chimney.x + 34,
+          x: state.chimney.x + 28,
           y: state.chimney.y - lift,
         }
       }
@@ -103,7 +103,7 @@ export default function P5DreamLayer({
       }
 
       const chooseLaneOffset = () => {
-        const lanes = [-34, 6, 44]
+        const lanes = [-30, 8, 46]
 
         if (particles.length === 0) {
           return lanes[Math.floor(s.random(lanes.length))] + s.random(-3, 3)
@@ -138,18 +138,18 @@ export default function P5DreamLayer({
         particles.push({
           x: emitter.x + s.random(-2, 2),
           y: emitter.y + s.random(-2, 2),
-          vy: s.random(-0.62, -0.54),
-          driftSpeed: s.random(0.70, 0.80),
+          vy: s.random(-0.44, -0.34),
+          driftSpeed: s.random(0.74, 0.92),
           travelX: 0,
           laneOffset: chooseLaneOffset(),
-          baseSize: s.random(18, 24),
-          alpha: s.random(150, 200),
+          baseSize: s.random(34, 44),
+          alpha: s.random(220, 250),
           angle: s.random(-0.05, 0.05),
-          angularVelocity: s.random(-0.0018, 0.0018),
+          angularVelocity: s.random(-0.0016, 0.0016),
           imageIndex,
           age: 0,
           riseFrames: Math.floor(s.random(3, 6)),
-          windRampFrames: Math.floor(s.random(16, 24)),
+          windRampFrames: Math.floor(s.random(14, 22)),
           wobbleSeed: s.random(0, 1000),
         })
       }
@@ -158,7 +158,7 @@ export default function P5DreamLayer({
         const emitter = getEmitterPosition()
         if (!emitter) return false
 
-        const minimumDistance = 88
+        const minimumDistance = 66
         for (const particle of particles) {
           const dx = particle.x - emitter.x
           const dy = particle.y - emitter.y
@@ -175,7 +175,7 @@ export default function P5DreamLayer({
             const dx = b.x - a.x
             const dy = b.y - a.y
             const distance = Math.hypot(dx, dy)
-            const requiredDistance = 50
+            const requiredDistance = 54
 
             if (distance >= requiredDistance) continue
 
@@ -187,7 +187,7 @@ export default function P5DreamLayer({
               directionX = a.laneOffset <= b.laneOffset ? 1 : -1
             }
 
-            const pushX = Math.min(overlap * 0.08, 0.85)
+            const pushX = Math.min(overlap * 0.08, 0.9)
             a.x -= directionX * pushX
             b.x += directionX * pushX
           }
@@ -213,12 +213,12 @@ export default function P5DreamLayer({
         }
 
         if (!shouldEmit) {
-          nextStarSpawnAt = now + s.random(900, 1400)
+          nextStarSpawnAt = now + s.random(350, 650)
         }
 
         particles = particles.filter(
           (particle) =>
-            particle.alpha > 3 &&
+            particle.alpha > 4 &&
             particle.y > -180 &&
             particle.x < s.width + 180,
         )
@@ -235,20 +235,20 @@ export default function P5DreamLayer({
           )
           const smoothWind = windFactor * windFactor * (3 - 2 * windFactor)
 
-          const laneEase = 0.42 + smoothWind * 0.58
+          const laneEase = 0.46 + smoothWind * 0.54
           const wobble =
-            (s.noise(particle.wobbleSeed, s.frameCount * 0.008) - 0.5) * 0.10
+            (s.noise(particle.wobbleSeed, s.frameCount * 0.008) - 0.5) * 0.12
 
           particle.travelX += particle.driftSpeed * smoothWind
 
           if (emitter) {
             const targetX =
               emitter.x + particle.travelX + particle.laneOffset * laneEase
-            particle.x += (targetX - particle.x) * 0.10 + wobble
+            particle.x += (targetX - particle.x) * 0.095 + wobble
           }
 
-          particle.y += particle.vy * (1 - smoothWind * 0.18)
-          particle.alpha -= 1.34 + smoothWind * 0.48
+          particle.y += particle.vy * (1 - smoothWind * 0.12)
+          particle.alpha -= 0.42 + smoothWind * 0.16
           particle.angle += particle.angularVelocity * (0.4 + smoothWind * 0.6)
         }
 
@@ -258,10 +258,10 @@ export default function P5DreamLayer({
           const img = starImages[particle.imageIndex]
           if (!img) continue
 
-          const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.55
-          const growthProgress = s.constrain((particle.age - 1) / 72, 0, 1)
+          const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.76
+          const growthProgress = s.constrain((particle.age - 1) / 88, 0, 1)
           const growthEase = growthProgress * growthProgress * (3 - 2 * growthProgress)
-          const growthMultiplier = s.lerp(0.20, 1.0, growthEase)
+          const growthMultiplier = s.lerp(0.30, 1.0, growthEase)
           const visualSize = particle.baseSize * assetScale * growthMultiplier
 
           s.push()
