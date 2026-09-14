@@ -32,9 +32,41 @@ export const ASSETS = {
 } as const
 
 export const MOTION = {
-  // Keep stars visibly separated instead of forming a dense plume.
   starSpawnMinMs: 2800,
   starSpawnMaxMs: 4000,
   enterDurationMs: 1280,
   mobileAutoWakeMs: 900,
 } as const
+
+export type StarTuning = {
+  spawnX: number
+  spawnY: number
+  sizeMin: number
+  sizeMax: number
+  birthScale: number
+  driftMin: number
+  driftMax: number
+  riseMin: number
+  riseMax: number
+  spawnMinMs: number
+  spawnMaxMs: number
+  maxStars: number
+}
+
+// Production defaults. ?tune=1 can override these live in the browser without
+// changing the normal page. Once a tuning pass is approved, copy the values
+// back here to make them permanent.
+export const STAR_TUNING_DEFAULTS: StarTuning = {
+  spawnX: 22,
+  spawnY: 4,
+  sizeMin: 56,
+  sizeMax: 72,
+  birthScale: 0.38,
+  driftMin: 0.78,
+  driftMax: 0.96,
+  riseMin: -0.30,
+  riseMax: -0.22,
+  spawnMinMs: MOTION.starSpawnMinMs,
+  spawnMaxMs: MOTION.starSpawnMaxMs,
+  maxStars: 3,
+}
