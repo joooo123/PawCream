@@ -52,7 +52,7 @@ function RangeRow({
         }
       />
       <output className="tune-row__value">
-        {step < 1 ? current.toFixed(2) : Math.round(current)}{suffix}
+        {step < 1 ? current.toFixed(step < 0.01 ? 3 : 2) : Math.round(current)}{suffix}
       </output>
     </label>
   )
@@ -99,7 +99,7 @@ export default function TunePanel({ value, onChange }: Props) {
       {!collapsed && (
         <div className="tune-panel__body">
           <p className="tune-panel__hint">
-            拖动画面中的粉色准星可直接调整出生位置；其它参数用滑块实时预览。
+            直接拖动画面中的 spawn / curve / end 三个点来设计轨迹；滑块负责细调飘逸感、尺寸和节奏。
           </p>
 
           <section className="tune-panel__section">
@@ -109,18 +109,26 @@ export default function TunePanel({ value, onChange }: Props) {
           </section>
 
           <section className="tune-panel__section">
+            <h2>轨迹形状</h2>
+            <RangeRow label="终点 X" field="pathEndX" value={value} onChange={onChange} min={40} max={520} step={1} suffix="px" />
+            <RangeRow label="终点 Y" field="pathEndY" value={value} onChange={onChange} min={-360} max={180} step={1} suffix="px" />
+            <RangeRow label="弯曲 X" field="pathCurveX" value={value} onChange={onChange} min={-120} max={420} step={1} suffix="px" />
+            <RangeRow label="弯曲 Y" field="pathCurveY" value={value} onChange={onChange} min={-360} max={220} step={1} suffix="px" />
+            <RangeRow label="飞行时长" field="pathDurationMs" value={value} onChange={onChange} min={1800} max={12000} step={100} suffix="ms" />
+          </section>
+
+          <section className="tune-panel__section">
+            <h2>飘逸感</h2>
+            <RangeRow label="摆动幅度" field="wobbleAmp" value={value} onChange={onChange} min={0} max={40} step={0.5} suffix="px" />
+            <RangeRow label="摆动频率" field="wobbleFreq" value={value} onChange={onChange} min={0.002} max={0.04} step={0.001} />
+            <RangeRow label="轨迹散开" field="laneSpread" value={value} onChange={onChange} min={0} max={80} step={1} suffix="px" />
+          </section>
+
+          <section className="tune-panel__section">
             <h2>尺寸</h2>
             <RangeRow label="最小尺寸" field="sizeMin" value={value} onChange={onChange} min={20} max={120} step={1} suffix="px" />
             <RangeRow label="最大尺寸" field="sizeMax" value={value} onChange={onChange} min={24} max={150} step={1} suffix="px" />
             <RangeRow label="出生比例" field="birthScale" value={value} onChange={onChange} min={0.1} max={1} step={0.01} />
-          </section>
-
-          <section className="tune-panel__section">
-            <h2>运动</h2>
-            <RangeRow label="右漂最慢" field="driftMin" value={value} onChange={onChange} min={0} max={2} step={0.01} />
-            <RangeRow label="右漂最快" field="driftMax" value={value} onChange={onChange} min={0} max={2} step={0.01} />
-            <RangeRow label="上升最慢" field="riseMax" value={value} onChange={onChange} min={-1} max={0} step={0.01} />
-            <RangeRow label="上升最快" field="riseMin" value={value} onChange={onChange} min={-1} max={0} step={0.01} />
           </section>
 
           <section className="tune-panel__section">
@@ -141,7 +149,7 @@ export default function TunePanel({ value, onChange }: Props) {
           </div>
 
           <p className="tune-panel__footnote">
-            调参值只保存在当前浏览器，不会修改正式页面。满意后把“复制参数”的内容发给我即可固化。
+            粉色虚线就是主轨迹。curve 控制弧线怎么拐，end 控制最终飘到哪里；参数只保存在当前浏览器。
           </p>
         </div>
       )}
