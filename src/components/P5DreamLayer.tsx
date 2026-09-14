@@ -37,9 +37,9 @@ type StarParticle = {
 }
 
 const STAR_VISUAL_SCALE = [
-  0.84, 0.82, 0.78, 0.84, 0.92,
-  0.72, 0.74, 0.72, 0.78, 0.70,
-  0.76, 0.74, 0.68, 0.70, 0.70,
+  1.00, 0.98, 0.94, 1.00, 1.06,
+  0.90, 0.92, 0.90, 0.96, 0.88,
+  0.94, 0.92, 0.86, 0.88, 0.88,
 ] as const
 
 // Zero-based asset indexes. 12 === star-13.png (the wreath/ring composition).
@@ -87,10 +87,12 @@ export default function P5DreamLayer({
         const state = stateRef.current
         if (!state.chimney) return null
 
-        const lift = s.constrain((state.homeRect?.height ?? 514) * 0.10, 38, 54)
+        // Keep the first star visually attached to the chimney instead of
+        // spawning in the empty space above the roof.
+        const downwardOffset = s.constrain((state.homeRect?.height ?? 514) * 0.025, 10, 16)
         return {
-          x: state.chimney.x + 28,
-          y: state.chimney.y - lift,
+          x: state.chimney.x + 22,
+          y: state.chimney.y + downwardOffset,
         }
       }
 
@@ -136,20 +138,20 @@ export default function P5DreamLayer({
         const imageIndex = enabled[Math.floor(s.random(enabled.length))]
 
         particles.push({
-          x: emitter.x + s.random(-2, 2),
-          y: emitter.y + s.random(-2, 2),
-          vy: s.random(-0.44, -0.34),
-          driftSpeed: s.random(0.74, 0.92),
+          x: emitter.x + s.random(-3, 3),
+          y: emitter.y + s.random(-3, 3),
+          vy: s.random(-0.30, -0.22),
+          driftSpeed: s.random(0.78, 0.96),
           travelX: 0,
           laneOffset: chooseLaneOffset(),
-          baseSize: s.random(34, 44),
-          alpha: s.random(220, 250),
+          baseSize: s.random(56, 72),
+          alpha: s.random(225, 252),
           angle: s.random(-0.05, 0.05),
           angularVelocity: s.random(-0.0016, 0.0016),
           imageIndex,
           age: 0,
-          riseFrames: Math.floor(s.random(3, 6)),
-          windRampFrames: Math.floor(s.random(14, 22)),
+          riseFrames: Math.floor(s.random(4, 7)),
+          windRampFrames: Math.floor(s.random(16, 24)),
           wobbleSeed: s.random(0, 1000),
         })
       }
@@ -158,7 +160,7 @@ export default function P5DreamLayer({
         const emitter = getEmitterPosition()
         if (!emitter) return false
 
-        const minimumDistance = 66
+        const minimumDistance = 78
         for (const particle of particles) {
           const dx = particle.x - emitter.x
           const dy = particle.y - emitter.y
@@ -175,7 +177,7 @@ export default function P5DreamLayer({
             const dx = b.x - a.x
             const dy = b.y - a.y
             const distance = Math.hypot(dx, dy)
-            const requiredDistance = 54
+            const requiredDistance = 68
 
             if (distance >= requiredDistance) continue
 
@@ -187,7 +189,7 @@ export default function P5DreamLayer({
               directionX = a.laneOffset <= b.laneOffset ? 1 : -1
             }
 
-            const pushX = Math.min(overlap * 0.08, 0.9)
+            const pushX = Math.min(overlap * 0.08, 1.0)
             a.x -= directionX * pushX
             b.x += directionX * pushX
           }
@@ -247,8 +249,8 @@ export default function P5DreamLayer({
             particle.x += (targetX - particle.x) * 0.095 + wobble
           }
 
-          particle.y += particle.vy * (1 - smoothWind * 0.12)
-          particle.alpha -= 0.42 + smoothWind * 0.16
+          particle.y += particle.vy * (1 - smoothWind * 0.10)
+          particle.alpha -= 0.40 + smoothWind * 0.14
           particle.angle += particle.angularVelocity * (0.4 + smoothWind * 0.6)
         }
 
@@ -258,10 +260,10 @@ export default function P5DreamLayer({
           const img = starImages[particle.imageIndex]
           if (!img) continue
 
-          const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.76
-          const growthProgress = s.constrain((particle.age - 1) / 88, 0, 1)
+          const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.94
+          const growthProgress = s.constrain((particle.age - 1) / 96, 0, 1)
           const growthEase = growthProgress * growthProgress * (3 - 2 * growthProgress)
-          const growthMultiplier = s.lerp(0.30, 1.0, growthEase)
+          const growthMultiplier = s.lerp(0.38, 1.0, growthEase)
           const visualSize = particle.baseSize * assetScale * growthMultiplier
 
           s.push()
