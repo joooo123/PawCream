@@ -60,18 +60,18 @@ export type StarTuning = {
 export const MAX_STAR_TRACKS = 6
 
 export const STAR_TUNING_DEFAULTS: StarTuning = {
-  spawnX: 14,
-  spawnY: -15,
+  spawnX: 7,
+  spawnY: -18,
   sizeMin: 31,
   sizeMax: 40,
   pathDurationMs: 6200,
   wobbleAmp: 9,
   wobbleFreq: 0.012,
   laneSpread: 24,
-  spawnMinMs: 210,
-  spawnMaxMs: 80,
+  spawnMinMs: 300,
+  spawnMaxMs: 600,
   burstStars: 6,
-  burstStaggerMs: 600,
+  burstStaggerMs: 150,
   maxStars: 12,
   tracks: [
     { curveX: 59, curveY: -100, endX: 162, endY: -129, startScale: 0.85, endScale: 2.05 },
