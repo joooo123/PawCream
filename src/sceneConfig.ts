@@ -11,27 +11,17 @@ export const HOME_DISPLAY = {
 
 export const HOME_ANCHORS = {
   chimney: { x: 1370, y: 62 },
-  houseHotspot: {
-    x: 405,
-    y: 48,
-    width: 1210,
-    height: 920,
-  },
+  houseHotspot: { x: 405, y: 48, width: 1210, height: 920 },
 } as const
 
 const BASE_URL = import.meta.env.BASE_URL
 
-const STAR_PARTICLE_ASSET_NUMBERS = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15,
-] as const
+const STAR_PARTICLE_ASSET_NUMBERS = [1,2,3,4,5,6,7,8,9,10,11,12,14,15] as const
 
 export const ASSETS = {
   home: `${BASE_URL}assets/home/Home.png`,
   ecg: `${BASE_URL}assets/effects/pawcream-ecg.png`,
-  stars: STAR_PARTICLE_ASSET_NUMBERS.map(
-    (number) =>
-      `${BASE_URL}assets/stars/star-${String(number).padStart(2, '0')}.png`,
-  ),
+  stars: STAR_PARTICLE_ASSET_NUMBERS.map((number) => `${BASE_URL}assets/stars/star-${String(number).padStart(2, '0')}.png`),
 } as const
 
 export const MOTION = {
@@ -78,59 +68,17 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
   wobbleAmp: 9,
   wobbleFreq: 0.012,
   laneSpread: 24,
-  spawnMinMs: 70,
-  spawnMaxMs: 600,
-  burstStars: 4,
+  spawnMinMs: 210,
+  spawnMaxMs: 80,
+  burstStars: 6,
   burstStaggerMs: 600,
   maxStars: 12,
   tracks: [
-    {
-      curveX: 59,
-      curveY: -100,
-      endX: 162,
-      endY: -129,
-      startScale: 0.85,
-      endScale: 2.05,
-    },
-    {
-      curveX: 71,
-      curveY: -96,
-      endX: 150,
-      endY: -83,
-      startScale: 1.1,
-      endScale: 1.73,
-    },
-    {
-      curveX: 28,
-      curveY: -120,
-      endX: 114,
-      endY: -155,
-      startScale: 0.76,
-      endScale: 1.89,
-    },
-    {
-      curveX: 69,
-      curveY: -61,
-      endX: 132,
-      endY: -39,
-      startScale: 0.91,
-      endScale: 1.53,
-    },
-    {
-      curveX: -8,
-      curveY: -95,
-      endX: 46,
-      endY: -162,
-      startScale: 0.91,
-      endScale: 1.89,
-    },
-    {
-      curveX: 3,
-      curveY: -67,
-      endX: 76,
-      endY: -127,
-      startScale: 0.78,
-      endScale: 1.75,
-    },
+    { curveX: 59, curveY: -100, endX: 162, endY: -129, startScale: 0.85, endScale: 2.05 },
+    { curveX: 71, curveY: -96, endX: 150, endY: -83, startScale: 1.1, endScale: 1.73 },
+    { curveX: 28, curveY: -120, endX: 114, endY: -155, startScale: 0.76, endScale: 1.89 },
+    { curveX: 69, curveY: -61, endX: 132, endY: -39, startScale: 0.91, endScale: 1.53 },
+    { curveX: -8, curveY: -95, endX: 46, endY: -162, startScale: 0.91, endScale: 1.89 },
+    { curveX: 3, curveY: -67, endX: 76, endY: -127, startScale: 0.78, endScale: 1.75 },
   ],
 }
