@@ -120,7 +120,7 @@ export default function P5DreamLayer({
         }
       }
 
-      const spawnStar = () => {
+      const spawnStar = (burstIndex = 0, burstCount = 1) => {
         const state = stateRef.current
         const emitter = getEmitterPosition()
         if (!emitter || !starImages.length || !state.tuning.tracks.length) return
@@ -130,8 +130,18 @@ export default function P5DreamLayer({
         const trackIndex = nextTrackIndex % state.tuning.tracks.length
         nextTrackIndex += 1
 
-        const startX = emitter.x + s.random(-3, 3)
-        const startY = emitter.y + s.random(-3, 3)
+        // A burst is simultaneous, but give its stars a tiny radial separation so
+        // they do not render as one stacked sprite at the chimney mouth.
+        const burstRadius = burstCount > 1
+          ? Math.min(10, Math.max(4, state.tuning.sizeMin * 0.12))
+          : 0
+        const burstAngle = burstCount > 1
+          ? (Math.PI * 2 * burstIndex) / burstCount + s.random(-0.12, 0.12)
+          : 0
+        const startX =
+          emitter.x + Math.cos(burstAngle) * burstRadius + s.random(-1.5, 1.5)
+        const startY =
+          emitter.y + Math.sin(burstAngle) * burstRadius + s.random(-1.5, 1.5)
 
         particles.push({
           startX,
@@ -169,6 +179,7 @@ export default function P5DreamLayer({
         const shouldEmit = state.awake && !state.entering
         const now = s.millis()
         const maxStars = Math.max(1, Math.round(state.tuning.maxStars))
+        const requestedBurst = Math.max(1, Math.round(state.tuning.burstStars))
 
         if (
           shouldEmit &&
@@ -176,7 +187,13 @@ export default function P5DreamLayer({
           particles.length < maxStars &&
           canSpawnStarSpatially()
         ) {
-          spawnStar()
+          const availableSlots = Math.max(0, maxStars - particles.length)
+          const burstCount = Math.min(requestedBurst, availableSlots)
+
+          for (let i = 0; i < burstCount; i += 1) {
+            spawnStar(i, burstCount)
+          }
+
           const [spawnMin, spawnMax] = orderedPair(
             state.tuning.spawnMinMs,
             state.tuning.spawnMaxMs,
