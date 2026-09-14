@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import p5 from 'p5'
-import { ASSETS, MOTION } from '../sceneConfig'
+import { ASSETS, MOTION, type StarTuning } from '../sceneConfig'
 
 export type RenderedHomeRect = {
   left: number
@@ -16,6 +16,7 @@ type Props = {
   transitionStartedAt: number | null
   homeRect: RenderedHomeRect | null
   chimney: { x: number; y: number } | null
+  tuning: StarTuning
 }
 
 type StarParticle = {
@@ -25,7 +26,7 @@ type StarParticle = {
   driftSpeed: number
   travelX: number
   laneOffset: number
-  baseSize: number
+  sizeMix: number
   alpha: number
   angle: number
   angularVelocity: number
@@ -45,19 +46,38 @@ const STAR_VISUAL_SCALE = [
 // Zero-based asset indexes. 12 === star-13.png (the wreath/ring composition).
 const DISABLED_STAR_INDICES = new Set<number>([12])
 
+function orderedPair(a: number, b: number) {
+  return a <= b ? [a, b] as const : [b, a] as const
+}
+
 export default function P5DreamLayer({
   awake,
   entering,
   transitionStartedAt,
   homeRect,
   chimney,
+  tuning,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const stateRef = useRef({ awake, entering, transitionStartedAt, homeRect, chimney })
+  const stateRef = useRef({
+    awake,
+    entering,
+    transitionStartedAt,
+    homeRect,
+    chimney,
+    tuning,
+  })
 
   useEffect(() => {
-    stateRef.current = { awake, entering, transitionStartedAt, homeRect, chimney }
-  }, [awake, entering, transitionStartedAt, homeRect, chimney])
+    stateRef.current = {
+      awake,
+      entering,
+      transitionStartedAt,
+      homeRect,
+      chimney,
+      tuning,
+    }
+  }, [awake, entering, transitionStartedAt, homeRect, chimney, tuning])
 
   useEffect(() => {
     if (!hostRef.current) return
@@ -87,12 +107,9 @@ export default function P5DreamLayer({
         const state = stateRef.current
         if (!state.chimney) return null
 
-        // Sit just above the previous position: still attached to the chimney,
-        // but no longer visually sunk into the roof artwork.
-        const downwardOffset = s.constrain((state.homeRect?.height ?? 514) * 0.008, 3, 5)
         return {
-          x: state.chimney.x + 22,
-          y: state.chimney.y + downwardOffset,
+          x: state.chimney.x + state.tuning.spawnX,
+          y: state.chimney.y + state.tuning.spawnY,
         }
       }
 
@@ -129,6 +146,7 @@ export default function P5DreamLayer({
       }
 
       const spawnStar = () => {
+        const state = stateRef.current
         const emitter = getEmitterPosition()
         if (!emitter || !starImages.length) return
 
@@ -136,15 +154,17 @@ export default function P5DreamLayer({
         if (!enabled.length) return
 
         const imageIndex = enabled[Math.floor(s.random(enabled.length))]
+        const [riseMin, riseMax] = orderedPair(state.tuning.riseMin, state.tuning.riseMax)
+        const [driftMin, driftMax] = orderedPair(state.tuning.driftMin, state.tuning.driftMax)
 
         particles.push({
           x: emitter.x + s.random(-3, 3),
           y: emitter.y + s.random(-3, 3),
-          vy: s.random(-0.30, -0.22),
-          driftSpeed: s.random(0.78, 0.96),
+          vy: s.random(riseMin, riseMax),
+          driftSpeed: s.random(driftMin, driftMax),
           travelX: 0,
           laneOffset: chooseLaneOffset(),
-          baseSize: s.random(56, 72),
+          sizeMix: s.random(0, 1),
           alpha: s.random(225, 252),
           angle: s.random(-0.05, 0.05),
           angularVelocity: s.random(-0.0016, 0.0016),
@@ -200,8 +220,9 @@ export default function P5DreamLayer({
         const state = stateRef.current
         const shouldEmit = state.awake && !state.entering
         const now = s.millis()
+        const maxStars = Math.max(1, Math.round(state.tuning.maxStars))
 
-        const canSpawnByCount = particles.length < 3
+        const canSpawnByCount = particles.length < maxStars
         const canSpawnBySpace = canSpawnStarSpatially()
 
         if (
@@ -211,7 +232,11 @@ export default function P5DreamLayer({
           canSpawnBySpace
         ) {
           spawnStar()
-          nextStarSpawnAt = now + s.random(MOTION.starSpawnMinMs, MOTION.starSpawnMaxMs)
+          const [spawnMin, spawnMax] = orderedPair(
+            state.tuning.spawnMinMs,
+            state.tuning.spawnMaxMs,
+          )
+          nextStarSpawnAt = now + s.random(spawnMin, spawnMax)
         }
 
         if (!shouldEmit) {
@@ -256,6 +281,8 @@ export default function P5DreamLayer({
 
         applyPairwiseSeparation()
 
+        const [sizeMin, sizeMax] = orderedPair(state.tuning.sizeMin, state.tuning.sizeMax)
+
         for (const particle of particles) {
           const img = starImages[particle.imageIndex]
           if (!img) continue
@@ -263,15 +290,23 @@ export default function P5DreamLayer({
           const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.94
           const growthProgress = s.constrain((particle.age - 1) / 96, 0, 1)
           const growthEase = growthProgress * growthProgress * (3 - 2 * growthProgress)
-          const growthMultiplier = s.lerp(0.38, 1.0, growthEase)
-          const visualSize = particle.baseSize * assetScale * growthMultiplier
+          const growthMultiplier = s.lerp(
+            s.constrain(state.tuning.birthScale, 0.05, 1),
+            1.0,
+            growthEase,
+          )
+          const baseSize = s.lerp(sizeMin, sizeMax, particle.sizeMix)
+          const visualSize = baseSize * assetScale * growthMultiplier
 
           s.push()
           s.translate(particle.x, particle.y)
           s.rotate(particle.angle)
           s.tint(255, particle.alpha)
           s.imageMode(s.CENTER)
-          s.image(img, 0, 0, visualSize, visualSize)
+
+          // Preserve source aspect ratio so shooting-star assets do not get squashed.
+          const sourceRatio = img.width > 0 ? img.height / img.width : 1
+          s.image(img, 0, 0, visualSize, visualSize * sourceRatio)
           s.pop()
         }
       }
