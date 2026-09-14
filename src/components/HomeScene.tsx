@@ -21,6 +21,7 @@ type Props = {
 }
 
 type SceneState = 'idle' | 'awake' | 'entering'
+type TuneHandleKind = 'spawn' | 'curve' | 'end'
 
 const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v1'
 
@@ -101,7 +102,7 @@ function loadStoredTuning(enabled: boolean): StarTuning {
 
 export default function HomeScene({ onEnter }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
-  const dragPointerIdRef = useRef<number | null>(null)
+  const dragHandleRef = useRef<{ kind: TuneHandleKind; pointerId: number } | null>(null)
   const tuneMode = useMemo(
     () => new URLSearchParams(window.location.search).get('tune') === '1',
     [],
@@ -170,6 +171,20 @@ export default function HomeScene({ onEnter }: Props) {
       }
     : null
 
+  const tuneCurvePoint = tuneSpawnPoint
+    ? {
+        x: tuneSpawnPoint.x + starTuning.pathCurveX,
+        y: tuneSpawnPoint.y + starTuning.pathCurveY,
+      }
+    : null
+
+  const tuneEndPoint = tuneSpawnPoint
+    ? {
+        x: tuneSpawnPoint.x + starTuning.pathEndX,
+        y: tuneSpawnPoint.y + starTuning.pathEndY,
+      }
+    : null
+
   const beginEnter = () => {
     if (entering || tuneMode) return
     setSceneState('entering')
@@ -185,34 +200,83 @@ export default function HomeScene({ onEnter }: Props) {
     if (!entering && !isCoarsePointer && !tuneMode) setSceneState('idle')
   }
 
-  const updateSpawnFromPointer = (clientX: number, clientY: number) => {
+  const updateTuneHandleFromPointer = (
+    kind: TuneHandleKind,
+    clientX: number,
+    clientY: number,
+  ) => {
     if (!chimney) return
 
-    setStarTuning((current) => ({
-      ...current,
-      spawnX: clamp(Math.round(clientX - chimney.x), -80, 140),
-      spawnY: clamp(Math.round(clientY - chimney.y), -80, 120),
-    }))
+    setStarTuning((current) => {
+      if (kind === 'spawn') {
+        return {
+          ...current,
+          spawnX: clamp(Math.round(clientX - chimney.x), -80, 140),
+          spawnY: clamp(Math.round(clientY - chimney.y), -80, 120),
+        }
+      }
+
+      const spawnX = chimney.x + current.spawnX
+      const spawnY = chimney.y + current.spawnY
+
+      if (kind === 'curve') {
+        return {
+          ...current,
+          pathCurveX: clamp(Math.round(clientX - spawnX), -120, 420),
+          pathCurveY: clamp(Math.round(clientY - spawnY), -360, 220),
+        }
+      }
+
+      return {
+        ...current,
+        pathEndX: clamp(Math.round(clientX - spawnX), 40, 520),
+        pathEndY: clamp(Math.round(clientY - spawnY), -360, 180),
+      }
+    })
   }
 
-  const onTuneHandlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    dragPointerIdRef.current = event.pointerId
+  const onTuneHandlePointerDown = (
+    kind: TuneHandleKind,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    dragHandleRef.current = { kind, pointerId: event.pointerId }
     event.currentTarget.setPointerCapture(event.pointerId)
-    updateSpawnFromPointer(event.clientX, event.clientY)
+    updateTuneHandleFromPointer(kind, event.clientX, event.clientY)
   }
 
   const onTuneHandlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (dragPointerIdRef.current !== event.pointerId) return
-    updateSpawnFromPointer(event.clientX, event.clientY)
+    const active = dragHandleRef.current
+    if (!active || active.pointerId !== event.pointerId) return
+    updateTuneHandleFromPointer(active.kind, event.clientX, event.clientY)
   }
 
   const onTuneHandlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (dragPointerIdRef.current !== event.pointerId) return
-    dragPointerIdRef.current = null
+    const active = dragHandleRef.current
+    if (!active || active.pointerId !== event.pointerId) return
+    dragHandleRef.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
   }
+
+  const renderTuneHandle = (
+    kind: TuneHandleKind,
+    point: { x: number; y: number },
+    label: string,
+  ) => (
+    <button
+      type="button"
+      className={`tune-path-handle tune-path-handle--${kind}`}
+      style={{ left: point.x, top: point.y }}
+      aria-label={`${label} X ${Math.round(point.x)}, Y ${Math.round(point.y)}`}
+      onPointerDown={(event) => onTuneHandlePointerDown(kind, event)}
+      onPointerMove={onTuneHandlePointerMove}
+      onPointerUp={onTuneHandlePointerUp}
+      onPointerCancel={onTuneHandlePointerUp}
+    >
+      <span>{label}</span>
+    </button>
+  )
 
   return (
     <main className={`home-scene home-scene--${sceneState}${tuneMode ? ' home-scene--tuning' : ''}`}>
@@ -253,19 +317,33 @@ export default function HomeScene({ onEnter }: Props) {
         </div>
       </div>
 
-      {tuneMode && tuneSpawnPoint && (
-        <button
-          type="button"
-          className="tune-spawn-handle"
-          style={{ left: tuneSpawnPoint.x, top: tuneSpawnPoint.y }}
-          aria-label={`星星出生点 X ${starTuning.spawnX}, Y ${starTuning.spawnY}`}
-          onPointerDown={onTuneHandlePointerDown}
-          onPointerMove={onTuneHandlePointerMove}
-          onPointerUp={onTuneHandlePointerUp}
-          onPointerCancel={onTuneHandlePointerUp}
-        >
-          <span>spawn</span>
-        </button>
+      {tuneMode && tuneSpawnPoint && tuneCurvePoint && tuneEndPoint && (
+        <>
+          <svg className="tune-path-overlay" aria-hidden="true">
+            <line
+              className="tune-path-control-line"
+              x1={tuneSpawnPoint.x}
+              y1={tuneSpawnPoint.y}
+              x2={tuneCurvePoint.x}
+              y2={tuneCurvePoint.y}
+            />
+            <line
+              className="tune-path-control-line"
+              x1={tuneCurvePoint.x}
+              y1={tuneCurvePoint.y}
+              x2={tuneEndPoint.x}
+              y2={tuneEndPoint.y}
+            />
+            <path
+              className="tune-path-curve"
+              d={`M ${tuneSpawnPoint.x} ${tuneSpawnPoint.y} Q ${tuneCurvePoint.x} ${tuneCurvePoint.y} ${tuneEndPoint.x} ${tuneEndPoint.y}`}
+            />
+          </svg>
+
+          {renderTuneHandle('spawn', tuneSpawnPoint, 'spawn')}
+          {renderTuneHandle('curve', tuneCurvePoint, 'curve')}
+          {renderTuneHandle('end', tuneEndPoint, 'end')}
+        </>
       )}
 
       {tuneMode && (
