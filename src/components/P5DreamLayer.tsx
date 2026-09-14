@@ -249,15 +249,16 @@ export default function P5DreamLayer({
           particle.angle += particle.angularVelocity
 
           const fade = t < 0.68 ? 1 : 1 - smoothstep((t - 0.68) / 0.32)
-          const growthProgress = smoothstep(s.constrain(t / 0.58, 0, 1))
-          const growthMultiplier = s.lerp(
-            s.constrain(state.tuning.birthScale, 0.05, 1),
-            1,
-            growthProgress,
-          )
           const baseSize = s.lerp(sizeMin, sizeMax, particle.sizeMix)
           const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.94
-          const visualSize = baseSize * assetScale * growthMultiplier
+
+          // Per-track size gradient: the star smoothly changes from the track's
+          // start scale at the chimney to its end scale at the end point.
+          const startScale = s.constrain(track.startScale, 0.05, 3)
+          const endScale = s.constrain(track.endScale, 0.05, 3)
+          const sizeScale = s.lerp(startScale, endScale, pathT)
+          const visualSize = baseSize * assetScale * sizeScale
+
           const drawAlpha = particle.baseAlpha * fade
           const img = starImages[particle.imageIndex]
 
