@@ -285,7 +285,8 @@ export default function TunePanel({
             <h2>节奏</h2>
             <RangeRow label="最短间隔" field="spawnMinMs" value={value} onChange={onChange} min={400} max={6000} step={100} suffix="ms" />
             <RangeRow label="最长间隔" field="spawnMaxMs" value={value} onChange={onChange} min={500} max={8000} step={100} suffix="ms" />
-            <RangeRow label="最多星星" field="maxStars" value={value} onChange={onChange} min={1} max={8} step={1} />
+            <RangeRow label="每批同时出生" field="burstStars" value={value} onChange={onChange} min={1} max={6} step={1} suffix="颗" />
+            <RangeRow label="画面最多存在" field="maxStars" value={value} onChange={onChange} min={1} max={12} step={1} suffix="颗" />
           </section>
 
           <div className="tune-panel__actions">
@@ -294,7 +295,7 @@ export default function TunePanel({
           </div>
 
           <p className="tune-panel__footnote">
-            星星会轮流进入不同轨道，方便逐条观察。star-13 花环素材也已重新加入随机素材池。满意后复制参数发给我即可固化。
+            “每批同时出生”控制一次喷出几颗；“画面最多存在”只是总上限。若总上限小于每批数量，会按剩余空位截断。星星会依次分配到不同轨道，star-13 花环素材也参与随机。
           </p>
         </div>
       )}
