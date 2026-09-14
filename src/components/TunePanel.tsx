@@ -3,6 +3,7 @@ import {
   STAR_TUNING_DEFAULTS,
   type StarTuning,
 } from '../sceneConfig'
+import '../tuneTrajectory.css'
 
 type Props = {
   value: StarTuning
