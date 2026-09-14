@@ -23,11 +23,19 @@ export const HOME_ANCHORS = {
 
 const BASE_URL = import.meta.env.BASE_URL
 
+// star-13 is the wreath/composite artwork and is intentionally excluded from
+// the particle pool. Keep the source file in the repository so it can be reused
+// elsewhere later without altering the original artwork.
+const STAR_PARTICLE_ASSET_NUMBERS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15,
+] as const
+
 export const ASSETS = {
   home: `${BASE_URL}assets/home/Home.png`,
   ecg: `${BASE_URL}assets/effects/pawcream-ecg.png`,
-  stars: Array.from({ length: 15 }, (_, i) =>
-    `${BASE_URL}assets/stars/star-${String(i + 1).padStart(2, '0')}.png`,
+  stars: STAR_PARTICLE_ASSET_NUMBERS.map(
+    (number) =>
+      `${BASE_URL}assets/stars/star-${String(number).padStart(2, '0')}.png`,
   ),
 } as const
 
