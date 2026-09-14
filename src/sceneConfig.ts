@@ -57,6 +57,7 @@ export type StarTuning = {
   laneSpread: number
   spawnMinMs: number
   spawnMaxMs: number
+  burstStars: number
   maxStars: number
   tracks: StarTrack[]
 }
@@ -65,7 +66,8 @@ export const MAX_STAR_TRACKS = 6
 
 // Production defaults. ?tune=1 can override these live in the browser without
 // changing the normal page. Multiple tracks share the same chimney emitter;
-// newly born stars are distributed across the tracks in round-robin order.
+// each emission event can release a tunable burst of stars, distributed across
+// the tracks in round-robin order.
 export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 22,
   spawnY: 4,
@@ -78,6 +80,7 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
   laneSpread: 24,
   spawnMinMs: MOTION.starSpawnMinMs,
   spawnMaxMs: MOTION.starSpawnMaxMs,
+  burstStars: 1,
   maxStars: 3,
   tracks: [
     {
