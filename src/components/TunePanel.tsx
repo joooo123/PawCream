@@ -286,10 +286,10 @@ export default function TunePanel({
 
           <section className="tune-panel__section">
             <h2>节奏</h2>
-            <RangeRow label="最短间隔" field="spawnMinMs" value={value} onChange={onChange} min={400} max={6000} step={100} suffix="ms" />
-            <RangeRow label="最长间隔" field="spawnMaxMs" value={value} onChange={onChange} min={500} max={8000} step={100} suffix="ms" />
+            <RangeRow label="最短间隔" field="spawnMinMs" value={value} onChange={onChange} min={10} max={600} step={10} suffix="ms" />
+            <RangeRow label="最长间隔" field="spawnMaxMs" value={value} onChange={onChange} min={10} max={600} step={10} suffix="ms" />
             <RangeRow label="每批星星数" field="burstStars" value={value} onChange={onChange} min={1} max={6} step={1} suffix="颗" />
-            <RangeRow label="同批星星间隔" field="burstStaggerMs" value={value} onChange={onChange} min={0} max={250} step={5} suffix="ms" />
+            <RangeRow label="同批星星间隔" field="burstStaggerMs" value={value} onChange={onChange} min={10} max={600} step={10} suffix="ms" />
             <RangeRow label="画面最多存在" field="maxStars" value={value} onChange={onChange} min={1} max={12} step={1} suffix="颗" />
           </section>
 
@@ -299,7 +299,7 @@ export default function TunePanel({
           </div>
 
           <p className="tune-panel__footnote">
-            “同批星星间隔”控制一批内部相邻两颗星星的出生时间差：0ms 就是完全同时，45ms 时 4 颗会在约 0 / 45 / 90 / 135ms 依次出现。轨道出生倍率 / 结束倍率仍会沿整条轨迹平滑渐变。
+            “最短间隔 / 最长间隔”控制不同批次之间的随机时间范围；“同批星星间隔”控制同一批里相邻两颗星星的出生时间差。现在三项都可在 10–600ms 内以 10ms 步进实时调节。
           </p>
         </div>
       )}
