@@ -9,8 +9,6 @@ export const HOME_DISPLAY = {
   breakpoint: 700,
 } as const
 
-// Coordinates are defined in the original 2048×1535 Home artwork.
-// Only these values usually need tuning after you visually inspect the page.
 export const HOME_ANCHORS = {
   chimney: { x: 1370, y: 62 },
   houseHotspot: {
@@ -23,9 +21,6 @@ export const HOME_ANCHORS = {
 
 const BASE_URL = import.meta.env.BASE_URL
 
-// star-13 is the wreath/composite artwork and is intentionally excluded from
-// the particle pool. Keep the source file in the repository so it can be reused
-// elsewhere later without altering the original artwork.
 const STAR_PARTICLE_ASSET_NUMBERS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15,
 ] as const
@@ -74,11 +69,6 @@ export type StarTuning = {
 
 export const MAX_STAR_TRACKS = 6
 
-// Production defaults. ?tune=1 can override these live in the browser without
-// changing the normal page. Multiple tracks share the same chimney emitter;
-// each emission event releases a tunable burst whose stars can be staggered by
-// a few milliseconds, then distributed across tracks in round-robin order.
-// Each track also owns its start/end size scale.
 export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 14,
   spawnY: -15,
@@ -88,10 +78,10 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
   wobbleAmp: 9,
   wobbleFreq: 0.012,
   laneSpread: 24,
-  spawnMinMs: 400,
-  spawnMaxMs: 1300,
+  spawnMinMs: 70,
+  spawnMaxMs: 600,
   burstStars: 4,
-  burstStaggerMs: 250,
+  burstStaggerMs: 600,
   maxStars: 12,
   tracks: [
     {
@@ -119,16 +109,16 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
       endScale: 1.89,
     },
     {
-      curveX: 108,
-      curveY: -62,
-      endX: 164,
-      endY: -53,
+      curveX: 69,
+      curveY: -61,
+      endX: 132,
+      endY: -39,
       startScale: 0.91,
       endScale: 1.53,
     },
     {
-      curveX: -21,
-      curveY: -101,
+      curveX: -8,
+      curveY: -95,
       endX: 46,
       endY: -162,
       startScale: 0.91,
