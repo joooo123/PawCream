@@ -44,10 +44,14 @@ export type StarTuning = {
   sizeMin: number
   sizeMax: number
   birthScale: number
-  driftMin: number
-  driftMax: number
-  riseMin: number
-  riseMax: number
+  pathEndX: number
+  pathEndY: number
+  pathCurveX: number
+  pathCurveY: number
+  pathDurationMs: number
+  wobbleAmp: number
+  wobbleFreq: number
+  laneSpread: number
   spawnMinMs: number
   spawnMaxMs: number
   maxStars: number
@@ -62,10 +66,14 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
   sizeMin: 56,
   sizeMax: 72,
   birthScale: 0.38,
-  driftMin: 0.78,
-  driftMax: 0.96,
-  riseMin: -0.30,
-  riseMax: -0.22,
+  pathEndX: 245,
+  pathEndY: -118,
+  pathCurveX: 72,
+  pathCurveY: -118,
+  pathDurationMs: 6200,
+  wobbleAmp: 9,
+  wobbleFreq: 0.012,
+  laneSpread: 24,
   spawnMinMs: MOTION.starSpawnMinMs,
   spawnMaxMs: MOTION.starSpawnMaxMs,
   maxStars: 3,
