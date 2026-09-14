@@ -1,0 +1,117 @@
+.tune-path-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  width: 100vw;
+  height: 100vh;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tune-path-control-line {
+  stroke: rgba(184, 151, 174, 0.34);
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+}
+
+.tune-path-curve {
+  fill: none;
+  stroke: rgba(217, 111, 151, 0.92);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 7 7;
+  filter: drop-shadow(0 2px 4px rgba(184, 104, 135, 0.14));
+}
+
+.tune-path-handle {
+  position: fixed;
+  z-index: 26;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(255, 250, 252, 0.76);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.72),
+    0 6px 18px rgba(113, 81, 91, 0.10);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tune-path-handle:active {
+  cursor: grabbing;
+}
+
+.tune-path-handle--spawn {
+  border: 1.5px dashed rgba(220, 112, 150, 0.96);
+  color: #c86f90;
+}
+
+.tune-path-handle--curve {
+  border: 1.5px solid rgba(161, 132, 190, 0.88);
+  color: #8f72ad;
+  border-radius: 9px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: rgba(247, 242, 252, 0.80);
+}
+
+.tune-path-handle--end {
+  border: 1.5px solid rgba(117, 174, 161, 0.92);
+  color: #699c91;
+  background: rgba(241, 251, 248, 0.80);
+}
+
+.tune-path-handle::before,
+.tune-path-handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: currentColor;
+  opacity: 0.78;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.tune-path-handle::before {
+  width: 22px;
+  height: 1px;
+}
+
+.tune-path-handle::after {
+  width: 1px;
+  height: 22px;
+}
+
+.tune-path-handle span {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 7px);
+  transform: translateX(-50%);
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 252, 253, 0.96);
+  box-shadow: 0 4px 14px rgba(113, 81, 91, 0.10);
+  font-size: 9px;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: currentColor;
+  pointer-events: none;
+}
+
+.tune-path-handle--curve span {
+  transform: translateX(-50%) rotate(-45deg);
+  top: calc(100% + 12px);
+}
+
+@media (max-width: 700px) {
+  .tune-path-handle {
+    width: 32px;
+    height: 32px;
+  }
+}
