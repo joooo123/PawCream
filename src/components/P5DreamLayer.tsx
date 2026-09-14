@@ -20,20 +20,18 @@ type Props = {
 }
 
 type StarParticle = {
+  startX: number
+  startY: number
   x: number
   y: number
-  vy: number
-  driftSpeed: number
-  travelX: number
-  laneOffset: number
   sizeMix: number
-  alpha: number
+  baseAlpha: number
   angle: number
   angularVelocity: number
   imageIndex: number
-  age: number
-  riseFrames: number
-  windRampFrames: number
+  elapsedMs: number
+  durationMix: number
+  laneFactor: number
   wobbleSeed: number
 }
 
@@ -48,6 +46,16 @@ const DISABLED_STAR_INDICES = new Set<number>([12])
 
 function orderedPair(a: number, b: number) {
   return a <= b ? [a, b] as const : [b, a] as const
+}
+
+function smoothstep(value: number) {
+  const t = Math.min(1, Math.max(0, value))
+  return t * t * (3 - 2 * t)
+}
+
+function quadraticBezier(a: number, b: number, c: number, t: number) {
+  const u = 1 - t
+  return u * u * a + 2 * u * t * b + t * t * c
 }
 
 export default function P5DreamLayer({
@@ -121,32 +129,7 @@ export default function P5DreamLayer({
         return enabled
       }
 
-      const chooseLaneOffset = () => {
-        const lanes = [-30, 8, 46]
-
-        if (particles.length === 0) {
-          return lanes[Math.floor(s.random(lanes.length))] + s.random(-3, 3)
-        }
-
-        let bestLane = lanes[0]
-        let bestScore = -Infinity
-
-        for (const lane of lanes) {
-          let minDiff = Infinity
-          for (const particle of particles) {
-            minDiff = Math.min(minDiff, Math.abs(lane - particle.laneOffset))
-          }
-          if (minDiff > bestScore) {
-            bestScore = minDiff
-            bestLane = lane
-          }
-        }
-
-        return bestLane + s.random(-3, 3)
-      }
-
       const spawnStar = () => {
-        const state = stateRef.current
         const emitter = getEmitterPosition()
         if (!emitter || !starImages.length) return
 
@@ -154,24 +137,22 @@ export default function P5DreamLayer({
         if (!enabled.length) return
 
         const imageIndex = enabled[Math.floor(s.random(enabled.length))]
-        const [riseMin, riseMax] = orderedPair(state.tuning.riseMin, state.tuning.riseMax)
-        const [driftMin, driftMax] = orderedPair(state.tuning.driftMin, state.tuning.driftMax)
+        const startX = emitter.x + s.random(-3, 3)
+        const startY = emitter.y + s.random(-3, 3)
 
         particles.push({
-          x: emitter.x + s.random(-3, 3),
-          y: emitter.y + s.random(-3, 3),
-          vy: s.random(riseMin, riseMax),
-          driftSpeed: s.random(driftMin, driftMax),
-          travelX: 0,
-          laneOffset: chooseLaneOffset(),
+          startX,
+          startY,
+          x: startX,
+          y: startY,
           sizeMix: s.random(0, 1),
-          alpha: s.random(225, 252),
+          baseAlpha: s.random(225, 252),
           angle: s.random(-0.05, 0.05),
           angularVelocity: s.random(-0.0016, 0.0016),
           imageIndex,
-          age: 0,
-          riseFrames: Math.floor(s.random(4, 7)),
-          windRampFrames: Math.floor(s.random(16, 24)),
+          elapsedMs: 0,
+          durationMix: s.random(0.90, 1.10),
+          laneFactor: s.random(-1, 1),
           wobbleSeed: s.random(0, 1000),
         })
       }
@@ -180,7 +161,7 @@ export default function P5DreamLayer({
         const emitter = getEmitterPosition()
         if (!emitter) return false
 
-        const minimumDistance = 78
+        const minimumDistance = Math.max(54, stateRef.current.tuning.sizeMin * 0.9)
         for (const particle of particles) {
           const dx = particle.x - emitter.x
           const dy = particle.y - emitter.y
@@ -189,47 +170,17 @@ export default function P5DreamLayer({
         return true
       }
 
-      const applyPairwiseSeparation = () => {
-        for (let i = 0; i < particles.length; i += 1) {
-          for (let j = i + 1; j < particles.length; j += 1) {
-            const a = particles[i]
-            const b = particles[j]
-            const dx = b.x - a.x
-            const dy = b.y - a.y
-            const distance = Math.hypot(dx, dy)
-            const requiredDistance = 68
-
-            if (distance >= requiredDistance) continue
-
-            const safeDistance = Math.max(distance, 0.001)
-            const overlap = requiredDistance - safeDistance
-            let directionX = dx / safeDistance
-
-            if (Math.abs(directionX) < 0.18) {
-              directionX = a.laneOffset <= b.laneOffset ? 1 : -1
-            }
-
-            const pushX = Math.min(overlap * 0.08, 1.0)
-            a.x -= directionX * pushX
-            b.x += directionX * pushX
-          }
-        }
-      }
-
       const drawStars = () => {
         const state = stateRef.current
         const shouldEmit = state.awake && !state.entering
         const now = s.millis()
         const maxStars = Math.max(1, Math.round(state.tuning.maxStars))
 
-        const canSpawnByCount = particles.length < maxStars
-        const canSpawnBySpace = canSpawnStarSpatially()
-
         if (
           shouldEmit &&
           now >= nextStarSpawnAt &&
-          canSpawnByCount &&
-          canSpawnBySpace
+          particles.length < maxStars &&
+          canSpawnStarSpatially()
         ) {
           spawnStar()
           const [spawnMin, spawnMax] = orderedPair(
@@ -243,72 +194,77 @@ export default function P5DreamLayer({
           nextStarSpawnAt = now + s.random(350, 650)
         }
 
-        particles = particles.filter(
-          (particle) =>
-            particle.alpha > 4 &&
-            particle.y > -180 &&
-            particle.x < s.width + 180,
-        )
-
-        const emitter = getEmitterPosition()
-
-        for (const particle of particles) {
-          particle.age += 1
-
-          const windFactor = s.constrain(
-            (particle.age - particle.riseFrames) / particle.windRampFrames,
-            0,
-            1,
-          )
-          const smoothWind = windFactor * windFactor * (3 - 2 * windFactor)
-
-          const laneEase = 0.46 + smoothWind * 0.54
-          const wobble =
-            (s.noise(particle.wobbleSeed, s.frameCount * 0.008) - 0.5) * 0.12
-
-          particle.travelX += particle.driftSpeed * smoothWind
-
-          if (emitter) {
-            const targetX =
-              emitter.x + particle.travelX + particle.laneOffset * laneEase
-            particle.x += (targetX - particle.x) * 0.095 + wobble
-          }
-
-          particle.y += particle.vy * (1 - smoothWind * 0.10)
-          particle.alpha -= 0.40 + smoothWind * 0.14
-          particle.angle += particle.angularVelocity * (0.4 + smoothWind * 0.6)
-        }
-
-        applyPairwiseSeparation()
-
         const [sizeMin, sizeMax] = orderedPair(state.tuning.sizeMin, state.tuning.sizeMax)
+        const durationBase = Math.max(900, state.tuning.pathDurationMs)
+        const deltaMs = Math.min(Math.max(s.deltaTime || 16.67, 0), 50)
 
-        for (const particle of particles) {
-          const img = starImages[particle.imageIndex]
-          if (!img) continue
+        particles = particles.filter((particle) => {
+          particle.elapsedMs += deltaMs
+          const duration = durationBase * particle.durationMix
+          const rawT = particle.elapsedMs / duration
+          if (rawT >= 1.02) return false
 
-          const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.94
-          const growthProgress = s.constrain((particle.age - 1) / 96, 0, 1)
-          const growthEase = growthProgress * growthProgress * (3 - 2 * growthProgress)
+          const t = s.constrain(rawT, 0, 1)
+          const pathT = smoothstep(t)
+          const controlX = particle.startX + state.tuning.pathCurveX
+          const controlY = particle.startY + state.tuning.pathCurveY
+          const endX = particle.startX + state.tuning.pathEndX
+          const endY = particle.startY + state.tuning.pathEndY
+
+          const baseX = quadraticBezier(particle.startX, controlX, endX, pathT)
+          const baseY = quadraticBezier(particle.startY, controlY, endY, pathT)
+
+          const flowEnvelope = Math.sin(Math.PI * t)
+          const laneOffset = particle.laneFactor * state.tuning.laneSpread * flowEnvelope
+          const noiseX =
+            (s.noise(
+              particle.wobbleSeed,
+              s.frameCount * Math.max(0.001, state.tuning.wobbleFreq),
+            ) - 0.5) * 2 * state.tuning.wobbleAmp * flowEnvelope
+          const noiseY =
+            (s.noise(
+              particle.wobbleSeed + 83.7,
+              s.frameCount * Math.max(0.001, state.tuning.wobbleFreq) * 0.87,
+            ) - 0.5) * state.tuning.wobbleAmp * 0.72 * flowEnvelope
+
+          particle.x = baseX + laneOffset + noiseX
+          particle.y = baseY + noiseY
+          particle.angle += particle.angularVelocity
+
+          const fade = t < 0.68 ? 1 : 1 - smoothstep((t - 0.68) / 0.32)
+          const growthProgress = smoothstep(s.constrain(t / 0.58, 0, 1))
           const growthMultiplier = s.lerp(
             s.constrain(state.tuning.birthScale, 0.05, 1),
-            1.0,
-            growthEase,
+            1,
+            growthProgress,
           )
           const baseSize = s.lerp(sizeMin, sizeMax, particle.sizeMix)
+          const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.94
           const visualSize = baseSize * assetScale * growthMultiplier
+          const drawAlpha = particle.baseAlpha * fade
+          const img = starImages[particle.imageIndex]
 
-          s.push()
-          s.translate(particle.x, particle.y)
-          s.rotate(particle.angle)
-          s.tint(255, particle.alpha)
-          s.imageMode(s.CENTER)
+          if (img && drawAlpha > 2) {
+            s.push()
+            s.translate(particle.x, particle.y)
+            s.rotate(particle.angle)
+            s.tint(255, drawAlpha)
+            s.imageMode(s.CENTER)
 
-          // Preserve source aspect ratio so shooting-star assets do not get squashed.
-          const sourceRatio = img.width > 0 ? img.height / img.width : 1
-          s.image(img, 0, 0, visualSize, visualSize * sourceRatio)
-          s.pop()
-        }
+            // Preserve source aspect ratio so shooting-star assets do not get squashed.
+            const sourceRatio = img.width > 0 ? img.height / img.width : 1
+            s.image(img, 0, 0, visualSize, visualSize * sourceRatio)
+            s.pop()
+          }
+
+          return (
+            drawAlpha > 1 &&
+            particle.y > -240 &&
+            particle.y < s.height + 240 &&
+            particle.x > -240 &&
+            particle.x < s.width + 240
+          )
+        })
       }
 
       const drawHeartbeatTransition = () => {
