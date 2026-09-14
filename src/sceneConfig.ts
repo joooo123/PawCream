@@ -38,16 +38,19 @@ export const MOTION = {
   mobileAutoWakeMs: 900,
 } as const
 
+export type StarTrack = {
+  curveX: number
+  curveY: number
+  endX: number
+  endY: number
+}
+
 export type StarTuning = {
   spawnX: number
   spawnY: number
   sizeMin: number
   sizeMax: number
   birthScale: number
-  pathEndX: number
-  pathEndY: number
-  pathCurveX: number
-  pathCurveY: number
   pathDurationMs: number
   wobbleAmp: number
   wobbleFreq: number
@@ -55,21 +58,20 @@ export type StarTuning = {
   spawnMinMs: number
   spawnMaxMs: number
   maxStars: number
+  tracks: StarTrack[]
 }
 
+export const MAX_STAR_TRACKS = 6
+
 // Production defaults. ?tune=1 can override these live in the browser without
-// changing the normal page. Once a tuning pass is approved, copy the values
-// back here to make them permanent.
+// changing the normal page. Multiple tracks share the same chimney emitter;
+// newly born stars are distributed across the tracks in round-robin order.
 export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 22,
   spawnY: 4,
   sizeMin: 56,
   sizeMax: 72,
   birthScale: 0.38,
-  pathEndX: 245,
-  pathEndY: -118,
-  pathCurveX: 72,
-  pathCurveY: -118,
   pathDurationMs: 6200,
   wobbleAmp: 9,
   wobbleFreq: 0.012,
@@ -77,4 +79,24 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnMinMs: MOTION.starSpawnMinMs,
   spawnMaxMs: MOTION.starSpawnMaxMs,
   maxStars: 3,
+  tracks: [
+    {
+      curveX: 72,
+      curveY: -118,
+      endX: 245,
+      endY: -118,
+    },
+    {
+      curveX: 126,
+      curveY: -76,
+      endX: 292,
+      endY: -48,
+    },
+    {
+      curveX: 54,
+      curveY: -152,
+      endX: 218,
+      endY: -172,
+    },
+  ],
 }

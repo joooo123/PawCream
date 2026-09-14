@@ -11,8 +11,10 @@ import {
   ASSETS,
   HOME_ANCHORS,
   HOME_SOURCE,
+  MAX_STAR_TRACKS,
   MOTION,
   STAR_TUNING_DEFAULTS,
+  type StarTrack,
   type StarTuning,
 } from '../sceneConfig'
 
@@ -22,11 +24,52 @@ type Props = {
 
 type SceneState = 'idle' | 'awake' | 'entering'
 type TuneHandleKind = 'spawn' | 'curve' | 'end'
+type NumericTuningKey = Exclude<keyof StarTuning, 'tracks'>
 
-const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v1'
+const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v2'
+const LEGACY_TUNING_STORAGE_KEY = 'pawcream-star-tuning-v1'
+
+const NUMERIC_TUNING_KEYS: NumericTuningKey[] = [
+  'spawnX',
+  'spawnY',
+  'sizeMin',
+  'sizeMax',
+  'birthScale',
+  'pathDurationMs',
+  'wobbleAmp',
+  'wobbleFreq',
+  'laneSpread',
+  'spawnMinMs',
+  'spawnMaxMs',
+  'maxStars',
+]
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
+}
+
+function cloneDefaults(): StarTuning {
+  return {
+    ...STAR_TUNING_DEFAULTS,
+    tracks: STAR_TUNING_DEFAULTS.tracks.map((track) => ({ ...track })),
+  }
+}
+
+function readFiniteNumber(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function readTrack(value: unknown, fallback: StarTrack): StarTrack {
+  const record = value && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {}
+
+  return {
+    curveX: readFiniteNumber(record.curveX, fallback.curveX),
+    curveY: readFiniteNumber(record.curveY, fallback.curveY),
+    endX: readFiniteNumber(record.endX, fallback.endX),
+    endY: readFiniteNumber(record.endY, fallback.endY),
+  }
 }
 
 function getContainRect(container: DOMRect): RenderedHomeRect {
@@ -77,32 +120,59 @@ function sourceRectToPercent() {
 
 function loadStoredTuning(enabled: boolean): StarTuning {
   if (!enabled || typeof window === 'undefined') {
-    return { ...STAR_TUNING_DEFAULTS }
+    return cloneDefaults()
   }
 
   try {
-    const raw = window.localStorage.getItem(TUNING_STORAGE_KEY)
-    if (!raw) return { ...STAR_TUNING_DEFAULTS }
+    const raw =
+      window.localStorage.getItem(TUNING_STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_TUNING_STORAGE_KEY)
+    if (!raw) return cloneDefaults()
 
     const parsed = JSON.parse(raw) as Record<string, unknown>
-    const next = { ...STAR_TUNING_DEFAULTS }
+    const next = cloneDefaults()
 
-    for (const key of Object.keys(STAR_TUNING_DEFAULTS) as (keyof StarTuning)[]) {
+    for (const key of NUMERIC_TUNING_KEYS) {
       const candidate = parsed[key]
       if (typeof candidate === 'number' && Number.isFinite(candidate)) {
-        next[key] = candidate
+        ;(next as unknown as Record<string, unknown>)[key] = candidate
+      }
+    }
+
+    if (Array.isArray(parsed.tracks) && parsed.tracks.length > 0) {
+      next.tracks = parsed.tracks
+        .slice(0, MAX_STAR_TRACKS)
+        .map((track, index) => {
+          const fallback =
+            STAR_TUNING_DEFAULTS.tracks[index] ??
+            STAR_TUNING_DEFAULTS.tracks[0]
+          return readTrack(track, fallback)
+        })
+    } else {
+      // Migrate the original single-trajectory tune data into track 1 while
+      // keeping the new default tracks 2 and 3 available for comparison.
+      const first = next.tracks[0]
+      next.tracks[0] = {
+        curveX: readFiniteNumber(parsed.pathCurveX, first.curveX),
+        curveY: readFiniteNumber(parsed.pathCurveY, first.curveY),
+        endX: readFiniteNumber(parsed.pathEndX, first.endX),
+        endY: readFiniteNumber(parsed.pathEndY, first.endY),
       }
     }
 
     return next
   } catch {
-    return { ...STAR_TUNING_DEFAULTS }
+    return cloneDefaults()
   }
 }
 
 export default function HomeScene({ onEnter }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
-  const dragHandleRef = useRef<{ kind: TuneHandleKind; pointerId: number } | null>(null)
+  const dragHandleRef = useRef<{
+    kind: TuneHandleKind
+    trackIndex: number
+    pointerId: number
+  } | null>(null)
   const tuneMode = useMemo(
     () => new URLSearchParams(window.location.search).get('tune') === '1',
     [],
@@ -113,6 +183,7 @@ export default function HomeScene({ onEnter }: Props) {
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [starTuning, setStarTuning] = useState<StarTuning>(() => loadStoredTuning(tuneMode))
+  const [activeTrackIndex, setActiveTrackIndex] = useState(0)
 
   const entering = sceneState === 'entering'
   const awake = tuneMode || sceneState === 'awake' || entering
@@ -160,6 +231,12 @@ export default function HomeScene({ onEnter }: Props) {
     window.localStorage.setItem(TUNING_STORAGE_KEY, JSON.stringify(starTuning))
   }, [starTuning, tuneMode])
 
+  useEffect(() => {
+    setActiveTrackIndex((current) =>
+      Math.min(current, Math.max(0, starTuning.tracks.length - 1)),
+    )
+  }, [starTuning.tracks.length])
+
   const chimney = renderedHomeRect
     ? sourcePointToViewport(HOME_ANCHORS.chimney, renderedHomeRect)
     : null
@@ -171,19 +248,18 @@ export default function HomeScene({ onEnter }: Props) {
       }
     : null
 
-  const tuneCurvePoint = tuneSpawnPoint
-    ? {
-        x: tuneSpawnPoint.x + starTuning.pathCurveX,
-        y: tuneSpawnPoint.y + starTuning.pathCurveY,
-      }
-    : null
-
-  const tuneEndPoint = tuneSpawnPoint
-    ? {
-        x: tuneSpawnPoint.x + starTuning.pathEndX,
-        y: tuneSpawnPoint.y + starTuning.pathEndY,
-      }
-    : null
+  const tuneTrackPoints = tuneSpawnPoint
+    ? starTuning.tracks.map((track) => ({
+        curve: {
+          x: tuneSpawnPoint.x + track.curveX,
+          y: tuneSpawnPoint.y + track.curveY,
+        },
+        end: {
+          x: tuneSpawnPoint.x + track.endX,
+          y: tuneSpawnPoint.y + track.endY,
+        },
+      }))
+    : []
 
   const beginEnter = () => {
     if (entering || tuneMode) return
@@ -202,6 +278,7 @@ export default function HomeScene({ onEnter }: Props) {
 
   const updateTuneHandleFromPointer = (
     kind: TuneHandleKind,
+    trackIndex: number,
     clientX: number,
     clientY: number,
   ) => {
@@ -218,36 +295,42 @@ export default function HomeScene({ onEnter }: Props) {
 
       const spawnX = chimney.x + current.spawnX
       const spawnY = chimney.y + current.spawnY
+      const nextTracks = current.tracks.map((track) => ({ ...track }))
+      const track = nextTracks[trackIndex]
+      if (!track) return current
 
       if (kind === 'curve') {
-        return {
-          ...current,
-          pathCurveX: clamp(Math.round(clientX - spawnX), -120, 420),
-          pathCurveY: clamp(Math.round(clientY - spawnY), -360, 220),
-        }
+        track.curveX = clamp(Math.round(clientX - spawnX), -120, 420)
+        track.curveY = clamp(Math.round(clientY - spawnY), -360, 220)
+      } else {
+        track.endX = clamp(Math.round(clientX - spawnX), 40, 520)
+        track.endY = clamp(Math.round(clientY - spawnY), -360, 180)
       }
 
-      return {
-        ...current,
-        pathEndX: clamp(Math.round(clientX - spawnX), 40, 520),
-        pathEndY: clamp(Math.round(clientY - spawnY), -360, 180),
-      }
+      return { ...current, tracks: nextTracks }
     })
   }
 
   const onTuneHandlePointerDown = (
     kind: TuneHandleKind,
+    trackIndex: number,
     event: ReactPointerEvent<HTMLButtonElement>,
   ) => {
-    dragHandleRef.current = { kind, pointerId: event.pointerId }
+    if (kind !== 'spawn') setActiveTrackIndex(trackIndex)
+    dragHandleRef.current = { kind, trackIndex, pointerId: event.pointerId }
     event.currentTarget.setPointerCapture(event.pointerId)
-    updateTuneHandleFromPointer(kind, event.clientX, event.clientY)
+    updateTuneHandleFromPointer(kind, trackIndex, event.clientX, event.clientY)
   }
 
   const onTuneHandlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
     const active = dragHandleRef.current
     if (!active || active.pointerId !== event.pointerId) return
-    updateTuneHandleFromPointer(active.kind, event.clientX, event.clientY)
+    updateTuneHandleFromPointer(
+      active.kind,
+      active.trackIndex,
+      event.clientX,
+      event.clientY,
+    )
   }
 
   const onTuneHandlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -261,15 +344,23 @@ export default function HomeScene({ onEnter }: Props) {
 
   const renderTuneHandle = (
     kind: TuneHandleKind,
+    trackIndex: number,
     point: { x: number; y: number },
     label: string,
+    isActive: boolean,
   ) => (
     <button
+      key={`${kind}-${trackIndex}`}
       type="button"
-      className={`tune-path-handle tune-path-handle--${kind}`}
+      className={[
+        'tune-path-handle',
+        `tune-path-handle--${kind}`,
+        kind === 'spawn' ? '' : `tune-track-color--${trackIndex % 6}`,
+        isActive ? 'is-active' : '',
+      ].filter(Boolean).join(' ')}
       style={{ left: point.x, top: point.y }}
       aria-label={`${label} X ${Math.round(point.x)}, Y ${Math.round(point.y)}`}
-      onPointerDown={(event) => onTuneHandlePointerDown(kind, event)}
+      onPointerDown={(event) => onTuneHandlePointerDown(kind, trackIndex, event)}
       onPointerMove={onTuneHandlePointerMove}
       onPointerUp={onTuneHandlePointerUp}
       onPointerCancel={onTuneHandlePointerUp}
@@ -317,32 +408,47 @@ export default function HomeScene({ onEnter }: Props) {
         </div>
       </div>
 
-      {tuneMode && tuneSpawnPoint && tuneCurvePoint && tuneEndPoint && (
+      {tuneMode && tuneSpawnPoint && tuneTrackPoints.length > 0 && (
         <>
           <svg className="tune-path-overlay" aria-hidden="true">
-            <line
-              className="tune-path-control-line"
-              x1={tuneSpawnPoint.x}
-              y1={tuneSpawnPoint.y}
-              x2={tuneCurvePoint.x}
-              y2={tuneCurvePoint.y}
-            />
-            <line
-              className="tune-path-control-line"
-              x1={tuneCurvePoint.x}
-              y1={tuneCurvePoint.y}
-              x2={tuneEndPoint.x}
-              y2={tuneEndPoint.y}
-            />
-            <path
-              className="tune-path-curve"
-              d={`M ${tuneSpawnPoint.x} ${tuneSpawnPoint.y} Q ${tuneCurvePoint.x} ${tuneCurvePoint.y} ${tuneEndPoint.x} ${tuneEndPoint.y}`}
-            />
+            {tuneTrackPoints.map((points, index) => {
+              const active = index === activeTrackIndex
+              return (
+                <g
+                  key={index}
+                  className={`tune-track-group tune-track-color--${index % 6}${active ? ' is-active' : ''}`}
+                >
+                  <line
+                    className="tune-path-control-line"
+                    x1={tuneSpawnPoint.x}
+                    y1={tuneSpawnPoint.y}
+                    x2={points.curve.x}
+                    y2={points.curve.y}
+                  />
+                  <line
+                    className="tune-path-control-line"
+                    x1={points.curve.x}
+                    y1={points.curve.y}
+                    x2={points.end.x}
+                    y2={points.end.y}
+                  />
+                  <path
+                    className="tune-path-curve"
+                    d={`M ${tuneSpawnPoint.x} ${tuneSpawnPoint.y} Q ${points.curve.x} ${points.curve.y} ${points.end.x} ${points.end.y}`}
+                  />
+                </g>
+              )
+            })}
           </svg>
 
-          {renderTuneHandle('spawn', tuneSpawnPoint, 'spawn')}
-          {renderTuneHandle('curve', tuneCurvePoint, 'curve')}
-          {renderTuneHandle('end', tuneEndPoint, 'end')}
+          {renderTuneHandle('spawn', activeTrackIndex, tuneSpawnPoint, 'spawn', true)}
+          {tuneTrackPoints.flatMap((points, index) => {
+            const active = index === activeTrackIndex
+            return [
+              renderTuneHandle('curve', index, points.curve, `curve ${index + 1}`, active),
+              renderTuneHandle('end', index, points.end, `end ${index + 1}`, active),
+            ]
+          })}
         </>
       )}
 
@@ -350,6 +456,8 @@ export default function HomeScene({ onEnter }: Props) {
         <TunePanel
           value={starTuning}
           onChange={setStarTuning}
+          activeTrackIndex={activeTrackIndex}
+          onActiveTrackChange={setActiveTrackIndex}
         />
       )}
     </main>

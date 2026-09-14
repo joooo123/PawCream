@@ -29,6 +29,7 @@ type StarParticle = {
   angle: number
   angularVelocity: number
   imageIndex: number
+  trackIndex: number
   elapsedMs: number
   durationMix: number
   laneFactor: number
@@ -40,9 +41,6 @@ const STAR_VISUAL_SCALE = [
   0.90, 0.92, 0.90, 0.96, 0.88,
   0.94, 0.92, 0.86, 0.88, 0.88,
 ] as const
-
-// Zero-based asset indexes. 12 === star-13.png (the wreath/ring composition).
-const DISABLED_STAR_INDICES = new Set<number>([12])
 
 function orderedPair(a: number, b: number) {
   return a <= b ? [a, b] as const : [b, a] as const
@@ -94,6 +92,7 @@ export default function P5DreamLayer({
     let ecgImage: p5.Image | null = null
     let particles: StarParticle[] = []
     let nextStarSpawnAt = 0
+    let nextTrackIndex = 0
 
     const sketch = (s: p5) => {
       s.preload = () => {
@@ -121,22 +120,16 @@ export default function P5DreamLayer({
         }
       }
 
-      const getEnabledStarIndices = () => {
-        const enabled: number[] = []
-        for (let i = 0; i < starImages.length; i += 1) {
-          if (!DISABLED_STAR_INDICES.has(i)) enabled.push(i)
-        }
-        return enabled
-      }
-
       const spawnStar = () => {
+        const state = stateRef.current
         const emitter = getEmitterPosition()
-        if (!emitter || !starImages.length) return
+        if (!emitter || !starImages.length || !state.tuning.tracks.length) return
 
-        const enabled = getEnabledStarIndices()
-        if (!enabled.length) return
+        // All 15 source images are eligible, including star-13.png (the wreath).
+        const imageIndex = Math.floor(s.random(starImages.length))
+        const trackIndex = nextTrackIndex % state.tuning.tracks.length
+        nextTrackIndex += 1
 
-        const imageIndex = enabled[Math.floor(s.random(enabled.length))]
         const startX = emitter.x + s.random(-3, 3)
         const startY = emitter.y + s.random(-3, 3)
 
@@ -150,6 +143,7 @@ export default function P5DreamLayer({
           angle: s.random(-0.05, 0.05),
           angularVelocity: s.random(-0.0016, 0.0016),
           imageIndex,
+          trackIndex,
           elapsedMs: 0,
           durationMix: s.random(0.90, 1.10),
           laneFactor: s.random(-1, 1),
@@ -197,19 +191,25 @@ export default function P5DreamLayer({
         const [sizeMin, sizeMax] = orderedPair(state.tuning.sizeMin, state.tuning.sizeMax)
         const durationBase = Math.max(900, state.tuning.pathDurationMs)
         const deltaMs = Math.min(Math.max(s.deltaTime || 16.67, 0), 50)
+        const tracks = state.tuning.tracks
 
         particles = particles.filter((particle) => {
+          if (!tracks.length) return false
+
           particle.elapsedMs += deltaMs
           const duration = durationBase * particle.durationMix
           const rawT = particle.elapsedMs / duration
           if (rawT >= 1.02) return false
 
+          const track = tracks[particle.trackIndex % tracks.length]
+          if (!track) return false
+
           const t = s.constrain(rawT, 0, 1)
           const pathT = smoothstep(t)
-          const controlX = particle.startX + state.tuning.pathCurveX
-          const controlY = particle.startY + state.tuning.pathCurveY
-          const endX = particle.startX + state.tuning.pathEndX
-          const endY = particle.startY + state.tuning.pathEndY
+          const controlX = particle.startX + track.curveX
+          const controlY = particle.startY + track.curveY
+          const endX = particle.startX + track.endX
+          const endY = particle.startY + track.endY
 
           const baseX = quadraticBezier(particle.startX, controlX, endX, pathT)
           const baseY = quadraticBezier(particle.startY, controlY, endY, pathT)
@@ -251,7 +251,6 @@ export default function P5DreamLayer({
             s.tint(255, drawAlpha)
             s.imageMode(s.CENTER)
 
-            // Preserve source aspect ratio so shooting-star assets do not get squashed.
             const sourceRatio = img.width > 0 ? img.height / img.width : 1
             s.image(img, 0, 0, visualSize, visualSize * sourceRatio)
             s.pop()
