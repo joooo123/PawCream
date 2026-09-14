@@ -98,7 +98,8 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
-.home-scene--awake .home-artboard {
+.home-scene--awake .home-artboard,
+.home-scene--tuning .home-artboard {
   transform: translateY(-2px) scale(1.008);
 }
 
@@ -173,6 +174,208 @@ select {
   border: 0;
 }
 
+.tune-panel {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 30;
+  width: min(330px, calc(100vw - 36px));
+  max-height: calc(100svh - 36px);
+  overflow: hidden;
+  border: 1px solid rgba(198, 133, 157, 0.24);
+  border-radius: 20px;
+  background: rgba(255, 252, 253, 0.88);
+  box-shadow: 0 18px 50px rgba(113, 81, 91, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: #745f66;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.tune-panel--collapsed {
+  width: 210px;
+}
+
+.tune-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 14px 12px 16px;
+  border-bottom: 1px solid rgba(198, 133, 157, 0.15);
+}
+
+.tune-panel--collapsed .tune-panel__header {
+  border-bottom: 0;
+}
+
+.tune-panel__header div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tune-panel__header strong {
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+
+.tune-panel__header span {
+  font-size: 10px;
+  color: #aa8c96;
+}
+
+.tune-panel__collapse {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(198, 133, 157, 0.24);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  color: #9d7180;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.tune-panel__body {
+  max-height: calc(100svh - 92px);
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+}
+
+.tune-panel__hint,
+.tune-panel__footnote {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #947a83;
+}
+
+.tune-panel__section {
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(198, 133, 157, 0.13);
+}
+
+.tune-panel__section h2 {
+  margin: 0 0 9px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: #8b6874;
+}
+
+.tune-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 58px;
+  align-items: center;
+  gap: 8px;
+  min-height: 31px;
+}
+
+.tune-row__label {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tune-row__range {
+  width: 100%;
+  accent-color: #d58da8;
+  cursor: ew-resize;
+}
+
+.tune-row__value {
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: #a17f8a;
+}
+
+.tune-panel__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tune-panel__actions button {
+  min-height: 34px;
+  border: 1px solid rgba(198, 133, 157, 0.24);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #876974;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.tune-panel__actions button:first-child {
+  background: #f8e8ee;
+}
+
+.tune-panel__footnote {
+  margin-top: 10px;
+  font-size: 10px;
+  opacity: 0.82;
+}
+
+.tune-spawn-handle {
+  position: fixed;
+  z-index: 25;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border: 1.5px dashed rgba(220, 112, 150, 0.95);
+  border-radius: 50%;
+  background: rgba(255, 239, 245, 0.42);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  color: #c86f90;
+}
+
+.tune-spawn-handle:active {
+  cursor: grabbing;
+}
+
+.tune-spawn-handle::before,
+.tune-spawn-handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(210, 104, 143, 0.88);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.tune-spawn-handle::before {
+  width: 26px;
+  height: 1px;
+}
+
+.tune-spawn-handle::after {
+  width: 1px;
+  height: 26px;
+}
+
+.tune-spawn-handle span {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 7px);
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(255, 250, 252, 0.94);
+  box-shadow: 0 4px 14px rgba(113, 81, 91, 0.10);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: #b66c87;
+  pointer-events: none;
+}
+
 @media (max-width: 700px) {
   .home-stage {
     padding: 16px;
@@ -182,6 +385,17 @@ select {
     width: 320px;
     height: 240px;
     max-width: calc(100vw - 24px);
+  }
+
+  .tune-panel {
+    top: 10px;
+    right: 10px;
+    width: min(310px, calc(100vw - 20px));
+    max-height: calc(100svh - 20px);
+  }
+
+  .tune-panel__body {
+    max-height: calc(100svh - 76px);
   }
 }
 
