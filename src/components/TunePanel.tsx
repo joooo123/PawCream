@@ -213,7 +213,7 @@ export default function TunePanel({
       {!collapsed && (
         <div className="tune-panel__body">
           <p className="tune-panel__hint">
-            多条轨道会同时显示。直接拖每条轨道的 curve / end 点即可改形状；拖任意轨道控制点时会自动选中该轨道。
+            多条轨道会同时显示。直接拖每条轨道的 curve / end 点即可改形状；每条轨道也能单独设置从出生到结束的大小渐变。
           </p>
 
           <section className="tune-panel__section">
@@ -264,6 +264,10 @@ export default function TunePanel({
             <TrackRangeRow label="终点 Y" field="endY" track={activeTrack} onChange={updateActiveTrack} min={-360} max={180} step={1} suffix="px" />
             <TrackRangeRow label="弯曲 X" field="curveX" track={activeTrack} onChange={updateActiveTrack} min={-120} max={420} step={1} suffix="px" />
             <TrackRangeRow label="弯曲 Y" field="curveY" track={activeTrack} onChange={updateActiveTrack} min={-360} max={220} step={1} suffix="px" />
+
+            <div className="tune-track-subheading">轨道大小渐变</div>
+            <TrackRangeRow label="出生倍率" field="startScale" track={activeTrack} onChange={updateActiveTrack} min={0.1} max={2.5} step={0.01} suffix="×" />
+            <TrackRangeRow label="结束倍率" field="endScale" track={activeTrack} onChange={updateActiveTrack} min={0.1} max={2.5} step={0.01} suffix="×" />
           </section>
 
           <section className="tune-panel__section">
@@ -275,10 +279,9 @@ export default function TunePanel({
           </section>
 
           <section className="tune-panel__section">
-            <h2>尺寸</h2>
+            <h2>基础尺寸</h2>
             <RangeRow label="最小尺寸" field="sizeMin" value={value} onChange={onChange} min={20} max={120} step={1} suffix="px" />
             <RangeRow label="最大尺寸" field="sizeMax" value={value} onChange={onChange} min={24} max={150} step={1} suffix="px" />
-            <RangeRow label="出生比例" field="birthScale" value={value} onChange={onChange} min={0.1} max={1} step={0.01} />
           </section>
 
           <section className="tune-panel__section">
@@ -295,7 +298,7 @@ export default function TunePanel({
           </div>
 
           <p className="tune-panel__footnote">
-            “每批同时出生”控制一次喷出几颗；“画面最多存在”只是总上限。若总上限小于每批数量，会按剩余空位截断。星星会依次分配到不同轨道，star-13 花环素材也参与随机。
+            轨道“出生倍率 / 结束倍率”会乘在基础尺寸上，并沿整条轨迹平滑渐变。比如 0.35× → 1.20× 会从小星星逐渐长大；1.20× → 0.35× 则会一路缩小。
           </p>
         </div>
       )}
