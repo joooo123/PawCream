@@ -87,9 +87,9 @@ export default function P5DreamLayer({
         const state = stateRef.current
         if (!state.chimney) return null
 
-        // Keep the first star visually attached to the chimney instead of
-        // spawning in the empty space above the roof.
-        const downwardOffset = s.constrain((state.homeRect?.height ?? 514) * 0.025, 10, 16)
+        // Sit just above the previous position: still attached to the chimney,
+        // but no longer visually sunk into the roof artwork.
+        const downwardOffset = s.constrain((state.homeRect?.height ?? 514) * 0.008, 3, 5)
         return {
           x: state.chimney.x + 22,
           y: state.chimney.y + downwardOffset,
