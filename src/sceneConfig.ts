@@ -59,6 +59,7 @@ export type StarTuning = {
   spawnMinMs: number
   spawnMaxMs: number
   burstStars: number
+  burstStaggerMs: number
   maxStars: number
   tracks: StarTrack[]
 }
@@ -67,8 +68,9 @@ export const MAX_STAR_TRACKS = 6
 
 // Production defaults. ?tune=1 can override these live in the browser without
 // changing the normal page. Multiple tracks share the same chimney emitter;
-// each emission event can release a tunable burst of stars, distributed across
-// the tracks in round-robin order. Each track also owns its start/end size scale.
+// each emission event releases a tunable burst whose stars can be staggered by
+// a few milliseconds, then distributed across tracks in round-robin order.
+// Each track also owns its start/end size scale.
 export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 14,
   spawnY: -15,
@@ -81,6 +83,7 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnMinMs: 400,
   spawnMaxMs: 1300,
   burstStars: 4,
+  burstStaggerMs: 45,
   maxStars: 12,
   tracks: [
     {

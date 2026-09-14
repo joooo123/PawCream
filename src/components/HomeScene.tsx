@@ -44,6 +44,7 @@ const NUMERIC_TUNING_KEYS: NumericTuningKey[] = [
   'spawnMinMs',
   'spawnMaxMs',
   'burstStars',
+  'burstStaggerMs',
   'maxStars',
 ]
 

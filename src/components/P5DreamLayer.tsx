@@ -36,6 +36,13 @@ type StarParticle = {
   wobbleSeed: number
 }
 
+type PendingStarSpawn = {
+  scheduledAt: number
+  burstIndex: number
+  burstCount: number
+  trackIndex: number
+}
+
 const STAR_VISUAL_SCALE = [
   1.00, 0.98, 0.94, 1.00, 1.06,
   0.90, 0.92, 0.90, 0.96, 0.88,
@@ -91,6 +98,7 @@ export default function P5DreamLayer({
     let starImages: p5.Image[] = []
     let ecgImage: p5.Image | null = null
     let particles: StarParticle[] = []
+    let pendingSpawns: PendingStarSpawn[] = []
     let nextStarSpawnAt = 0
     let nextTrackIndex = 0
 
@@ -120,18 +128,20 @@ export default function P5DreamLayer({
         }
       }
 
-      const spawnStar = (burstIndex = 0, burstCount = 1) => {
+      const spawnStar = (
+        trackIndex: number,
+        burstIndex = 0,
+        burstCount = 1,
+      ) => {
         const state = stateRef.current
         const emitter = getEmitterPosition()
         if (!emitter || !starImages.length || !state.tuning.tracks.length) return
 
         // All 15 source images are eligible, including star-13.png (the wreath).
         const imageIndex = Math.floor(s.random(starImages.length))
-        const trackIndex = nextTrackIndex % state.tuning.tracks.length
-        nextTrackIndex += 1
 
-        // A burst is simultaneous, but give its stars a tiny radial separation so
-        // they do not render as one stacked sprite at the chimney mouth.
+        // Keep a tiny radial separation inside one burst so staggered stars still
+        // feel like a shared puff rather than repeatedly occupying one exact pixel.
         const burstRadius = burstCount > 1
           ? Math.min(10, Math.max(4, state.tuning.sizeMin * 0.12))
           : 0
@@ -161,6 +171,46 @@ export default function P5DreamLayer({
         })
       }
 
+      const queueBurst = (now: number, burstCount: number) => {
+        const state = stateRef.current
+        const trackCount = state.tuning.tracks.length
+        if (!trackCount || burstCount <= 0) return
+
+        const staggerMs = Math.max(0, state.tuning.burstStaggerMs)
+
+        for (let i = 0; i < burstCount; i += 1) {
+          const trackIndex = nextTrackIndex % trackCount
+          nextTrackIndex += 1
+          pendingSpawns.push({
+            scheduledAt: now + i * staggerMs,
+            burstIndex: i,
+            burstCount,
+            trackIndex,
+          })
+        }
+      }
+
+      const flushPendingSpawns = (now: number, maxStars: number) => {
+        if (!pendingSpawns.length) return
+
+        const future: PendingStarSpawn[] = []
+        for (const pending of pendingSpawns) {
+          if (pending.scheduledAt > now) {
+            future.push(pending)
+            continue
+          }
+
+          if (particles.length < maxStars) {
+            spawnStar(
+              pending.trackIndex,
+              pending.burstIndex,
+              pending.burstCount,
+            )
+          }
+        }
+        pendingSpawns = future
+      }
+
       const canSpawnStarSpatially = () => {
         const emitter = getEmitterPosition()
         if (!emitter) return false
@@ -184,15 +234,16 @@ export default function P5DreamLayer({
         if (
           shouldEmit &&
           now >= nextStarSpawnAt &&
-          particles.length < maxStars &&
+          particles.length + pendingSpawns.length < maxStars &&
           canSpawnStarSpatially()
         ) {
-          const availableSlots = Math.max(0, maxStars - particles.length)
+          const availableSlots = Math.max(
+            0,
+            maxStars - particles.length - pendingSpawns.length,
+          )
           const burstCount = Math.min(requestedBurst, availableSlots)
 
-          for (let i = 0; i < burstCount; i += 1) {
-            spawnStar(i, burstCount)
-          }
+          queueBurst(now, burstCount)
 
           const [spawnMin, spawnMax] = orderedPair(
             state.tuning.spawnMinMs,
@@ -202,7 +253,10 @@ export default function P5DreamLayer({
         }
 
         if (!shouldEmit) {
+          pendingSpawns = []
           nextStarSpawnAt = now + s.random(350, 650)
+        } else {
+          flushPendingSpawns(now, maxStars)
         }
 
         const [sizeMin, sizeMax] = orderedPair(state.tuning.sizeMin, state.tuning.sizeMax)
