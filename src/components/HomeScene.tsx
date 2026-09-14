@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import P5DreamLayer, { type RenderedHomeRect } from './P5DreamLayer'
+import TunePanel from './TunePanel'
 import {
   ASSETS,
   HOME_ANCHORS,
-  HOME_DISPLAY,
   HOME_SOURCE,
   MOTION,
+  STAR_TUNING_DEFAULTS,
+  type StarTuning,
 } from '../sceneConfig'
 
 type Props = {
@@ -13,6 +21,12 @@ type Props = {
 }
 
 type SceneState = 'idle' | 'awake' | 'entering'
+
+const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v1'
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
 
 function getContainRect(container: DOMRect): RenderedHomeRect {
   const sourceRatio = HOME_SOURCE.width / HOME_SOURCE.height
@@ -60,15 +74,47 @@ function sourceRectToPercent() {
   }
 }
 
+function loadStoredTuning(enabled: boolean): StarTuning {
+  if (!enabled || typeof window === 'undefined') {
+    return { ...STAR_TUNING_DEFAULTS }
+  }
+
+  try {
+    const raw = window.localStorage.getItem(TUNING_STORAGE_KEY)
+    if (!raw) return { ...STAR_TUNING_DEFAULTS }
+
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const next = { ...STAR_TUNING_DEFAULTS }
+
+    for (const key of Object.keys(STAR_TUNING_DEFAULTS) as (keyof StarTuning)[]) {
+      const candidate = parsed[key]
+      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+        next[key] = candidate
+      }
+    }
+
+    return next
+  } catch {
+    return { ...STAR_TUNING_DEFAULTS }
+  }
+}
+
 export default function HomeScene({ onEnter }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
+  const dragPointerIdRef = useRef<number | null>(null)
+  const tuneMode = useMemo(
+    () => new URLSearchParams(window.location.search).get('tune') === '1',
+    [],
+  )
+
   const [sceneState, setSceneState] = useState<SceneState>('idle')
   const [renderedHomeRect, setRenderedHomeRect] = useState<RenderedHomeRect | null>(null)
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+  const [starTuning, setStarTuning] = useState<StarTuning>(() => loadStoredTuning(tuneMode))
 
   const entering = sceneState === 'entering'
-  const awake = sceneState === 'awake' || entering
+  const awake = tuneMode || sceneState === 'awake' || entering
 
   const hotspotStyle = useMemo(() => sourceRectToPercent(), [])
 
@@ -101,19 +147,31 @@ export default function HomeScene({ onEnter }: Props) {
   }, [])
 
   useEffect(() => {
-    if (!isCoarsePointer || entering) return
+    if (!isCoarsePointer || entering || tuneMode) return
     const timer = window.setTimeout(() => {
       setSceneState((current) => (current === 'idle' ? 'awake' : current))
     }, MOTION.mobileAutoWakeMs)
     return () => window.clearTimeout(timer)
-  }, [isCoarsePointer, entering])
+  }, [isCoarsePointer, entering, tuneMode])
+
+  useEffect(() => {
+    if (!tuneMode) return
+    window.localStorage.setItem(TUNING_STORAGE_KEY, JSON.stringify(starTuning))
+  }, [starTuning, tuneMode])
 
   const chimney = renderedHomeRect
     ? sourcePointToViewport(HOME_ANCHORS.chimney, renderedHomeRect)
     : null
 
+  const tuneSpawnPoint = chimney
+    ? {
+        x: chimney.x + starTuning.spawnX,
+        y: chimney.y + starTuning.spawnY,
+      }
+    : null
+
   const beginEnter = () => {
-    if (entering) return
+    if (entering || tuneMode) return
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
     window.setTimeout(onEnter, MOTION.enterDurationMs)
@@ -124,17 +182,47 @@ export default function HomeScene({ onEnter }: Props) {
   }
 
   const onPointerLeave = () => {
-    if (!entering && !isCoarsePointer) setSceneState('idle')
+    if (!entering && !isCoarsePointer && !tuneMode) setSceneState('idle')
+  }
+
+  const updateSpawnFromPointer = (clientX: number, clientY: number) => {
+    if (!chimney) return
+
+    setStarTuning((current) => ({
+      ...current,
+      spawnX: clamp(Math.round(clientX - chimney.x), -80, 140),
+      spawnY: clamp(Math.round(clientY - chimney.y), -80, 120),
+    }))
+  }
+
+  const onTuneHandlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    dragPointerIdRef.current = event.pointerId
+    event.currentTarget.setPointerCapture(event.pointerId)
+    updateSpawnFromPointer(event.clientX, event.clientY)
+  }
+
+  const onTuneHandlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (dragPointerIdRef.current !== event.pointerId) return
+    updateSpawnFromPointer(event.clientX, event.clientY)
+  }
+
+  const onTuneHandlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (dragPointerIdRef.current !== event.pointerId) return
+    dragPointerIdRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
   }
 
   return (
-    <main className={`home-scene home-scene--${sceneState}`}>
+    <main className={`home-scene home-scene--${sceneState}${tuneMode ? ' home-scene--tuning' : ''}`}>
       <P5DreamLayer
         awake={awake}
         entering={entering}
         transitionStartedAt={transitionStartedAt}
         homeRect={renderedHomeRect}
         chimney={chimney}
+        tuning={starTuning}
       />
 
       <div className="home-stage" aria-label="PawCream illustrated home">
@@ -164,6 +252,28 @@ export default function HomeScene({ onEnter }: Props) {
           </button>
         </div>
       </div>
+
+      {tuneMode && tuneSpawnPoint && (
+        <button
+          type="button"
+          className="tune-spawn-handle"
+          style={{ left: tuneSpawnPoint.x, top: tuneSpawnPoint.y }}
+          aria-label={`星星出生点 X ${starTuning.spawnX}, Y ${starTuning.spawnY}`}
+          onPointerDown={onTuneHandlePointerDown}
+          onPointerMove={onTuneHandlePointerMove}
+          onPointerUp={onTuneHandlePointerUp}
+          onPointerCancel={onTuneHandlePointerUp}
+        >
+          <span>spawn</span>
+        </button>
+      )}
+
+      {tuneMode && (
+        <TunePanel
+          value={starTuning}
+          onChange={setStarTuning}
+        />
+      )}
     </main>
   )
 }
