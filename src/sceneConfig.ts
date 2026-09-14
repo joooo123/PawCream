@@ -43,6 +43,8 @@ export type StarTrack = {
   curveY: number
   endX: number
   endY: number
+  startScale: number
+  endScale: number
 }
 
 export type StarTuning = {
@@ -50,7 +52,6 @@ export type StarTuning = {
   spawnY: number
   sizeMin: number
   sizeMax: number
-  birthScale: number
   pathDurationMs: number
   wobbleAmp: number
   wobbleFreq: number
@@ -67,13 +68,12 @@ export const MAX_STAR_TRACKS = 6
 // Production defaults. ?tune=1 can override these live in the browser without
 // changing the normal page. Multiple tracks share the same chimney emitter;
 // each emission event can release a tunable burst of stars, distributed across
-// the tracks in round-robin order.
+// the tracks in round-robin order. Each track also owns its start/end size scale.
 export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 22,
   spawnY: 4,
   sizeMin: 56,
   sizeMax: 72,
-  birthScale: 0.38,
   pathDurationMs: 6200,
   wobbleAmp: 9,
   wobbleFreq: 0.012,
@@ -88,18 +88,24 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
       curveY: -118,
       endX: 245,
       endY: -118,
+      startScale: 0.38,
+      endScale: 1.0,
     },
     {
       curveX: 126,
       curveY: -76,
       endX: 292,
       endY: -48,
+      startScale: 0.38,
+      endScale: 1.0,
     },
     {
       curveX: 54,
       curveY: -152,
       endX: 218,
       endY: -172,
+      startScale: 0.38,
+      endScale: 1.0,
     },
   ],
 }
