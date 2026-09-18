@@ -204,14 +204,22 @@
   font-weight: 650;
 }
 
-.tune-track-actions {
+.tune-track-actions,
+.tune-device-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin: 0 0 8px;
 }
 
-.tune-track-actions button {
+.tune-device-switch {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(198, 133, 157, 0.13);
+}
+
+.tune-track-actions button,
+.tune-device-switch button {
   min-height: 29px;
   border: 1px solid rgba(198, 133, 157, 0.18);
   border-radius: 9px;
@@ -219,6 +227,18 @@
   color: #92737e;
   cursor: pointer;
   font-size: 9px;
+}
+
+.tune-device-switch button {
+  min-height: 36px;
+  font-size: 10px;
+}
+
+.tune-device-switch button.is-active {
+  border-color: rgba(208, 118, 151, 0.5);
+  background: #f7e8ee;
+  color: #875f6e;
+  font-weight: 650;
 }
 
 .tune-track-actions button:disabled {
