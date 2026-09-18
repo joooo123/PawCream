@@ -21,6 +21,7 @@ import {
 type Props = {
   onEnter: () => void
   mobile: boolean
+  mobilePreview: boolean
 }
 
 type SceneState = 'idle' | 'awake' | 'entering'
@@ -28,7 +29,8 @@ type TuneHandleKind = 'spawn' | 'curve' | 'end'
 type NumericTuningKey = Exclude<keyof StarTuning, 'tracks'>
 type SourceSize = { width: number; height: number }
 
-const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v3'
+const DESKTOP_TUNING_STORAGE_KEY = 'pawcream-star-tuning-v3'
+const MOBILE_TUNING_STORAGE_KEY = 'pawcream-star-tuning-mobile-v1'
 const LEGACY_TUNING_STORAGE_KEYS = [
   'pawcream-star-tuning-v2',
   'pawcream-star-tuning-v1',
@@ -142,19 +144,24 @@ function sourceRectToPercent() {
   }
 }
 
-function loadStoredTuning(enabled: boolean): StarTuning {
+function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
   if (!enabled || typeof window === 'undefined') {
     return cloneDefaults()
   }
 
   try {
-    let raw = window.localStorage.getItem(TUNING_STORAGE_KEY)
-    if (!raw) {
+    const storageKey = mobile
+      ? MOBILE_TUNING_STORAGE_KEY
+      : DESKTOP_TUNING_STORAGE_KEY
+    let raw = window.localStorage.getItem(storageKey)
+
+    if (!raw && !mobile) {
       for (const key of LEGACY_TUNING_STORAGE_KEYS) {
         raw = window.localStorage.getItem(key)
         if (raw) break
       }
     }
+
     if (!raw) return cloneDefaults()
 
     const parsed = JSON.parse(raw) as Record<string, unknown>
@@ -196,7 +203,7 @@ function loadStoredTuning(enabled: boolean): StarTuning {
   }
 }
 
-export default function HomeScene({ onEnter, mobile }: Props) {
+export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
   const dragHandleRef = useRef<{
     kind: TuneHandleKind
@@ -213,7 +220,7 @@ export default function HomeScene({ onEnter, mobile }: Props) {
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [sourceSize, setSourceSize] = useState<SourceSize>({ ...HOME_SOURCE })
-  const [starTuning, setStarTuning] = useState<StarTuning>(() => loadStoredTuning(tuneMode))
+  const [starTuning, setStarTuning] = useState<StarTuning>(() => loadStoredTuning(tuneMode, mobile))
   const [activeTrackIndex, setActiveTrackIndex] = useState(0)
 
   const entering = sceneState === 'entering'
@@ -248,7 +255,7 @@ export default function HomeScene({ onEnter, mobile }: Props) {
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update)
     }
-  }, [sourceSize, mobile])
+  }, [sourceSize, mobile, mobilePreview])
 
   useEffect(() => {
     if (mobile || !isCoarsePointer || entering || tuneMode) return
@@ -260,8 +267,11 @@ export default function HomeScene({ onEnter, mobile }: Props) {
 
   useEffect(() => {
     if (!tuneMode) return
-    window.localStorage.setItem(TUNING_STORAGE_KEY, JSON.stringify(starTuning))
-  }, [starTuning, tuneMode])
+    const storageKey = mobile
+      ? MOBILE_TUNING_STORAGE_KEY
+      : DESKTOP_TUNING_STORAGE_KEY
+    window.localStorage.setItem(storageKey, JSON.stringify(starTuning))
+  }, [starTuning, tuneMode, mobile])
 
   useEffect(() => {
     setActiveTrackIndex((current) =>
@@ -403,7 +413,7 @@ export default function HomeScene({ onEnter, mobile }: Props) {
   )
 
   return (
-    <main className={`home-scene home-scene--${sceneState}${mobile ? ' home-scene--mobile' : ''}${tuneMode ? ' home-scene--tuning' : ''}`}>
+    <main className={`home-scene home-scene--${sceneState}${mobile ? ' home-scene--mobile' : ''}${mobilePreview ? ' home-scene--mobile-preview' : ''}${tuneMode ? ' home-scene--tuning' : ''}`}>
       <P5DreamLayer
         awake={awake}
         entering={entering}
@@ -420,6 +430,12 @@ export default function HomeScene({ onEnter, mobile }: Props) {
           onPointerEnter={onPointerEnter}
           onPointerLeave={onPointerLeave}
         >
+          {mobile && tuneMode && (
+            <div className="mobile-reference-label" aria-hidden="true">
+              Mobile reference · 390 × 844 CSS px
+            </div>
+          )}
+
           <img
             key={imageSrc}
             src={imageSrc}
