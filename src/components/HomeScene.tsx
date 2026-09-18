@@ -20,11 +20,13 @@ import {
 
 type Props = {
   onEnter: () => void
+  mobile: boolean
 }
 
 type SceneState = 'idle' | 'awake' | 'entering'
 type TuneHandleKind = 'spawn' | 'curve' | 'end'
 type NumericTuningKey = Exclude<keyof StarTuning, 'tracks'>
+type SourceSize = { width: number; height: number }
 
 const TUNING_STORAGE_KEY = 'pawcream-star-tuning-v3'
 const LEGACY_TUNING_STORAGE_KEYS = [
@@ -82,8 +84,10 @@ function readTrack(
   }
 }
 
-function getContainRect(container: DOMRect): RenderedHomeRect {
-  const sourceRatio = HOME_SOURCE.width / HOME_SOURCE.height
+function getContainRect(container: DOMRect, source: SourceSize): RenderedHomeRect {
+  const safeWidth = Math.max(1, source.width)
+  const safeHeight = Math.max(1, source.height)
+  const sourceRatio = safeWidth / safeHeight
   const containerRatio = container.width / container.height
 
   let width: number
@@ -105,7 +109,7 @@ function getContainRect(container: DOMRect): RenderedHomeRect {
     top,
     width,
     height,
-    sourceScale: width / HOME_SOURCE.width,
+    sourceScale: width / safeWidth,
   }
 }
 
@@ -116,6 +120,16 @@ function sourcePointToViewport(
   return {
     x: rect.left + point.x * rect.sourceScale,
     y: rect.top + point.y * rect.sourceScale,
+  }
+}
+
+function normalizedDesktopPointToSource(
+  point: { x: number; y: number },
+  source: SourceSize,
+) {
+  return {
+    x: source.width * (point.x / HOME_SOURCE.width),
+    y: source.height * (point.y / HOME_SOURCE.height),
   }
 }
 
@@ -165,8 +179,6 @@ function loadStoredTuning(enabled: boolean): StarTuning {
           return readTrack(track, fallback, legacyBirthScale)
         })
     } else {
-      // Migrate the original single-trajectory tune data into track 1 while
-      // keeping the new default tracks 2 and 3 available for comparison.
       const first = next.tracks[0]
       next.tracks[0] = {
         curveX: readFiniteNumber(parsed.pathCurveX, first.curveX),
@@ -184,7 +196,7 @@ function loadStoredTuning(enabled: boolean): StarTuning {
   }
 }
 
-export default function HomeScene({ onEnter }: Props) {
+export default function HomeScene({ onEnter, mobile }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
   const dragHandleRef = useRef<{
     kind: TuneHandleKind
@@ -200,11 +212,13 @@ export default function HomeScene({ onEnter }: Props) {
   const [renderedHomeRect, setRenderedHomeRect] = useState<RenderedHomeRect | null>(null)
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+  const [sourceSize, setSourceSize] = useState<SourceSize>({ ...HOME_SOURCE })
   const [starTuning, setStarTuning] = useState<StarTuning>(() => loadStoredTuning(tuneMode))
   const [activeTrackIndex, setActiveTrackIndex] = useState(0)
 
   const entering = sceneState === 'entering'
-  const awake = tuneMode || sceneState === 'awake' || entering
+  const awake = mobile || tuneMode || sceneState === 'awake' || entering
+  const imageSrc = mobile ? ASSETS.homeMobile : ASSETS.home
 
   const hotspotStyle = useMemo(() => sourceRectToPercent(), [])
 
@@ -220,7 +234,7 @@ export default function HomeScene({ onEnter }: Props) {
     const update = () => {
       const node = artboardRef.current
       if (!node) return
-      setRenderedHomeRect(getContainRect(node.getBoundingClientRect()))
+      setRenderedHomeRect(getContainRect(node.getBoundingClientRect(), sourceSize))
     }
 
     update()
@@ -234,15 +248,15 @@ export default function HomeScene({ onEnter }: Props) {
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update)
     }
-  }, [])
+  }, [sourceSize, mobile])
 
   useEffect(() => {
-    if (!isCoarsePointer || entering || tuneMode) return
+    if (mobile || !isCoarsePointer || entering || tuneMode) return
     const timer = window.setTimeout(() => {
       setSceneState((current) => (current === 'idle' ? 'awake' : current))
     }, MOTION.mobileAutoWakeMs)
     return () => window.clearTimeout(timer)
-  }, [isCoarsePointer, entering, tuneMode])
+  }, [mobile, isCoarsePointer, entering, tuneMode])
 
   useEffect(() => {
     if (!tuneMode) return
@@ -255,8 +269,9 @@ export default function HomeScene({ onEnter }: Props) {
     )
   }, [starTuning.tracks.length])
 
+  const chimneySource = normalizedDesktopPointToSource(HOME_ANCHORS.chimney, sourceSize)
   const chimney = renderedHomeRect
-    ? sourcePointToViewport(HOME_ANCHORS.chimney, renderedHomeRect)
+    ? sourcePointToViewport(chimneySource, renderedHomeRect)
     : null
 
   const tuneSpawnPoint = chimney
@@ -287,11 +302,11 @@ export default function HomeScene({ onEnter }: Props) {
   }
 
   const onPointerEnter = () => {
-    if (!entering) setSceneState('awake')
+    if (!mobile && !entering) setSceneState('awake')
   }
 
   const onPointerLeave = () => {
-    if (!entering && !isCoarsePointer && !tuneMode) setSceneState('idle')
+    if (!mobile && !entering && !isCoarsePointer && !tuneMode) setSceneState('idle')
   }
 
   const updateTuneHandleFromPointer = (
@@ -388,7 +403,7 @@ export default function HomeScene({ onEnter }: Props) {
   )
 
   return (
-    <main className={`home-scene home-scene--${sceneState}${tuneMode ? ' home-scene--tuning' : ''}`}>
+    <main className={`home-scene home-scene--${sceneState}${mobile ? ' home-scene--mobile' : ''}${tuneMode ? ' home-scene--tuning' : ''}`}>
       <P5DreamLayer
         awake={awake}
         entering={entering}
@@ -406,10 +421,17 @@ export default function HomeScene({ onEnter }: Props) {
           onPointerLeave={onPointerLeave}
         >
           <img
-            src={ASSETS.home}
+            key={imageSrc}
+            src={imageSrc}
             className="home-artwork"
             draggable={false}
             alt="PawCream dreamy illustrated atelier house"
+            onLoad={(event) => {
+              const image = event.currentTarget
+              if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+                setSourceSize({ width: image.naturalWidth, height: image.naturalHeight })
+              }
+            }}
           />
 
           <button
