@@ -7,12 +7,16 @@ import {
   useEffect,
 } from 'react'
 
+type DeviceProfile = 'desktop' | 'mobile'
+
 type Props = {
   onBack: () => void
+  deviceProfile: DeviceProfile
+  onDeviceChange: (profile: DeviceProfile) => void
+  mobilePreview: boolean
 }
 
 type AssetKey = 'light' | 'message' | 'instax' | 'sewing'
-type DeviceProfile = 'desktop' | 'mobile'
 
 type AssetLayout = {
   x: number
@@ -25,7 +29,6 @@ type AtelierProfiles = Record<DeviceProfile, AtelierTuning>
 
 const STORAGE_KEY = 'pawcream-atelier-tuning-v2'
 const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
-const MOBILE_BREAKPOINT = 700
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
   light: {
@@ -152,8 +155,6 @@ function loadTuning(enabled: boolean): AtelierProfiles {
       }
     }
 
-    // v1 only had one layout. Preserve it as the desktop profile and start the
-    // mobile profile from its own dedicated defaults.
     const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY)
     if (legacyRaw) {
       const legacy = JSON.parse(legacyRaw) as Partial<Record<AssetKey, Partial<AssetLayout>>>
@@ -167,17 +168,6 @@ function loadTuning(enabled: boolean): AtelierProfiles {
   }
 
   return cloneDefaults()
-}
-
-function getDeviceFromUrl(): DeviceProfile | null {
-  if (typeof window === 'undefined') return null
-  const value = new URLSearchParams(window.location.search).get('device')
-  return value === 'mobile' || value === 'desktop' ? value : null
-}
-
-function getDetectedDevice(): DeviceProfile {
-  if (typeof window === 'undefined') return 'desktop'
-  return window.innerWidth <= MOBILE_BREAKPOINT ? 'mobile' : 'desktop'
 }
 
 function RangeRow({
@@ -225,7 +215,12 @@ function RangeRow({
   )
 }
 
-export default function AtelierPlaceholder({ onBack }: Props) {
+export default function AtelierPlaceholder({
+  onBack,
+  deviceProfile,
+  onDeviceChange,
+  mobilePreview,
+}: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<{ key: AssetKey; pointerId: number } | null>(null)
 
@@ -234,46 +229,27 @@ export default function AtelierPlaceholder({ onBack }: Props) {
     [],
   )
 
-  const [detectedProfile, setDetectedProfile] = useState<DeviceProfile>(() => getDetectedDevice())
-  const [activeProfile, setActiveProfile] = useState<DeviceProfile>(() => getDeviceFromUrl() ?? getDetectedDevice())
   const [tuning, setTuning] = useState<AtelierProfiles>(() => loadTuning(tuneMode))
   const [selectedKey, setSelectedKey] = useState<AssetKey>('sewing')
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
 
   useEffect(() => {
-    const media = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`)
-    const update = () => setDetectedProfile(media.matches ? 'mobile' : 'desktop')
-    update()
-    media.addEventListener?.('change', update)
-    return () => media.removeEventListener?.('change', update)
-  }, [])
-
-  useEffect(() => {
     if (!tuneMode) return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tuning))
   }, [tuneMode, tuning])
 
-  const renderProfile = tuneMode ? activeProfile : detectedProfile
-  const renderTuning = tuning[renderProfile]
-  const selected = tuning[activeProfile][selectedKey]
-  const isMobilePreview = renderProfile === 'mobile'
-
-  const switchProfile = (profile: DeviceProfile) => {
-    setActiveProfile(profile)
-    if (!tuneMode) return
-    const url = new URL(window.location.href)
-    url.searchParams.set('device', profile)
-    window.history.replaceState(null, '', url)
-  }
+  const renderTuning = tuning[deviceProfile]
+  const selected = tuning[deviceProfile][selectedKey]
+  const mobile = deviceProfile === 'mobile'
 
   const updateSelected = (field: keyof AssetLayout, value: number) => {
     setTuning((current) => ({
       ...current,
-      [activeProfile]: {
-        ...current[activeProfile],
+      [deviceProfile]: {
+        ...current[deviceProfile],
         [selectedKey]: {
-          ...current[activeProfile][selectedKey],
+          ...current[deviceProfile][selectedKey],
           [field]: value,
         },
       },
@@ -290,10 +266,10 @@ export default function AtelierPlaceholder({ onBack }: Props) {
 
     setTuning((current) => ({
       ...current,
-      [activeProfile]: {
-        ...current[activeProfile],
+      [deviceProfile]: {
+        ...current[deviceProfile],
         [key]: {
-          ...current[activeProfile][key],
+          ...current[deviceProfile][key],
           x: Number(x.toFixed(1)),
           y: Number(y.toFixed(1)),
         },
@@ -339,43 +315,154 @@ export default function AtelierPlaceholder({ onBack }: Props) {
   const resetCurrentProfile = () => {
     setTuning((current) => ({
       ...current,
-      [activeProfile]: cloneLayout(ATELIER_TUNING_DEFAULTS[activeProfile]),
+      [deviceProfile]: cloneLayout(ATELIER_TUNING_DEFAULTS[deviceProfile]),
     }))
     setSelectedKey('sewing')
   }
 
-  const stageStyle: CSSProperties = isMobilePreview
+  const stageStyle: CSSProperties = mobile
     ? {
         position: 'relative',
-        width: tuneMode
-          ? 'min(390px, 52vw, calc((100svh - 48px) * 9 / 16))'
-          : 'min(100vw, 520px, calc(100svh * 9 / 16))',
-        aspectRatio: '9 / 16',
-        maxWidth: '100%',
-        overflow: 'visible',
+        width: mobilePreview ? 390 : '100vw',
+        height: mobilePreview ? 844 : '100svh',
+        minHeight: mobilePreview ? 844 : '100svh',
+        maxWidth: 'none',
+        overflow: 'hidden',
         background: '#ffffff',
-        boxShadow: tuneMode ? '0 0 0 1px rgba(198, 133, 157, 0.22)' : 'none',
       }
     : {
         position: 'relative',
-        width: tuneMode
-          ? 'min(1080px, 78vw, 130vh)'
-          : 'min(1320px, 94vw, 140vh)',
-        aspectRatio: '16 / 10',
-        maxWidth: '100%',
-        overflow: 'visible',
+        width: '100vw',
+        height: '100svh',
+        minHeight: '100svh',
+        maxWidth: 'none',
+        overflow: 'hidden',
         background: '#ffffff',
-        boxShadow: tuneMode ? '0 0 0 1px rgba(198, 133, 157, 0.16)' : 'none',
       }
+
+  const stage = (
+    <section
+      ref={artboardRef}
+      aria-label={`PawCream Atelier Room ${deviceProfile} layout`}
+      style={stageStyle}
+    >
+      <h1
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        PawCream Atelier Room
+      </h1>
+
+      {tuneMode && (
+        <span
+          style={{
+            position: 'absolute',
+            left: 8,
+            bottom: 8,
+            zIndex: 50,
+            padding: '4px 8px',
+            borderRadius: 999,
+            background: 'rgba(255, 249, 252, 0.9)',
+            color: '#a4687f',
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontSize: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          {mobile ? 'Mobile phone · 390 × 844' : 'Desktop · full viewport'}
+        </span>
+      )}
+
+      {ASSET_ORDER.map((key) => {
+        const asset = ASSETS[key]
+        const layout = renderTuning[key]
+        const selectedAsset = tuneMode && selectedKey === key
+
+        return (
+          <div
+            key={key}
+            role={tuneMode ? 'button' : undefined}
+            tabIndex={tuneMode ? 0 : undefined}
+            aria-label={tuneMode ? `Move ${asset.label}` : undefined}
+            onPointerDown={(event) => onAssetPointerDown(key, event)}
+            onPointerMove={onAssetPointerMove}
+            onPointerUp={onAssetPointerUp}
+            onPointerCancel={onAssetPointerUp}
+            onClick={() => tuneMode && setSelectedKey(key)}
+            style={{
+              position: 'absolute',
+              left: `${layout.x}%`,
+              top: `${layout.y}%`,
+              width: `${layout.width}%`,
+              transform: 'translate(-50%, -50%)',
+              zIndex: asset.zIndex,
+              cursor: tuneMode ? 'grab' : 'default',
+              touchAction: tuneMode ? 'none' : 'auto',
+              userSelect: 'none',
+              outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
+              outlineOffset: selectedAsset ? 6 : 0,
+              borderRadius: selectedAsset ? 10 : 0,
+            }}
+          >
+            <img
+              src={asset.src}
+              alt={asset.label}
+              draggable={false}
+              decoding="async"
+              style={{
+                display: 'block',
+                width: '100%',
+                height: 'auto',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}
+            />
+
+            {selectedAsset && (
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: -27,
+                  transform: 'translateX(-50%)',
+                  padding: '3px 7px',
+                  borderRadius: 999,
+                  background: 'rgba(255, 249, 252, 0.96)',
+                  color: '#a4687f',
+                  fontSize: 10,
+                  fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                  boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
+                  pointerEvents: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {asset.label}
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </section>
+  )
 
   return (
     <main
       style={{
-        minHeight: '100svh',
-        display: 'grid',
-        placeItems: 'center',
-        overflow: 'hidden',
-        background: '#ffffff',
+        minHeight: mobilePreview ? 940 : '100svh',
+        display: mobilePreview ? 'block' : 'grid',
+        placeItems: mobilePreview ? undefined : 'center',
+        overflowX: 'hidden',
+        overflowY: mobilePreview ? 'visible' : 'hidden',
+        background: mobilePreview ? '#fbf9fa' : '#ffffff',
         position: 'relative',
         isolation: 'isolate',
       }}
@@ -388,7 +475,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
           position: 'fixed',
           left: 18,
           top: 18,
-          zIndex: 55,
+          zIndex: 65,
           border: '1px solid rgba(164, 132, 143, 0.2)',
           borderRadius: 999,
           background: 'rgba(255,255,255,0.82)',
@@ -402,117 +489,29 @@ export default function AtelierPlaceholder({ onBack }: Props) {
         ← Home
       </button>
 
-      <section
-        ref={artboardRef}
-        aria-label={`PawCream Atelier Room ${renderProfile} layout`}
-        style={stageStyle}
-      >
-        <h1
+      {mobilePreview ? (
+        <div
           style={{
-            position: 'absolute',
-            width: 1,
-            height: 1,
-            padding: 0,
-            margin: -1,
-            overflow: 'hidden',
-            clip: 'rect(0, 0, 0, 0)',
-            whiteSpace: 'nowrap',
-            border: 0,
+            width: 'calc(100% - 380px)',
+            minWidth: 470,
+            minHeight: 940,
+            display: 'grid',
+            placeItems: 'center',
+            padding: '32px 24px',
           }}
         >
-          PawCream Atelier Room
-        </h1>
-
-        {tuneMode && (
-          <span
-            style={{
-              position: 'absolute',
-              left: 8,
-              bottom: 8,
-              zIndex: 50,
-              padding: '4px 8px',
-              borderRadius: 999,
-              background: 'rgba(255, 249, 252, 0.9)',
-              color: '#a4687f',
-              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-              fontSize: 10,
-              pointerEvents: 'none',
-            }}
-          >
-            {isMobilePreview ? 'Mobile preview · 9:16' : 'Desktop preview · 16:10'}
-          </span>
-        )}
-
-        {ASSET_ORDER.map((key) => {
-          const asset = ASSETS[key]
-          const layout = renderTuning[key]
-          const selectedAsset = tuneMode && selectedKey === key
-
-          return (
-            <div
-              key={key}
-              role={tuneMode ? 'button' : undefined}
-              tabIndex={tuneMode ? 0 : undefined}
-              aria-label={tuneMode ? `Move ${asset.label}` : undefined}
-              onPointerDown={(event) => onAssetPointerDown(key, event)}
-              onPointerMove={onAssetPointerMove}
-              onPointerUp={onAssetPointerUp}
-              onPointerCancel={onAssetPointerUp}
-              onClick={() => tuneMode && setSelectedKey(key)}
-              style={{
-                position: 'absolute',
-                left: `${layout.x}%`,
-                top: `${layout.y}%`,
-                width: `${layout.width}%`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: asset.zIndex,
-                cursor: tuneMode ? 'grab' : 'default',
-                touchAction: tuneMode ? 'none' : 'auto',
-                userSelect: 'none',
-                outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
-                outlineOffset: selectedAsset ? 6 : 0,
-                borderRadius: selectedAsset ? 10 : 0,
-              }}
-            >
-              <img
-                src={asset.src}
-                alt={asset.label}
-                draggable={false}
-                decoding="async"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  height: 'auto',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}
-              />
-
-              {selectedAsset && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: -27,
-                    transform: 'translateX(-50%)',
-                    padding: '3px 7px',
-                    borderRadius: 999,
-                    background: 'rgba(255, 249, 252, 0.96)',
-                    color: '#a4687f',
-                    fontSize: 10,
-                    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                    boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {asset.label}
-                </span>
-              )}
+          <div className="mobile-device-shell">
+            <div className="mobile-reference-label" aria-hidden="true">
+              Atelier phone preview · 390 × 844 CSS px
             </div>
-          )
-        })}
-      </section>
+            <div className="mobile-device-screen">
+              <div className="mobile-device-island" aria-hidden="true" />
+              <div className="mobile-device-home-indicator" aria-hidden="true" />
+              {stage}
+            </div>
+          </div>
+        </div>
+      ) : stage}
 
       {tuneMode && (
         <aside style={{ ...panelStyle, width: collapsed ? 220 : panelStyle.width }}>
@@ -528,7 +527,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
           >
             <div>
               <strong style={{ display: 'block', fontSize: 13 }}>Atelier Tune</strong>
-              <span style={{ fontSize: 10, color: '#aa8c96' }}>电脑端 / 手机端 独立布局</span>
+              <span style={{ fontSize: 10, color: '#aa8c96' }}>电脑端全屏 / 手机端真实屏幕</span>
             </div>
             <button
               type="button"
@@ -550,7 +549,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
           {!collapsed && (
             <div style={{ maxHeight: 'calc(100svh - 92px)', overflowY: 'auto', padding: '14px 16px 16px' }}>
               <p style={{ margin: 0, fontSize: 11, lineHeight: 1.55, color: '#947a83' }}>
-                两套参数完全独立。先切换电脑端 / 手机端，再调整当前端的四张图；正式页面会按屏幕宽度自动选择对应布局。
+                电脑端直接使用整个浏览器 viewport；手机端放进 390 × 844 手机模型中，页面本身可上下滚动。两套参数完全独立。
               </p>
 
               <div
@@ -565,20 +564,20 @@ export default function AtelierPlaceholder({ onBack }: Props) {
                   <button
                     key={profile}
                     type="button"
-                    onClick={() => switchProfile(profile)}
+                    onClick={() => onDeviceChange(profile)}
                     style={{
                       ...smallButtonStyle,
                       minHeight: 38,
                       fontWeight: 650,
                       background:
-                        activeProfile === profile ? 'rgba(248, 232, 238, 0.98)' : 'rgba(255,255,255,0.78)',
+                        deviceProfile === profile ? 'rgba(248, 232, 238, 0.98)' : 'rgba(255,255,255,0.78)',
                       borderColor:
-                        activeProfile === profile
+                        deviceProfile === profile
                           ? 'rgba(213, 111, 157, 0.55)'
                           : 'rgba(198, 133, 157, 0.24)',
                     }}
                   >
-                    {profile === 'desktop' ? '电脑端 · 16:10' : '手机端 · 9:16'}
+                    {profile === 'desktop' ? '电脑端 · 全屏' : '手机端 · 390×844'}
                   </button>
                 ))}
               </div>
@@ -621,7 +620,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
                 }}
               >
                 <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>
-                  {activeProfile === 'desktop' ? '电脑端' : '手机端'} · {ASSETS[selectedKey].label}
+                  {deviceProfile === 'desktop' ? '电脑端' : '手机端'} · {ASSETS[selectedKey].label}
                 </strong>
                 <RangeRow
                   label="X"
@@ -673,7 +672,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
               </div>
 
               <p style={{ margin: '10px 0 0', fontSize: 10, lineHeight: 1.5, color: '#aa8c96' }}>
-                电脑端和手机端都会保存在同一个调试配置中。全部调好后点“复制双端参数”发给我即可固化。
+                切换设备会保留当前场景和两套独立参数；全部调好后复制双端参数即可固化。
               </p>
             </div>
           )}
