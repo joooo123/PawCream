@@ -83,3 +83,27 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
     { curveX: 3, curveY: -67, endX: 76, endY: -127, startScale: 0.78, endScale: 1.75 },
   ],
 }
+
+export const MOBILE_STAR_TUNING_DEFAULTS: StarTuning = {
+  spawnX: 7,
+  spawnY: -18,
+  sizeMin: 20,
+  sizeMax: 25,
+  pathDurationMs: 6200,
+  wobbleAmp: 9,
+  wobbleFreq: 0.012,
+  laneSpread: 24,
+  spawnMinMs: 300,
+  spawnMaxMs: 600,
+  burstStars: 6,
+  burstStaggerMs: 150,
+  maxStars: 12,
+  tracks: [
+    { curveX: 59, curveY: -100, endX: 162, endY: -129, startScale: 0.85, endScale: 2.05 },
+    { curveX: 71, curveY: -96, endX: 150, endY: -83, startScale: 1.1, endScale: 1.73 },
+    { curveX: 28, curveY: -120, endX: 114, endY: -155, startScale: 0.76, endScale: 1.89 },
+    { curveX: 69, curveY: -61, endX: 132, endY: -39, startScale: 0.91, endScale: 1.53 },
+    { curveX: -8, curveY: -95, endX: 46, endY: -162, startScale: 0.91, endScale: 1.89 },
+    { curveX: 3, curveY: -67, endX: 76, endY: -127, startScale: 0.78, endScale: 1.75 },
+  ],
+}
