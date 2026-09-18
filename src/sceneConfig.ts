@@ -20,6 +20,7 @@ const STAR_PARTICLE_ASSET_NUMBERS = [1,2,3,4,5,6,7,8,9,10,11,12,14,15] as const
 
 export const ASSETS = {
   home: `${BASE_URL}assets/home/Home.png`,
+  homeMobile: `${BASE_URL}assets/home/Home_mobile.png`,
   ecg: `${BASE_URL}assets/effects/pawcream-ecg.png`,
   stars: STAR_PARTICLE_ASSET_NUMBERS.map((number) => `${BASE_URL}assets/stars/star-${String(number).padStart(2, '0')}.png`),
 } as const
