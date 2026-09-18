@@ -32,6 +32,8 @@ type RoadTuning = {
   footGap: number
   footLifetimeMs: number
   footWidth: number
+  footStartScale: number
+  footEndScale: number
   footSideOffset: number
   particleCount: number
   particleSpread: number
@@ -65,23 +67,26 @@ type RangeRowProps = {
 }
 
 const FOOT_SRC = `${import.meta.env.BASE_URL}assets/foot.png`
-const ROAD_STORAGE_KEY = 'pawcream-road-tuning-v1'
+const ROAD_STORAGE_KEY = 'pawcream-road-tuning-v2'
+const LEGACY_ROAD_STORAGE_KEY = 'pawcream-road-tuning-v1'
 const MAX_PARTICLE_SEEDS = 100
 
 const ROAD_TUNING_DEFAULTS: RoadTuning = {
-  startX: 760,
-  startY: 1515,
-  control1X: 835,
-  control1Y: 1390,
-  control2X: 1075,
-  control2Y: 1210,
-  endX: 985,
-  endY: 1015,
+  startX: 634,
+  startY: 1535,
+  control1X: 783,
+  control1Y: 1535,
+  control2X: 948,
+  control2Y: 1385,
+  endX: 999,
+  endY: 1178,
   walkDurationMs: 4800,
-  cyclePauseMs: 1300,
-  footGap: 0.115,
-  footLifetimeMs: 5200,
-  footWidth: 118,
+  cyclePauseMs: 300,
+  footGap: 0.205,
+  footLifetimeMs: 2500,
+  footWidth: 162,
+  footStartScale: 1.35,
+  footEndScale: 0.55,
   footSideOffset: 22,
   particleCount: 22,
   particleSpread: 34,
@@ -137,8 +142,11 @@ function loadRoadTuning(tuneMode: boolean): RoadTuning {
   if (!tuneMode || typeof window === 'undefined') return cloneRoadDefaults()
 
   try {
-    const raw = window.localStorage.getItem(ROAD_STORAGE_KEY)
+    const raw =
+      window.localStorage.getItem(ROAD_STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_ROAD_STORAGE_KEY)
     if (!raw) return cloneRoadDefaults()
+
     const parsed = JSON.parse(raw) as Partial<Record<keyof RoadTuning, unknown>>
     const next = cloneRoadDefaults()
 
@@ -195,14 +203,10 @@ function isHomeAwake() {
 
 function getRoadPoint(tuning: RoadTuning, handle: RoadHandle) {
   switch (handle) {
-    case 'start':
-      return { x: tuning.startX, y: tuning.startY }
-    case 'control1':
-      return { x: tuning.control1X, y: tuning.control1Y }
-    case 'control2':
-      return { x: tuning.control2X, y: tuning.control2Y }
-    case 'end':
-      return { x: tuning.endX, y: tuning.endY }
+    case 'start': return { x: tuning.startX, y: tuning.startY }
+    case 'control1': return { x: tuning.control1X, y: tuning.control1Y }
+    case 'control2': return { x: tuning.control2X, y: tuning.control2Y }
+    case 'end': return { x: tuning.endX, y: tuning.endY }
   }
 }
 
@@ -215,14 +219,10 @@ function updateRoadPoint(
   const y = Math.round(clamp(point.y, 0, HOME_SOURCE.height))
 
   switch (handle) {
-    case 'start':
-      return { ...tuning, startX: x, startY: y }
-    case 'control1':
-      return { ...tuning, control1X: x, control1Y: y }
-    case 'control2':
-      return { ...tuning, control2X: x, control2Y: y }
-    case 'end':
-      return { ...tuning, endX: x, endY: y }
+    case 'start': return { ...tuning, startX: x, startY: y }
+    case 'control1': return { ...tuning, control1X: x, control1Y: y }
+    case 'control2': return { ...tuning, control2X: x, control2Y: y }
+    case 'end': return { ...tuning, endX: x, endY: y }
   }
 }
 
@@ -302,16 +302,14 @@ function RangeRow({
   const current = value[field]
 
   return (
-    <label
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '88px 1fr 58px',
-        alignItems: 'center',
-        gap: 8,
-        margin: '8px 0',
-        fontSize: 12,
-      }}
-    >
+    <label style={{
+      display: 'grid',
+      gridTemplateColumns: '88px 1fr 58px',
+      alignItems: 'center',
+      gap: 8,
+      margin: '8px 0',
+      fontSize: 12,
+    }}>
       <span>{label}</span>
       <input
         type="range"
@@ -319,12 +317,10 @@ function RangeRow({
         max={max}
         step={step}
         value={current}
-        onChange={(event) =>
-          onChange({
-            ...value,
-            [field]: Number(event.currentTarget.value),
-          })
-        }
+        onChange={(event) => onChange({
+          ...value,
+          [field]: Number(event.currentTarget.value),
+        })}
         style={{ width: '100%' }}
       />
       <output style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -396,7 +392,6 @@ export default function P5PathLayer() {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -454,20 +449,25 @@ export default function P5PathLayer() {
       const normalX = -tangent.y / tangentLength
       const normalY = tangent.x / tangentLength
       const lateral = current.footSideOffset * foot.side
-      const viewport = sourceToViewport(
-        {
-          x: point.x + normalX * lateral,
-          y: point.y + normalY * lateral,
-        },
-        rect,
-      )
+      const viewport = sourceToViewport({
+        x: point.x + normalX * lateral,
+        y: point.y + normalY * lateral,
+      }, rect)
+
       const direction = Math.atan2(tangent.y, tangent.x) + Math.PI / 2 + foot.twist
       const fadeIn = clamp01(age / 260)
       const fadeOut = age > current.footLifetimeMs - 1200
         ? clamp01((current.footLifetimeMs - age) / 1200)
         : 1
       const alpha = 0.58 * fadeIn * fadeOut * activity
-      const sourceWidth = current.footWidth * (0.9 + foot.progress * 0.18)
+
+      // Size now interpolates along the road. Values > 1 enlarge the footprint,
+      // values < 1 shrink it. This makes “large in foreground → small at house”
+      // independently tuneable without changing the base footWidth.
+      const roadScale =
+        current.footStartScale +
+        (current.footEndScale - current.footStartScale) * foot.progress
+      const sourceWidth = current.footWidth * Math.max(0.05, roadScale)
       const width = sourceWidth * rect.sourceScale
       const aspect = footImage.naturalHeight / footImage.naturalWidth
       const height = width * aspect
@@ -501,13 +501,10 @@ export default function P5PathLayer() {
         const normalY = tangent.x / tangentLength
         const shimmer = Math.sin(time * 0.0035 + seed.phase)
         const side = seed.side * current.particleSpread
-        const viewport = sourceToViewport(
-          {
-            x: point.x + normalX * (side + shimmer * 7),
-            y: point.y + normalY * (side + shimmer * 7) + seed.lift + shimmer * 5,
-          },
-          rect,
-        )
+        const viewport = sourceToViewport({
+          x: point.x + normalX * (side + shimmer * 7),
+          y: point.y + normalY * (side + shimmer * 7) + seed.lift + shimmer * 5,
+        }, rect)
         const radius = seed.radius * (0.75 + t * 0.25) * Math.max(0.72, rect.sourceScale * 2.2)
         const distanceFromHead = Math.abs(t - walkerProgress)
         const alpha = Math.max(0, current.particleOpacity - distanceFromHead * 1.35) * activity
@@ -566,10 +563,7 @@ export default function P5PathLayer() {
         }
 
         drawParticleTrail(walkerProgress, time, rect, current)
-
-        for (const foot of footsteps) {
-          drawFootstep(foot, time, rect, current)
-        }
+        for (const foot of footsteps) drawFootstep(foot, time, rect, current)
       }
 
       for (let index = footsteps.length - 1; index >= 0; index -= 1) {
@@ -591,19 +585,20 @@ export default function P5PathLayer() {
     }
   }, [])
 
-  const pathPoints = renderedRect
-    ? {
-        start: sourceToViewport(getRoadPoint(tuning, 'start'), renderedRect),
-        control1: sourceToViewport(getRoadPoint(tuning, 'control1'), renderedRect),
-        control2: sourceToViewport(getRoadPoint(tuning, 'control2'), renderedRect),
-        end: sourceToViewport(getRoadPoint(tuning, 'end'), renderedRect),
-      }
-    : null
+  const pathPoints = renderedRect ? {
+    start: sourceToViewport(getRoadPoint(tuning, 'start'), renderedRect),
+    control1: sourceToViewport(getRoadPoint(tuning, 'control1'), renderedRect),
+    control2: sourceToViewport(getRoadPoint(tuning, 'control2'), renderedRect),
+    end: sourceToViewport(getRoadPoint(tuning, 'end'), renderedRect),
+  } : null
 
   const updateFromPointer = (handle: RoadHandle, clientX: number, clientY: number) => {
     if (!renderedRect) return
-    const sourcePoint = viewportToSource(clientX, clientY, renderedRect)
-    setTuning((current) => updateRoadPoint(current, handle, sourcePoint))
+    setTuning((current) => updateRoadPoint(
+      current,
+      handle,
+      viewportToSource(clientX, clientY, renderedRect),
+    ))
   }
 
   const onHandlePointerDown = (
@@ -643,7 +638,11 @@ export default function P5PathLayer() {
     }
   }
 
-  const renderHandle = (handle: RoadHandle, label: string, point: { x: number; y: number }) => (
+  const renderHandle = (
+    handle: RoadHandle,
+    label: string,
+    point: { x: number; y: number },
+  ) => (
     <button
       key={handle}
       type="button"
@@ -654,22 +653,20 @@ export default function P5PathLayer() {
       onPointerUp={onHandlePointerUp}
       onPointerCancel={onHandlePointerUp}
     >
-      <span
-        style={{
-          position: 'absolute',
-          top: 38,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          padding: '2px 6px',
-          borderRadius: 999,
-          background: 'rgba(255,248,252,.94)',
-          color: '#9b5f7c',
-          fontSize: 10,
-          fontWeight: 700,
-          pointerEvents: 'none',
-        }}
-      >
+      <span style={{
+        position: 'absolute',
+        top: 38,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        whiteSpace: 'nowrap',
+        padding: '2px 6px',
+        borderRadius: 999,
+        background: 'rgba(255,248,252,.94)',
+        color: '#9b5f7c',
+        fontSize: 10,
+        fontWeight: 700,
+        pointerEvents: 'none',
+      }}>
         {label}
       </span>
     </button>
@@ -680,12 +677,7 @@ export default function P5PathLayer() {
       <canvas
         ref={canvasRef}
         aria-hidden="true"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 4,
-        }}
+        style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 4 }}
       />
 
       {tuneMode && pathPoints && (
@@ -738,14 +730,12 @@ export default function P5PathLayer() {
 
       {tuneMode && (
         <aside style={panelStyle}>
-          <header
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '11px 14px',
-            }}
-          >
+          <header style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '11px 14px',
+          }}>
             <div>
               <strong style={{ display: 'block', fontSize: 13 }}>Footprint Tune</strong>
               <span style={{ fontSize: 10, opacity: 0.64 }}>小路 / 脚印 / 魔法粒子</span>
@@ -762,14 +752,16 @@ export default function P5PathLayer() {
           {!collapsed && (
             <div>
               <p style={{ margin: 0, padding: '0 14px 11px', fontSize: 11, lineHeight: 1.55, opacity: 0.72 }}>
-                粉色虚线就是脚印轨迹。直接拖 start / curve 1 / curve 2 / end 四个点，也可以用下面的坐标滑块精调。
+                粉色虚线就是脚印轨迹。拖动 start / curve 1 / curve 2 / end 可直接改路线；“出生倍率 / 结束倍率”控制脚印沿路线由大变小或由小变大。
               </p>
 
               <section style={sectionStyle}>
                 <strong style={{ fontSize: 12 }}>脚印外观</strong>
-                <RangeRow label="脚印大小" field="footWidth" value={tuning} onChange={setTuning} min={40} max={280} step={2} suffix="px" />
+                <RangeRow label="基础大小" field="footWidth" value={tuning} onChange={setTuning} min={40} max={280} step={2} suffix="px" />
+                <RangeRow label="出生倍率" field="footStartScale" value={tuning} onChange={setTuning} min={0.2} max={2.5} step={0.05} suffix="×" />
+                <RangeRow label="结束倍率" field="footEndScale" value={tuning} onChange={setTuning} min={0.2} max={2.5} step={0.05} suffix="×" />
                 <RangeRow label="左右错位" field="footSideOffset" value={tuning} onChange={setTuning} min={0} max={90} step={1} suffix="px" />
-                <RangeRow label="脚步间距" field="footGap" value={tuning} onChange={setTuning} min={0.04} max={0.25} step={0.005} />
+                <RangeRow label="脚步间距" field="footGap" value={tuning} onChange={setTuning} min={0.04} max={0.3} step={0.005} />
                 <RangeRow label="停留时间" field="footLifetimeMs" value={tuning} onChange={setTuning} min={600} max={9000} step={100} suffix="ms" />
               </section>
 
