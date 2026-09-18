@@ -5,7 +5,10 @@ import {
   useRef,
   useState,
 } from 'react'
-import P5DreamLayer, { type RenderedHomeRect } from './P5DreamLayer'
+import P5DreamLayer, {
+  type DreamClipRect,
+  type RenderedHomeRect,
+} from './P5DreamLayer'
 import TunePanel from './TunePanel'
 import {
   ASSETS,
@@ -205,6 +208,7 @@ function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
 
 export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
+  const mobileScreenRef = useRef<HTMLDivElement | null>(null)
   const dragHandleRef = useRef<{
     kind: TuneHandleKind
     trackIndex: number
@@ -217,6 +221,7 @@ export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
 
   const [sceneState, setSceneState] = useState<SceneState>('idle')
   const [renderedHomeRect, setRenderedHomeRect] = useState<RenderedHomeRect | null>(null)
+  const [mobileClipRect, setMobileClipRect] = useState<DreamClipRect | null>(null)
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [sourceSize, setSourceSize] = useState<SourceSize>({ ...HOME_SOURCE })
@@ -240,13 +245,29 @@ export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
   useEffect(() => {
     const update = () => {
       const node = artboardRef.current
-      if (!node) return
-      setRenderedHomeRect(getContainRect(node.getBoundingClientRect(), sourceSize))
+      if (node) {
+        setRenderedHomeRect(getContainRect(node.getBoundingClientRect(), sourceSize))
+      }
+
+      const screen = mobileScreenRef.current
+      if (mobilePreview && screen) {
+        const rect = screen.getBoundingClientRect()
+        setMobileClipRect({
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          radius: 46,
+        })
+      } else {
+        setMobileClipRect(null)
+      }
     }
 
     update()
     const observer = new ResizeObserver(update)
     if (artboardRef.current) observer.observe(artboardRef.current)
+    if (mobileScreenRef.current) observer.observe(mobileScreenRef.current)
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, { passive: true })
 
@@ -412,6 +433,41 @@ export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
     </button>
   )
 
+  const homeArtboard = (
+    <div
+      ref={artboardRef}
+      className="home-artboard"
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+    >
+      <img
+        key={imageSrc}
+        src={imageSrc}
+        className="home-artwork"
+        draggable={false}
+        alt="PawCream dreamy illustrated atelier house"
+        onLoad={(event) => {
+          const image = event.currentTarget
+          if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+            setSourceSize({ width: image.naturalWidth, height: image.naturalHeight })
+          }
+        }}
+      />
+
+      <button
+        className="house-hotspot"
+        style={hotspotStyle}
+        type="button"
+        aria-label="Enter PawCream atelier"
+        onFocus={onPointerEnter}
+        onBlur={onPointerLeave}
+        onClick={beginEnter}
+      >
+        <span className="sr-only">Enter PawCream atelier</span>
+      </button>
+    </div>
+  )
+
   return (
     <main className={`home-scene home-scene--${sceneState}${mobile ? ' home-scene--mobile' : ''}${mobilePreview ? ' home-scene--mobile-preview' : ''}${tuneMode ? ' home-scene--tuning' : ''}`}>
       <P5DreamLayer
@@ -421,47 +477,22 @@ export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
         homeRect={renderedHomeRect}
         chimney={chimney}
         tuning={starTuning}
+        clipRect={mobilePreview ? mobileClipRect : null}
       />
 
       <div className="home-stage" aria-label="PawCream illustrated home">
-        <div
-          ref={artboardRef}
-          className="home-artboard"
-          onPointerEnter={onPointerEnter}
-          onPointerLeave={onPointerLeave}
-        >
-          {mobile && tuneMode && (
+        {mobilePreview ? (
+          <div className="mobile-device-shell">
             <div className="mobile-reference-label" aria-hidden="true">
-              Mobile reference · 390 × 844 CSS px
+              Phone preview · 390 × 844 CSS px
             </div>
-          )}
-
-          <img
-            key={imageSrc}
-            src={imageSrc}
-            className="home-artwork"
-            draggable={false}
-            alt="PawCream dreamy illustrated atelier house"
-            onLoad={(event) => {
-              const image = event.currentTarget
-              if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-                setSourceSize({ width: image.naturalWidth, height: image.naturalHeight })
-              }
-            }}
-          />
-
-          <button
-            className="house-hotspot"
-            style={hotspotStyle}
-            type="button"
-            aria-label="Enter PawCream atelier"
-            onFocus={onPointerEnter}
-            onBlur={onPointerLeave}
-            onClick={beginEnter}
-          >
-            <span className="sr-only">Enter PawCream atelier</span>
-          </button>
-        </div>
+            <div ref={mobileScreenRef} className="mobile-device-screen">
+              <div className="mobile-device-island" aria-hidden="true" />
+              <div className="mobile-device-home-indicator" aria-hidden="true" />
+              {homeArtboard}
+            </div>
+          </div>
+        ) : homeArtboard}
       </div>
 
       {tuneMode && tuneSpawnPoint && tuneTrackPoints.length > 0 && (
