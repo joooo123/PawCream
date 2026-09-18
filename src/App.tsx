@@ -47,7 +47,12 @@ export default function App() {
 
   return (
     <>
-      <HomeScene mobile={mobile} onEnter={() => setScene('atelier')} />
+      <HomeScene
+        key={mobile ? 'home-mobile' : 'home-desktop'}
+        mobile={mobile}
+        mobilePreview={forcedDevice === 'mobile'}
+        onEnter={() => setScene('atelier')}
+      />
       {!mobile && <P5PathLayer />}
     </>
   )
