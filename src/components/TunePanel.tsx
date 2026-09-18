@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   MAX_STAR_TRACKS,
+  MOBILE_STAR_TUNING_DEFAULTS,
   STAR_TUNING_DEFAULTS,
   type StarTrack,
   type StarTuning,
@@ -115,10 +116,10 @@ function TrackRangeRow({
   )
 }
 
-function cloneDefaults(): StarTuning {
+function cloneDefaults(source: StarTuning): StarTuning {
   return {
-    ...STAR_TUNING_DEFAULTS,
-    tracks: STAR_TUNING_DEFAULTS.tracks.map((track) => ({ ...track })),
+    ...source,
+    tracks: source.tracks.map((track) => ({ ...track })),
   }
 }
 
@@ -130,16 +131,21 @@ export default function TunePanel({
 }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制参数')
+  const mobile = useMemo(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('device') === 'mobile',
+    [],
+  )
+  const defaults = mobile ? MOBILE_STAR_TUNING_DEFAULTS : STAR_TUNING_DEFAULTS
 
   const safeTrackIndex = Math.min(
     Math.max(activeTrackIndex, 0),
     Math.max(0, value.tracks.length - 1),
   )
-  const activeTrack = value.tracks[safeTrackIndex] ?? STAR_TUNING_DEFAULTS.tracks[0]
+  const activeTrack = value.tracks[safeTrackIndex] ?? defaults.tracks[0]
 
   const settingsText = useMemo(
-    () => `STAR_TUNING_DEFAULTS = ${JSON.stringify(value, null, 2)}`,
-    [value],
+    () => `${mobile ? 'MOBILE_STAR_TUNING_DEFAULTS' : 'STAR_TUNING_DEFAULTS'} = ${JSON.stringify(value, null, 2)}`,
+    [mobile, value],
   )
 
   const copySettings = async () => {
@@ -189,7 +195,7 @@ export default function TunePanel({
   }
 
   const reset = () => {
-    onChange(cloneDefaults())
+    onChange(cloneDefaults(defaults))
     onActiveTrackChange(0)
   }
 
@@ -197,7 +203,7 @@ export default function TunePanel({
     <aside className={`tune-panel${collapsed ? ' tune-panel--collapsed' : ''}`}>
       <header className="tune-panel__header">
         <div>
-          <strong>PawCream Tune</strong>
+          <strong>{mobile ? 'PawCream Mobile Tune' : 'PawCream Tune'}</strong>
           <span>?tune=1</span>
         </div>
         <button
@@ -280,8 +286,8 @@ export default function TunePanel({
 
           <section className="tune-panel__section">
             <h2>基础尺寸</h2>
-            <RangeRow label="最小尺寸" field="sizeMin" value={value} onChange={onChange} min={20} max={120} step={1} suffix="px" />
-            <RangeRow label="最大尺寸" field="sizeMax" value={value} onChange={onChange} min={24} max={150} step={1} suffix="px" />
+            <RangeRow label="最小尺寸" field="sizeMin" value={value} onChange={onChange} min={12} max={120} step={1} suffix="px" />
+            <RangeRow label="最大尺寸" field="sizeMax" value={value} onChange={onChange} min={16} max={150} step={1} suffix="px" />
           </section>
 
           <section className="tune-panel__section">
