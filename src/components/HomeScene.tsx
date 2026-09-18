@@ -22,10 +22,14 @@ import {
   type StarTuning,
 } from '../sceneConfig'
 
+type DeviceProfile = 'desktop' | 'mobile'
+
 type Props = {
   onEnter: () => void
   mobile: boolean
   mobilePreview: boolean
+  deviceProfile: DeviceProfile
+  onDeviceChange: (profile: DeviceProfile) => void
 }
 
 type SceneState = 'idle' | 'awake' | 'entering'
@@ -208,7 +212,13 @@ function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
   }
 }
 
-export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
+export default function HomeScene({
+  onEnter,
+  mobile,
+  mobilePreview,
+  deviceProfile,
+  onDeviceChange,
+}: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
   const mobileScreenRef = useRef<HTMLDivElement | null>(null)
   const dragHandleRef = useRef<{
@@ -547,6 +557,8 @@ export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
           onChange={setStarTuning}
           activeTrackIndex={activeTrackIndex}
           onActiveTrackChange={setActiveTrackIndex}
+          deviceProfile={deviceProfile}
+          onDeviceChange={onDeviceChange}
         />
       )}
     </main>
