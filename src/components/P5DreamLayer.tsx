@@ -10,6 +10,14 @@ export type RenderedHomeRect = {
   sourceScale: number
 }
 
+export type DreamClipRect = {
+  left: number
+  top: number
+  width: number
+  height: number
+  radius?: number
+}
+
 type Props = {
   awake: boolean
   entering: boolean
@@ -17,6 +25,7 @@ type Props = {
   homeRect: RenderedHomeRect | null
   chimney: { x: number; y: number } | null
   tuning: StarTuning
+  clipRect?: DreamClipRect | null
 }
 
 type StarParticle = {
@@ -63,6 +72,31 @@ function quadraticBezier(a: number, b: number, c: number, t: number) {
   return u * u * a + 2 * u * t * b + t * t * c
 }
 
+function clipRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  rect: DreamClipRect,
+) {
+  const radius = Math.max(
+    0,
+    Math.min(rect.radius ?? 0, rect.width / 2, rect.height / 2),
+  )
+  const right = rect.left + rect.width
+  const bottom = rect.top + rect.height
+
+  ctx.beginPath()
+  ctx.moveTo(rect.left + radius, rect.top)
+  ctx.lineTo(right - radius, rect.top)
+  ctx.quadraticCurveTo(right, rect.top, right, rect.top + radius)
+  ctx.lineTo(right, bottom - radius)
+  ctx.quadraticCurveTo(right, bottom, right - radius, bottom)
+  ctx.lineTo(rect.left + radius, bottom)
+  ctx.quadraticCurveTo(rect.left, bottom, rect.left, bottom - radius)
+  ctx.lineTo(rect.left, rect.top + radius)
+  ctx.quadraticCurveTo(rect.left, rect.top, rect.left + radius, rect.top)
+  ctx.closePath()
+  ctx.clip()
+}
+
 export default function P5DreamLayer({
   awake,
   entering,
@@ -70,6 +104,7 @@ export default function P5DreamLayer({
   homeRect,
   chimney,
   tuning,
+  clipRect = null,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const stateRef = useRef({
@@ -79,6 +114,7 @@ export default function P5DreamLayer({
     homeRect,
     chimney,
     tuning,
+    clipRect,
   })
 
   useEffect(() => {
@@ -89,8 +125,9 @@ export default function P5DreamLayer({
       homeRect,
       chimney,
       tuning,
+      clipRect,
     }
-  }, [awake, entering, transitionStartedAt, homeRect, chimney, tuning])
+  }, [awake, entering, transitionStartedAt, homeRect, chimney, tuning, clipRect])
 
   useEffect(() => {
     if (!hostRef.current) return
@@ -137,11 +174,8 @@ export default function P5DreamLayer({
         const emitter = getEmitterPosition()
         if (!emitter || !starImages.length || !state.tuning.tracks.length) return
 
-        // All 15 source images are eligible, including star-13.png (the wreath).
         const imageIndex = Math.floor(s.random(starImages.length))
 
-        // Keep a tiny radial separation inside one burst so staggered stars still
-        // feel like a shared puff rather than repeatedly occupying one exact pixel.
         const burstRadius = burstCount > 1
           ? Math.min(10, Math.max(4, state.tuning.sizeMin * 0.12))
           : 0
@@ -306,8 +340,6 @@ export default function P5DreamLayer({
           const baseSize = s.lerp(sizeMin, sizeMax, particle.sizeMix)
           const assetScale = STAR_VISUAL_SCALE[particle.imageIndex] ?? 0.94
 
-          // Per-track size gradient: the star smoothly changes from the track's
-          // start scale at the chimney to its end scale at the end point.
           const startScale = s.constrain(track.startScale, 0.05, 3)
           const endScale = s.constrain(track.endScale, 0.05, 3)
           const sizeScale = s.lerp(startScale, endScale, pathT)
@@ -392,8 +424,18 @@ export default function P5DreamLayer({
 
       s.draw = () => {
         s.clear()
+
+        const clip = stateRef.current.clipRect
+        const ctx = s.drawingContext as CanvasRenderingContext2D
+        if (clip) {
+          ctx.save()
+          clipRoundedRect(ctx, clip)
+        }
+
         drawStars()
         drawHeartbeatTransition()
+
+        if (clip) ctx.restore()
       }
 
       s.windowResized = () => {
