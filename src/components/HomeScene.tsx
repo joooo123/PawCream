@@ -15,6 +15,7 @@ import {
   HOME_ANCHORS,
   HOME_SOURCE,
   MAX_STAR_TRACKS,
+  MOBILE_STAR_TUNING_DEFAULTS,
   MOTION,
   STAR_TUNING_DEFAULTS,
   type StarTrack,
@@ -59,10 +60,11 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function cloneDefaults(): StarTuning {
+function cloneDefaults(mobile = false): StarTuning {
+  const defaults = mobile ? MOBILE_STAR_TUNING_DEFAULTS : STAR_TUNING_DEFAULTS
   return {
-    ...STAR_TUNING_DEFAULTS,
-    tracks: STAR_TUNING_DEFAULTS.tracks.map((track) => ({ ...track })),
+    ...defaults,
+    tracks: defaults.tracks.map((track) => ({ ...track })),
   }
 }
 
@@ -148,8 +150,10 @@ function sourceRectToPercent() {
 }
 
 function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
+  const defaults = mobile ? MOBILE_STAR_TUNING_DEFAULTS : STAR_TUNING_DEFAULTS
+
   if (!enabled || typeof window === 'undefined') {
-    return cloneDefaults()
+    return cloneDefaults(mobile)
   }
 
   try {
@@ -165,10 +169,10 @@ function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
       }
     }
 
-    if (!raw) return cloneDefaults()
+    if (!raw) return cloneDefaults(mobile)
 
     const parsed = JSON.parse(raw) as Record<string, unknown>
-    const next = cloneDefaults()
+    const next = cloneDefaults(mobile)
 
     for (const key of NUMERIC_TUNING_KEYS) {
       const candidate = parsed[key]
@@ -183,9 +187,7 @@ function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
       next.tracks = parsed.tracks
         .slice(0, MAX_STAR_TRACKS)
         .map((track, index) => {
-          const fallback =
-            STAR_TUNING_DEFAULTS.tracks[index] ??
-            STAR_TUNING_DEFAULTS.tracks[0]
+          const fallback = defaults.tracks[index] ?? defaults.tracks[0]
           return readTrack(track, fallback, legacyBirthScale)
         })
     } else {
@@ -202,7 +204,7 @@ function loadStoredTuning(enabled: boolean, mobile: boolean): StarTuning {
 
     return next
   } catch {
-    return cloneDefaults()
+    return cloneDefaults(mobile)
   }
 }
 
@@ -326,7 +328,7 @@ export default function HomeScene({ onEnter, mobile, mobilePreview }: Props) {
     : []
 
   const beginEnter = () => {
-    if (entering || tuneMode) return
+    if (entering) return
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
     window.setTimeout(onEnter, MOTION.enterDurationMs)
