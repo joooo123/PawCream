@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import HomeScene from './components/HomeScene'
+import P5PathLayer from './components/P5PathLayer'
 import AtelierPlaceholder from './components/AtelierPlaceholder'
 
 export default function App() {
@@ -9,5 +10,10 @@ export default function App() {
     return <AtelierPlaceholder onBack={() => setScene('home')} />
   }
 
-  return <HomeScene onEnter={() => setScene('atelier')} />
+  return (
+    <>
+      <HomeScene onEnter={() => setScene('atelier')} />
+      <P5PathLayer />
+    </>
+  )
 }
