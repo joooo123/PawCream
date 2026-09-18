@@ -1,11 +1,19 @@
 import { useEffect, useRef } from 'react'
-import type { RenderedHomeRect } from './P5DreamLayer'
+import { HOME_SOURCE } from '../sceneConfig'
+
+type RenderedHomeRect = {
+  left: number
+  top: number
+  width: number
+  height: number
+  sourceScale: number
+}
 
 const FOOT_SRC = `${import.meta.env.BASE_URL}assets/foot.png`
 
 // Coordinates are measured in the original 2048×1535 Home.png artwork.
-// The route follows the center of the pink path from the foreground toward
-// the front edge of the atelier.
+// This curve follows the center of the hand-drawn pink path from the
+// foreground toward the atelier entrance.
 const ROAD_CURVE = {
   start: { x: 760, y: 1515 },
   control1: { x: 835, y: 1390 },
@@ -20,11 +28,6 @@ const FOOT_LIFETIME_MS = 5200
 const FOOT_SOURCE_WIDTH = 118
 const FOOT_SIDE_OFFSET = 22
 const PARTICLE_COUNT = 22
-
-type Props = {
-  homeRect: RenderedHomeRect | null
-  awake: boolean
-}
 
 type Footstep = {
   progress: number
@@ -43,6 +46,44 @@ type ParticleSeed = {
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value))
+}
+
+function getRenderedHomeRect(): RenderedHomeRect | null {
+  const artboard = document.querySelector<HTMLElement>('.home-artboard')
+  if (!artboard) return null
+
+  const container = artboard.getBoundingClientRect()
+  const sourceRatio = HOME_SOURCE.width / HOME_SOURCE.height
+  const containerRatio = container.width / container.height
+
+  let width: number
+  let height: number
+
+  if (sourceRatio > containerRatio) {
+    width = container.width
+    height = width / sourceRatio
+  } else {
+    height = container.height
+    width = height * sourceRatio
+  }
+
+  return {
+    left: container.left + (container.width - width) / 2,
+    top: container.top + (container.height - height) / 2,
+    width,
+    height,
+    sourceScale: width / HOME_SOURCE.width,
+  }
+}
+
+function isHomeAwake() {
+  const scene = document.querySelector<HTMLElement>('.home-scene')
+  if (!scene) return false
+  return (
+    scene.classList.contains('home-scene--awake') ||
+    scene.classList.contains('home-scene--entering') ||
+    scene.classList.contains('home-scene--tuning')
+  )
 }
 
 function cubicPoint(t: number) {
@@ -91,22 +132,17 @@ function seededParticles(): ParticleSeed[] {
   return Array.from({ length: PARTICLE_COUNT }, (_, index) => {
     const n = index + 1
     return {
-      progressOffset: -0.19 + ((n * 37) % 100) / 100 * 0.23,
-      side: -34 + ((n * 53) % 100) / 100 * 68,
-      lift: -12 - ((n * 71) % 100) / 100 * 30,
-      radius: 1.7 + ((n * 29) % 100) / 100 * 3.2,
-      phase: ((n * 43) % 100) / 100 * Math.PI * 2,
+      progressOffset: -0.19 + (((n * 37) % 100) / 100) * 0.23,
+      side: -34 + (((n * 53) % 100) / 100) * 68,
+      lift: -12 - (((n * 71) % 100) / 100) * 30,
+      radius: 1.7 + (((n * 29) % 100) / 100) * 3.2,
+      phase: (((n * 43) % 100) / 100) * Math.PI * 2,
     }
   })
 }
 
-export default function P5PathLayer({ homeRect, awake }: Props) {
+export default function P5PathLayer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const stateRef = useRef({ homeRect, awake })
-
-  useEffect(() => {
-    stateRef.current = { homeRect, awake }
-  }, [homeRect, awake])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -123,6 +159,7 @@ export default function P5PathLayer({ homeRect, awake }: Props) {
     let animationFrame = 0
     let cycleStartedAt = performance.now()
     let lastStepIndex = -1
+    let lastCycleIndex = 0
     let activity = 0
     let wasAwake = false
 
@@ -162,11 +199,13 @@ export default function P5PathLayer({ homeRect, awake }: Props) {
       const normalX = -tangent.y / tangentLength
       const normalY = tangent.x / tangentLength
       const lateral = FOOT_SIDE_OFFSET * foot.side
-      const placed = {
-        x: point.x + normalX * lateral,
-        y: point.y + normalY * lateral,
-      }
-      const viewport = sourceToViewport(placed, rect)
+      const viewport = sourceToViewport(
+        {
+          x: point.x + normalX * lateral,
+          y: point.y + normalY * lateral,
+        },
+        rect,
+      )
       const direction = Math.atan2(tangent.y, tangent.x) + Math.PI / 2 + foot.twist
       const fadeIn = clamp01(age / 260)
       const fadeOut = age > FOOT_LIFETIME_MS - 1200
@@ -203,11 +242,13 @@ export default function P5PathLayer({ homeRect, awake }: Props) {
         const normalX = -tangent.y / tangentLength
         const normalY = tangent.x / tangentLength
         const shimmer = Math.sin(time * 0.0035 + seed.phase)
-        const sourcePoint = {
-          x: point.x + normalX * (seed.side + shimmer * 7),
-          y: point.y + normalY * (seed.side + shimmer * 7) + seed.lift + shimmer * 5,
-        }
-        const viewport = sourceToViewport(sourcePoint, rect)
+        const viewport = sourceToViewport(
+          {
+            x: point.x + normalX * (seed.side + shimmer * 7),
+            y: point.y + normalY * (seed.side + shimmer * 7) + seed.lift + shimmer * 5,
+          },
+          rect,
+        )
         const radius = seed.radius * (0.75 + t * 0.25) * Math.max(0.72, rect.sourceScale * 2.2)
         const distanceFromHead = Math.abs(t - walkerProgress)
         const alpha = Math.max(0, 0.42 - distanceFromHead * 1.35) * activity
@@ -232,17 +273,18 @@ export default function P5PathLayer({ homeRect, awake }: Props) {
     }
 
     const draw = (time: number) => {
-      const state = stateRef.current
-      const rect = state.homeRect
-      activity += ((state.awake ? 1 : 0) - activity) * 0.075
+      const awake = isHomeAwake()
+      const rect = getRenderedHomeRect()
+      activity += ((awake ? 1 : 0) - activity) * 0.075
 
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
 
-      if (state.awake && !wasAwake) {
+      if (awake && !wasAwake) {
         cycleStartedAt = time
         lastStepIndex = -1
+        lastCycleIndex = 0
       }
-      wasAwake = state.awake
+      wasAwake = awake
 
       if (rect && activity > 0.01) {
         const cycleLength = WALK_DURATION_MS + CYCLE_PAUSE_MS
@@ -253,11 +295,12 @@ export default function P5PathLayer({ homeRect, awake }: Props) {
           ? clamp01(cyclePosition / WALK_DURATION_MS)
           : 1
 
-        if (cycleIndex > 0 && cyclePosition < 34) {
+        if (cycleIndex !== lastCycleIndex) {
+          lastCycleIndex = cycleIndex
           lastStepIndex = -1
         }
 
-        if (state.awake && cyclePosition < WALK_DURATION_MS) {
+        if (awake && cyclePosition < WALK_DURATION_MS) {
           addFootstepsUpTo(walkerProgress, time)
         }
 
