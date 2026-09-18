@@ -8,11 +8,15 @@ import {
 } from '../sceneConfig'
 import '../tuneTrajectory.css'
 
+type DeviceProfile = 'desktop' | 'mobile'
+
 type Props = {
   value: StarTuning
   onChange: (next: StarTuning) => void
   activeTrackIndex: number
   onActiveTrackChange: (index: number) => void
+  deviceProfile: DeviceProfile
+  onDeviceChange: (profile: DeviceProfile) => void
 }
 
 type NumericKey = Exclude<keyof StarTuning, 'tracks'>
@@ -128,13 +132,12 @@ export default function TunePanel({
   onChange,
   activeTrackIndex,
   onActiveTrackChange,
+  deviceProfile,
+  onDeviceChange,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制参数')
-  const mobile = useMemo(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('device') === 'mobile',
-    [],
-  )
+  const mobile = deviceProfile === 'mobile'
   const defaults = mobile ? MOBILE_STAR_TUNING_DEFAULTS : STAR_TUNING_DEFAULTS
 
   const safeTrackIndex = Math.min(
@@ -203,7 +206,7 @@ export default function TunePanel({
     <aside className={`tune-panel${collapsed ? ' tune-panel--collapsed' : ''}`}>
       <header className="tune-panel__header">
         <div>
-          <strong>{mobile ? 'PawCream Mobile Tune' : 'PawCream Tune'}</strong>
+          <strong>{mobile ? 'PawCream Mobile Tune' : 'PawCream Desktop Tune'}</strong>
           <span>?tune=1</span>
         </div>
         <button
@@ -219,8 +222,21 @@ export default function TunePanel({
       {!collapsed && (
         <div className="tune-panel__body">
           <p className="tune-panel__hint">
-            多条轨道会同时显示。直接拖每条轨道的 curve / end 点即可改形状；每条轨道也能单独设置从出生到结束的大小渐变。
+            电脑端和手机端参数独立。电脑端按整个浏览器屏幕预览；手机端使用 390 × 844 的真实手机模型预览。
           </p>
+
+          <div className="tune-device-switch" role="group" aria-label="预览设备">
+            {(['desktop', 'mobile'] as DeviceProfile[]).map((profile) => (
+              <button
+                key={profile}
+                type="button"
+                className={deviceProfile === profile ? 'is-active' : ''}
+                onClick={() => onDeviceChange(profile)}
+              >
+                {profile === 'desktop' ? '电脑端 · 全屏' : '手机端 · 390×844'}
+              </button>
+            ))}
+          </div>
 
           <section className="tune-panel__section">
             <h2>出生位置</h2>
@@ -301,11 +317,11 @@ export default function TunePanel({
 
           <div className="tune-panel__actions">
             <button type="button" onClick={copySettings}>{copyStatus}</button>
-            <button type="button" onClick={reset}>恢复默认</button>
+            <button type="button" onClick={reset}>恢复当前端默认</button>
           </div>
 
           <p className="tune-panel__footnote">
-            “最短间隔 / 最长间隔”控制不同批次之间的随机时间范围；“同批星星间隔”控制同一批里相邻两颗星星的出生时间差。现在三项都可在 10–600ms 内以 10ms 步进实时调节。
+            切换设备不会覆盖另一端参数；每一端分别保存到自己的 localStorage。点击 Home 仍会播放心电图并进入 Atelier。
           </p>
         </div>
       )}
