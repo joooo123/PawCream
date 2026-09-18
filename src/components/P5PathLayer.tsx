@@ -72,12 +72,12 @@ const LEGACY_ROAD_STORAGE_KEY = 'pawcream-road-tuning-v1'
 const MAX_PARTICLE_SEEDS = 100
 
 const ROAD_TUNING_DEFAULTS: RoadTuning = {
-  startX: 634,
+  startX: 627,
   startY: 1535,
-  control1X: 783,
-  control1Y: 1535,
-  control2X: 948,
-  control2Y: 1385,
+  control1X: 846,
+  control1Y: 1426,
+  control2X: 977,
+  control2Y: 1352,
   endX: 999,
   endY: 1178,
   walkDurationMs: 4800,
