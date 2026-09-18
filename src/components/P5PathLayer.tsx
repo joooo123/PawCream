@@ -72,25 +72,25 @@ const LEGACY_ROAD_STORAGE_KEY = 'pawcream-road-tuning-v1'
 const MAX_PARTICLE_SEEDS = 100
 
 const ROAD_TUNING_DEFAULTS: RoadTuning = {
-  startX: 627,
+  startX: 808,
   startY: 1535,
-  control1X: 846,
-  control1Y: 1426,
-  control2X: 977,
-  control2Y: 1352,
-  endX: 999,
-  endY: 1178,
+  control1X: 959,
+  control1Y: 1450,
+  control2X: 1009,
+  control2Y: 1332,
+  endX: 1039,
+  endY: 1186,
   walkDurationMs: 4800,
   cyclePauseMs: 300,
-  footGap: 0.205,
+  footGap: 0.3,
   footLifetimeMs: 2500,
   footWidth: 162,
   footStartScale: 1.35,
-  footEndScale: 0.55,
+  footEndScale: 1.05,
   footSideOffset: 22,
-  particleCount: 22,
+  particleCount: 9,
   particleSpread: 34,
-  particleOpacity: 0.42,
+  particleOpacity: 0.23,
 }
 
 const panelStyle: CSSProperties = {
@@ -461,9 +461,6 @@ export default function P5PathLayer() {
         : 1
       const alpha = 0.58 * fadeIn * fadeOut * activity
 
-      // Size now interpolates along the road. Values > 1 enlarge the footprint,
-      // values < 1 shrink it. This makes “large in foreground → small at house”
-      // independently tuneable without changing the base footWidth.
       const roadScale =
         current.footStartScale +
         (current.footEndScale - current.footStartScale) * foot.progress
