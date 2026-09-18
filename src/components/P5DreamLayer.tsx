@@ -376,16 +376,22 @@ export default function P5DreamLayer({
 
         const elapsed = performance.now() - state.transitionStartedAt
         const t = s.constrain(elapsed / MOTION.enterDurationMs, 0, 1)
+        const frame = state.clipRect ?? {
+          left: 0,
+          top: 0,
+          width: s.width,
+          height: s.height,
+        }
 
         const flashPeak = Math.exp(-Math.pow((t - 0.27) / 0.16, 2))
         s.noStroke()
         s.fill(255, 237, 245, 38 * flashPeak)
-        s.rect(0, 0, s.width, s.height)
+        s.rect(frame.left, frame.top, frame.width, frame.height)
 
-        const targetWidth = Math.min(s.width * 0.9, 1280)
+        const targetWidth = Math.min(frame.width * 0.88, 1280)
         const targetHeight = targetWidth * (ecgImage.height / ecgImage.width)
-        const x = (s.width - targetWidth) / 2
-        const y = (s.height - targetHeight) / 2
+        const x = frame.left + (frame.width - targetWidth) / 2
+        const y = frame.top + (frame.height - targetHeight) / 2
 
         const reveal = s.constrain(t / 0.7, 0, 1)
         const eased = 1 - Math.pow(1 - reveal, 3)
