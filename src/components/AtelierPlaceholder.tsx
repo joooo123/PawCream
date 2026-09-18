@@ -12,6 +12,7 @@ type Props = {
 }
 
 type AssetKey = 'light' | 'message' | 'instax' | 'sewing'
+type DeviceProfile = 'desktop' | 'mobile'
 
 type AssetLayout = {
   x: number
@@ -20,8 +21,11 @@ type AssetLayout = {
 }
 
 type AtelierTuning = Record<AssetKey, AssetLayout>
+type AtelierProfiles = Record<DeviceProfile, AtelierTuning>
 
-const STORAGE_KEY = 'pawcream-atelier-tuning-v1'
+const STORAGE_KEY = 'pawcream-atelier-tuning-v2'
+const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
+const MOBILE_BREAKPOINT = 700
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
   light: {
@@ -48,11 +52,19 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
 
 const ASSET_ORDER: AssetKey[] = ['light', 'message', 'instax', 'sewing']
 
-const ATELIER_TUNING_DEFAULTS: AtelierTuning = {
-  light: { x: 67, y: 18, width: 24 },
-  message: { x: 25, y: 28, width: 22 },
-  instax: { x: 25, y: 69, width: 22 },
-  sewing: { x: 61, y: 64, width: 44 },
+const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
+  desktop: {
+    light: { x: 67, y: 18, width: 24 },
+    message: { x: 25, y: 28, width: 22 },
+    instax: { x: 25, y: 69, width: 22 },
+    sewing: { x: 61, y: 64, width: 44 },
+  },
+  mobile: {
+    light: { x: 68, y: 15, width: 40 },
+    message: { x: 27, y: 31, width: 38 },
+    instax: { x: 27, y: 61, width: 38 },
+    sewing: { x: 58, y: 79, width: 74 },
+  },
 }
 
 const panelStyle: CSSProperties = {
@@ -60,7 +72,7 @@ const panelStyle: CSSProperties = {
   top: 18,
   right: 18,
   zIndex: 60,
-  width: 'min(330px, calc(100vw - 36px))',
+  width: 'min(340px, calc(100vw - 36px))',
   maxHeight: 'calc(100svh - 36px)',
   overflow: 'hidden',
   border: '1px solid rgba(198, 133, 157, 0.28)',
@@ -83,12 +95,19 @@ const smallButtonStyle: CSSProperties = {
   fontSize: 11,
 }
 
-function cloneDefaults(): AtelierTuning {
+function cloneLayout(source: AtelierTuning): AtelierTuning {
   return {
-    light: { ...ATELIER_TUNING_DEFAULTS.light },
-    message: { ...ATELIER_TUNING_DEFAULTS.message },
-    instax: { ...ATELIER_TUNING_DEFAULTS.instax },
-    sewing: { ...ATELIER_TUNING_DEFAULTS.sewing },
+    light: { ...source.light },
+    message: { ...source.message },
+    instax: { ...source.instax },
+    sewing: { ...source.sewing },
+  }
+}
+
+function cloneDefaults(): AtelierProfiles {
+  return {
+    desktop: cloneLayout(ATELIER_TUNING_DEFAULTS.desktop),
+    mobile: cloneLayout(ATELIER_TUNING_DEFAULTS.mobile),
   }
 }
 
@@ -96,34 +115,69 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function loadTuning(enabled: boolean): AtelierTuning {
+function mergeLayout(
+  source: Partial<Record<AssetKey, Partial<AssetLayout>>> | undefined,
+  fallback: AtelierTuning,
+): AtelierTuning {
+  const next = cloneLayout(fallback)
+  if (!source) return next
+
+  for (const key of ASSET_ORDER) {
+    const item = source[key]
+    if (!item) continue
+    const current = next[key]
+    next[key] = {
+      x: typeof item.x === 'number' && Number.isFinite(item.x) ? item.x : current.x,
+      y: typeof item.y === 'number' && Number.isFinite(item.y) ? item.y : current.y,
+      width:
+        typeof item.width === 'number' && Number.isFinite(item.width)
+          ? item.width
+          : current.width,
+    }
+  }
+
+  return next
+}
+
+function loadTuning(enabled: boolean): AtelierProfiles {
   if (!enabled || typeof window === 'undefined') return cloneDefaults()
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return cloneDefaults()
-
-    const parsed = JSON.parse(raw) as Partial<Record<AssetKey, Partial<AssetLayout>>>
-    const next = cloneDefaults()
-
-    for (const key of ASSET_ORDER) {
-      const source = parsed[key]
-      if (!source) continue
-      const current = next[key]
-      next[key] = {
-        x: typeof source.x === 'number' && Number.isFinite(source.x) ? source.x : current.x,
-        y: typeof source.y === 'number' && Number.isFinite(source.y) ? source.y : current.y,
-        width:
-          typeof source.width === 'number' && Number.isFinite(source.width)
-            ? source.width
-            : current.width,
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Record<DeviceProfile, Partial<Record<AssetKey, Partial<AssetLayout>>>>>
+      return {
+        desktop: mergeLayout(parsed.desktop, ATELIER_TUNING_DEFAULTS.desktop),
+        mobile: mergeLayout(parsed.mobile, ATELIER_TUNING_DEFAULTS.mobile),
       }
     }
 
-    return next
+    // v1 only had one layout. Preserve it as the desktop profile and start the
+    // mobile profile from its own dedicated defaults.
+    const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (legacyRaw) {
+      const legacy = JSON.parse(legacyRaw) as Partial<Record<AssetKey, Partial<AssetLayout>>>
+      return {
+        desktop: mergeLayout(legacy, ATELIER_TUNING_DEFAULTS.desktop),
+        mobile: cloneLayout(ATELIER_TUNING_DEFAULTS.mobile),
+      }
+    }
   } catch {
     return cloneDefaults()
   }
+
+  return cloneDefaults()
+}
+
+function getDeviceFromUrl(): DeviceProfile | null {
+  if (typeof window === 'undefined') return null
+  const value = new URLSearchParams(window.location.search).get('device')
+  return value === 'mobile' || value === 'desktop' ? value : null
+}
+
+function getDetectedDevice(): DeviceProfile {
+  if (typeof window === 'undefined') return 'desktop'
+  return window.innerWidth <= MOBILE_BREAKPOINT ? 'mobile' : 'desktop'
 }
 
 function RangeRow({
@@ -180,22 +234,48 @@ export default function AtelierPlaceholder({ onBack }: Props) {
     [],
   )
 
-  const [tuning, setTuning] = useState<AtelierTuning>(() => loadTuning(tuneMode))
+  const [detectedProfile, setDetectedProfile] = useState<DeviceProfile>(() => getDetectedDevice())
+  const [activeProfile, setActiveProfile] = useState<DeviceProfile>(() => getDeviceFromUrl() ?? getDetectedDevice())
+  const [tuning, setTuning] = useState<AtelierProfiles>(() => loadTuning(tuneMode))
   const [selectedKey, setSelectedKey] = useState<AssetKey>('sewing')
   const [collapsed, setCollapsed] = useState(false)
-  const [copyStatus, setCopyStatus] = useState('复制 Atelier 参数')
+  const [copyStatus, setCopyStatus] = useState('复制双端参数')
+
+  useEffect(() => {
+    const media = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`)
+    const update = () => setDetectedProfile(media.matches ? 'mobile' : 'desktop')
+    update()
+    media.addEventListener?.('change', update)
+    return () => media.removeEventListener?.('change', update)
+  }, [])
 
   useEffect(() => {
     if (!tuneMode) return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tuning))
   }, [tuneMode, tuning])
 
+  const renderProfile = tuneMode ? activeProfile : detectedProfile
+  const renderTuning = tuning[renderProfile]
+  const selected = tuning[activeProfile][selectedKey]
+  const isMobilePreview = renderProfile === 'mobile'
+
+  const switchProfile = (profile: DeviceProfile) => {
+    setActiveProfile(profile)
+    if (!tuneMode) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('device', profile)
+    window.history.replaceState(null, '', url)
+  }
+
   const updateSelected = (field: keyof AssetLayout, value: number) => {
     setTuning((current) => ({
       ...current,
-      [selectedKey]: {
-        ...current[selectedKey],
-        [field]: value,
+      [activeProfile]: {
+        ...current[activeProfile],
+        [selectedKey]: {
+          ...current[activeProfile][selectedKey],
+          [field]: value,
+        },
       },
     }))
   }
@@ -210,10 +290,13 @@ export default function AtelierPlaceholder({ onBack }: Props) {
 
     setTuning((current) => ({
       ...current,
-      [key]: {
-        ...current[key],
-        x: Number(x.toFixed(1)),
-        y: Number(y.toFixed(1)),
+      [activeProfile]: {
+        ...current[activeProfile],
+        [key]: {
+          ...current[activeProfile][key],
+          x: Number(x.toFixed(1)),
+          y: Number(y.toFixed(1)),
+        },
       },
     }))
   }
@@ -246,14 +329,44 @@ export default function AtelierPlaceholder({ onBack }: Props) {
     try {
       await navigator.clipboard.writeText(text)
       setCopyStatus('已复制')
-      window.setTimeout(() => setCopyStatus('复制 Atelier 参数'), 1200)
+      window.setTimeout(() => setCopyStatus('复制双端参数'), 1200)
     } catch {
       setCopyStatus('复制失败')
-      window.setTimeout(() => setCopyStatus('复制 Atelier 参数'), 1500)
+      window.setTimeout(() => setCopyStatus('复制双端参数'), 1500)
     }
   }
 
-  const selected = tuning[selectedKey]
+  const resetCurrentProfile = () => {
+    setTuning((current) => ({
+      ...current,
+      [activeProfile]: cloneLayout(ATELIER_TUNING_DEFAULTS[activeProfile]),
+    }))
+    setSelectedKey('sewing')
+  }
+
+  const stageStyle: CSSProperties = isMobilePreview
+    ? {
+        position: 'relative',
+        width: tuneMode
+          ? 'min(390px, 52vw, calc((100svh - 48px) * 9 / 16))'
+          : 'min(100vw, 520px, calc(100svh * 9 / 16))',
+        aspectRatio: '9 / 16',
+        maxWidth: '100%',
+        overflow: 'visible',
+        background: '#ffffff',
+        boxShadow: tuneMode ? '0 0 0 1px rgba(198, 133, 157, 0.22)' : 'none',
+      }
+    : {
+        position: 'relative',
+        width: tuneMode
+          ? 'min(1080px, 78vw, 130vh)'
+          : 'min(1320px, 94vw, 140vh)',
+        aspectRatio: '16 / 10',
+        maxWidth: '100%',
+        overflow: 'visible',
+        background: '#ffffff',
+        boxShadow: tuneMode ? '0 0 0 1px rgba(198, 133, 157, 0.16)' : 'none',
+      }
 
   return (
     <main
@@ -291,15 +404,8 @@ export default function AtelierPlaceholder({ onBack }: Props) {
 
       <section
         ref={artboardRef}
-        aria-label="PawCream Atelier Room"
-        style={{
-          position: 'relative',
-          width: 'min(1320px, 94vw, 140vh)',
-          aspectRatio: '16 / 10',
-          maxWidth: '100%',
-          overflow: 'visible',
-          background: '#ffffff',
-        }}
+        aria-label={`PawCream Atelier Room ${renderProfile} layout`}
+        style={stageStyle}
       >
         <h1
           style={{
@@ -317,9 +423,29 @@ export default function AtelierPlaceholder({ onBack }: Props) {
           PawCream Atelier Room
         </h1>
 
+        {tuneMode && (
+          <span
+            style={{
+              position: 'absolute',
+              left: 8,
+              bottom: 8,
+              zIndex: 50,
+              padding: '4px 8px',
+              borderRadius: 999,
+              background: 'rgba(255, 249, 252, 0.9)',
+              color: '#a4687f',
+              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              fontSize: 10,
+              pointerEvents: 'none',
+            }}
+          >
+            {isMobilePreview ? 'Mobile preview · 9:16' : 'Desktop preview · 16:10'}
+          </span>
+        )}
+
         {ASSET_ORDER.map((key) => {
           const asset = ASSETS[key]
-          const layout = tuning[key]
+          const layout = renderTuning[key]
           const selectedAsset = tuneMode && selectedKey === key
 
           return (
@@ -402,7 +528,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
           >
             <div>
               <strong style={{ display: 'block', fontSize: 13 }}>Atelier Tune</strong>
-              <span style={{ fontSize: 10, color: '#aa8c96' }}>位置 / 大小</span>
+              <span style={{ fontSize: 10, color: '#aa8c96' }}>电脑端 / 手机端 独立布局</span>
             </div>
             <button
               type="button"
@@ -424,7 +550,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
           {!collapsed && (
             <div style={{ maxHeight: 'calc(100svh - 92px)', overflowY: 'auto', padding: '14px 16px 16px' }}>
               <p style={{ margin: 0, fontSize: 11, lineHeight: 1.55, color: '#947a83' }}>
-                先选中一张图，再拖动画面中的图片；也可以用 X / Y / Size 滑块精调。
+                两套参数完全独立。先切换电脑端 / 手机端，再调整当前端的四张图；正式页面会按屏幕宽度自动选择对应布局。
               </p>
 
               <div
@@ -433,6 +559,38 @@ export default function AtelierPlaceholder({ onBack }: Props) {
                   gridTemplateColumns: '1fr 1fr',
                   gap: 7,
                   marginTop: 13,
+                }}
+              >
+                {(['desktop', 'mobile'] as DeviceProfile[]).map((profile) => (
+                  <button
+                    key={profile}
+                    type="button"
+                    onClick={() => switchProfile(profile)}
+                    style={{
+                      ...smallButtonStyle,
+                      minHeight: 38,
+                      fontWeight: 650,
+                      background:
+                        activeProfile === profile ? 'rgba(248, 232, 238, 0.98)' : 'rgba(255,255,255,0.78)',
+                      borderColor:
+                        activeProfile === profile
+                          ? 'rgba(213, 111, 157, 0.55)'
+                          : 'rgba(198, 133, 157, 0.24)',
+                    }}
+                  >
+                    {profile === 'desktop' ? '电脑端 · 16:10' : '手机端 · 9:16'}
+                  </button>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 7,
+                  marginTop: 13,
+                  paddingTop: 12,
+                  borderTop: '1px solid rgba(198, 133, 157, 0.13)',
                 }}
               >
                 {ASSET_ORDER.map((key) => (
@@ -463,7 +621,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
                 }}
               >
                 <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>
-                  {ASSETS[selectedKey].label}
+                  {activeProfile === 'desktop' ? '电脑端' : '手机端'} · {ASSETS[selectedKey].label}
                 </strong>
                 <RangeRow
                   label="X"
@@ -487,7 +645,7 @@ export default function AtelierPlaceholder({ onBack }: Props) {
                   label="Size"
                   value={selected.width}
                   min={5}
-                  max={85}
+                  max={95}
                   step={0.5}
                   suffix="%"
                   onChange={(value) => updateSelected('width', value)}
@@ -508,17 +666,14 @@ export default function AtelierPlaceholder({ onBack }: Props) {
                 <button
                   type="button"
                   style={smallButtonStyle}
-                  onClick={() => {
-                    setTuning(cloneDefaults())
-                    setSelectedKey('sewing')
-                  }}
+                  onClick={resetCurrentProfile}
                 >
-                  恢复默认
+                  恢复当前端
                 </button>
               </div>
 
               <p style={{ margin: '10px 0 0', fontSize: 10, lineHeight: 1.5, color: '#aa8c96' }}>
-                调好以后点“复制 Atelier 参数”发给我，我可以像 Home 星星 / 脚印一样固化为正式默认布局。
+                电脑端和手机端都会保存在同一个调试配置中。全部调好后点“复制双端参数”发给我即可固化。
               </p>
             </div>
           )}
