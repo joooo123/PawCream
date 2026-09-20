@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import HomeScene from './components/HomeScene'
-import P5PathLayer from './components/P5PathLayer'
 import AtelierPlaceholder from './components/AtelierPlaceholder'
 
 export type DeviceProfile = 'desktop' | 'mobile'
@@ -73,16 +72,13 @@ export default function App() {
   }
 
   return (
-    <>
-      <HomeScene
-        key={`home-${deviceProfile}`}
-        mobile={mobile}
-        mobilePreview={mobilePreview}
-        deviceProfile={deviceProfile}
-        onDeviceChange={switchDevice}
-        onEnter={() => setScene('atelier')}
-      />
-      {!mobile && <P5PathLayer />}
-    </>
+    <HomeScene
+      key={`home-${deviceProfile}`}
+      mobile={mobile}
+      mobilePreview={mobilePreview}
+      deviceProfile={deviceProfile}
+      onDeviceChange={switchDevice}
+      onEnter={() => setScene('atelier')}
+    />
   )
 }
