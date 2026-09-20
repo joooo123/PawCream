@@ -211,3 +211,32 @@ main:has(section[aria-label^="PawCream Atelier Room"]) > aside::before {
   text-shadow: 0 1px 8px rgba(255, 255, 255, 0.95);
   pointer-events: none;
 }
+
+/*
+ * Lamp-triggered navigation is a bottom bar. Keep the existing React state and
+ * controls untouched; only anchor the toolbar to the lower edge of the scene.
+ */
+section[aria-label^="PawCream Atelier Room"] > nav[aria-label="PawCream Atelier toolbar"] {
+  top: auto !important;
+  bottom: 16px !important;
+}
+
+.mobile-device-screen > section[aria-label^="PawCream Atelier Room"]
+  > nav[aria-label="PawCream Atelier toolbar"],
+section[aria-label*="mobile layout"] > nav[aria-label="PawCream Atelier toolbar"] {
+  top: auto !important;
+  bottom: 22px !important;
+}
+
+/* Login notice now opens above the bottom bar instead of near the old top bar. */
+section[aria-label^="PawCream Atelier Room"] > div[role="dialog"]:not([aria-modal="true"]) {
+  top: auto !important;
+  bottom: 86px !important;
+}
+
+.mobile-device-screen > section[aria-label^="PawCream Atelier Room"]
+  > div[role="dialog"]:not([aria-modal="true"]),
+section[aria-label*="mobile layout"] > div[role="dialog"]:not([aria-modal="true"]) {
+  top: auto !important;
+  bottom: 92px !important;
+}
