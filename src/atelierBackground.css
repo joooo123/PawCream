@@ -50,12 +50,32 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 }
 
 /*
- * Lamp / night mode.
- * The previous implementation tried to detect the active lamp by matching the
- * browser-serialized inline box-shadow string. Browsers normalize inline
- * styles, so that selector was brittle and the night layer never activated.
- * The toolbar already reflects the exact same React state as the lamp, so use
- * its visible state as the stable CSS hook instead.
+ * User-provided lightline.jpg is the only lamp-light artwork. It sits above
+ * the ordinary Atelier assets but below the full-scene dark/frosted veil.
+ * Because JPG has no alpha channel, screen blending lets a dark-backed light
+ * artwork merge naturally without changing the source pixels.
+ */
+.atelier-lightline-layer {
+  position: absolute;
+  z-index: 19;
+  display: block;
+  height: auto;
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 50%;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  mix-blend-mode: screen;
+  transition: opacity 260ms ease;
+}
+
+.atelier-lightline-layer.is-visible {
+  opacity: var(--lightline-opacity, 0.72);
+}
+
+/*
+ * Night layer is deliberately one layer ABOVE lightline, matching the desired
+ * hierarchy: room assets < lightline < dark frosted veil < lamp < toolbar.
  */
 section[aria-label^="PawCream Atelier Room"]::after {
   content: "";
@@ -64,101 +84,109 @@ section[aria-label^="PawCream Atelier Room"]::after {
   z-index: 20;
   pointer-events: none;
   opacity: 0;
-  background:
-    linear-gradient(rgba(5, 5, 7, 0.58), rgba(4, 4, 6, 0.66)),
-    radial-gradient(
-      ellipse at 50% 42%,
-      rgba(14, 12, 15, 0.20) 0%,
-      rgba(8, 7, 10, 0.36) 55%,
-      rgba(2, 2, 3, 0.52) 100%
-    );
-  backdrop-filter: blur(4px) saturate(0.72) brightness(0.78);
-  -webkit-backdrop-filter: blur(4px) saturate(0.72) brightness(0.78);
-  transition: opacity 320ms ease;
+  background: rgba(4, 4, 6, 0.60);
+  backdrop-filter: blur(5px) saturate(0.68) brightness(0.76);
+  -webkit-backdrop-filter: blur(5px) saturate(0.68) brightness(0.76);
+  transition: opacity 300ms ease;
 }
 
-section[aria-label^="PawCream Atelier Room"]:has(
-    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
-  )::after {
+section[aria-label^="PawCream Atelier Room"].atelier-night-active::after {
   opacity: 1;
 }
 
-/* Keep the active lamp itself above the dark frosted layer and remove every
- * trace of the old outline/box-shadow feedback. */
-section[aria-label^="PawCream Atelier Room"]:has(
-    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
-  )
-  > div[aria-label="Light interaction"] {
-  z-index: 22 !important;
-  isolation: isolate;
+/*
+ * Remove all generated yellow frame/glow feedback from the lamp itself. The
+ * light visual now comes exclusively from lightline.jpg.
+ */
+section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction"] {
   outline: none !important;
   outline-offset: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
-/* Soft warm halo immediately behind the lamp. */
-section[aria-label^="PawCream Atelier Room"]:has(
-    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
-  )
-  > div[aria-label="Light interaction"]::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 58%;
-  z-index: -1;
-  width: 125%;
-  height: 165%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 38%,
-    rgba(255, 238, 183, 0.98) 0%,
-    rgba(255, 220, 139, 0.82) 13%,
-    rgba(250, 194, 93, 0.54) 29%,
-    rgba(241, 163, 66, 0.28) 48%,
-    rgba(228, 135, 49, 0.11) 64%,
-    rgba(221, 123, 42, 0) 80%
-  );
-  filter: blur(17px);
-  opacity: 0.98;
+section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction"]::before,
+section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction"]::after {
+  content: none !important;
+  display: none !important;
 }
 
-/* A softer pool of light falling downward, close to the supplied night-mode
- * reference: the warm light sits under the lamp, while the rest of the scene
- * remains behind the frosted black veil. */
-section[aria-label^="PawCream Atelier Room"]:has(
-    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
-  )
-  > div[aria-label="Light interaction"]::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 92%;
-  z-index: -1;
-  width: 105%;
-  height: 205%;
-  transform: translate(-50%, -50%);
-  border-radius: 48% 48% 60% 60%;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% 8%,
-    rgba(255, 228, 154, 0.50) 0%,
-    rgba(249, 193, 92, 0.32) 25%,
-    rgba(236, 158, 59, 0.15) 49%,
-    rgba(224, 135, 46, 0) 76%
-  );
-  filter: blur(27px);
-  opacity: 0.94;
+section[aria-label^="PawCream Atelier Room"].atelier-night-active
+  > div[aria-label="Light interaction"] {
+  z-index: 22 !important;
+  isolation: isolate;
 }
 
-section[aria-label^="PawCream Atelier Room"]:has(
-    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
-  )
+section[aria-label^="PawCream Atelier Room"].atelier-night-active
   > div[aria-label="Light interaction"]
   > img[alt="Light"] {
-  filter: brightness(1.12) saturate(0.94) drop-shadow(0 0 11px rgba(255, 221, 143, 0.38));
+  filter: none !important;
+}
+
+/* Lightline controls are injected into the existing Atelier Tune panel. */
+.lightline-tune-panel {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(198, 133, 157, 0.16);
+  color: #745f66;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.lightline-tune-panel > strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.lightline-tune-row {
+  display: grid;
+  grid-template-columns: 62px 1fr 54px;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 11px;
+}
+
+.lightline-tune-row input[type="range"] {
+  width: 100%;
+  accent-color: #d58da8;
+  cursor: ew-resize;
+}
+
+.lightline-tune-row output {
+  text-align: right;
+  color: #a17f8a;
+  font-variant-numeric: tabular-nums;
+}
+
+.lightline-tune-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lightline-tune-actions button {
+  min-height: 34px;
+  border: 1px solid rgba(198, 133, 157, 0.24);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #876974;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1.25;
+  padding: 6px 8px;
+}
+
+.lightline-tune-actions button:first-child {
+  background: #f8e8ee;
+}
+
+.lightline-tune-note {
+  margin: 9px 0 0;
+  color: #aa8c96;
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 /*
