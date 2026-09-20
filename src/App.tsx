@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import HomeScene from './components/HomeScene'
 import AtelierPlaceholder from './components/AtelierPlaceholder'
+import AtelierColorFeature from './components/AtelierColorFeature'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
@@ -62,12 +63,15 @@ export default function App() {
 
   if (scene === 'atelier') {
     return (
-      <AtelierPlaceholder
-        onBack={() => setScene('home')}
-        deviceProfile={deviceProfile}
-        onDeviceChange={switchDevice}
-        mobilePreview={mobilePreview}
-      />
+      <>
+        <AtelierPlaceholder
+          onBack={() => setScene('home')}
+          deviceProfile={deviceProfile}
+          onDeviceChange={switchDevice}
+          mobilePreview={mobilePreview}
+        />
+        <AtelierColorFeature deviceProfile={deviceProfile} />
+      </>
     )
   }
 
