@@ -26,6 +26,7 @@ type AssetKey =
   | 'instax'
   | 'sewing'
   | 'note'
+  | 'bear'
 
 type AssetLayout = {
   x: number
@@ -81,9 +82,14 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     zIndex: 7,
   },
   note: {
-    src: `${import.meta.env.BASE_URL}assets/atelier/note.png`,
+    src: `${import.meta.env.BASE_URL}assets/atelier/note.png?v=517196166abc61e4216196dc5b317b39c36d2c86`,
     label: 'Note',
     zIndex: 8,
+  },
+  bear: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/bear.png?v=3f981c19b7b4bc06c34a4cfb27bf86e50dd0cb06`,
+    label: 'Bear',
+    zIndex: 9,
   },
 }
 
@@ -97,6 +103,7 @@ const ASSET_ORDER: AssetKey[] = [
   'instax',
   'sewing',
   'note',
+  'bear',
 ]
 
 const STANDARD_ASSET_ORDER: AssetKey[] = [
@@ -107,6 +114,7 @@ const STANDARD_ASSET_ORDER: AssetKey[] = [
   'instax',
   'sewing',
   'note',
+  'bear',
 ]
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
@@ -120,6 +128,7 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
     instax: { x: 24.1, y: 67.4, width: 32 },
     sewing: { x: 85.7, y: 48.7, width: 42 },
     note: { x: 63, y: 78, width: 14 },
+    bear: { x: 55, y: 55, width: 14 },
   },
   mobile: {
     window: { x: 31.3, y: 27.3, width: 95 },
@@ -131,6 +140,7 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
     instax: { x: 83.1, y: 78, width: 57.5 },
     sewing: { x: 70.5, y: 53.6, width: 74 },
     note: { x: 49, y: 68, width: 34 },
+    bear: { x: 50, y: 60, width: 34 },
   },
 }
 
@@ -302,7 +312,7 @@ export default function AtelierPlaceholder({
   )
 
   const [tuning, setTuning] = useState<AtelierProfiles>(() => loadTuning(tuneMode))
-  const [selectedKey, setSelectedKey] = useState<AssetKey>('sewing')
+  const [selectedKey, setSelectedKey] = useState<AssetKey>('bear')
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
   const [windowHovered, setWindowHovered] = useState(false)
@@ -427,7 +437,7 @@ export default function AtelierPlaceholder({
       ...current,
       [deviceProfile]: cloneLayout(ATELIER_TUNING_DEFAULTS[deviceProfile]),
     }))
-    setSelectedKey('sewing')
+    setSelectedKey('bear')
     setWindowHovered(false)
   }
 
@@ -915,7 +925,7 @@ export default function AtelierPlaceholder({
                   color: '#aa8c96',
                 }}
               >
-                9 个素材都会保存在双端调试配置中。新加入的 Note 和 Wall cabinet 也可独立拖动并调节 X / Y / Size。
+                10 个素材都会保存在双端调试配置中。Bear、Note 和 Wall cabinet 都可独立拖动并调节 X / Y / Size。
               </p>
             </div>
           )}
