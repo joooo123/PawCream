@@ -1,10 +1,10 @@
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
-  useEffect,
 } from 'react'
 
 type DeviceProfile = 'desktop' | 'mobile'
@@ -16,7 +16,14 @@ type Props = {
   mobilePreview: boolean
 }
 
-type AssetKey = 'light' | 'message' | 'instax' | 'sewing'
+type AssetKey =
+  | 'window'
+  | 'pawcream'
+  | 'people'
+  | 'light'
+  | 'message'
+  | 'instax'
+  | 'sewing'
 
 type AssetLayout = {
   x: number
@@ -29,40 +36,78 @@ type AtelierProfiles = Record<DeviceProfile, AtelierTuning>
 
 const STORAGE_KEY = 'pawcream-atelier-tuning-v2'
 const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
+const SWAP_KEYS: AssetKey[] = ['window', 'pawcream']
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
+  window: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/window.png`,
+    label: 'Window',
+    zIndex: 1,
+  },
+  pawcream: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/pawcream.png`,
+    label: 'PawCream',
+    zIndex: 1,
+  },
+  people: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/people.png`,
+    label: 'People',
+    zIndex: 2,
+  },
   light: {
     src: `${import.meta.env.BASE_URL}assets/atelier/light.png`,
     label: 'Light',
-    zIndex: 1,
+    zIndex: 3,
   },
   message: {
     src: `${import.meta.env.BASE_URL}assets/atelier/message.png`,
     label: 'Message',
-    zIndex: 2,
+    zIndex: 4,
   },
   instax: {
     src: `${import.meta.env.BASE_URL}assets/atelier/instax.png`,
     label: 'Instax',
-    zIndex: 3,
+    zIndex: 5,
   },
   sewing: {
     src: `${import.meta.env.BASE_URL}assets/atelier/sewing%20machine.png`,
     label: 'Sewing machine',
-    zIndex: 4,
+    zIndex: 6,
   },
 }
 
-const ASSET_ORDER: AssetKey[] = ['light', 'message', 'instax', 'sewing']
+const ASSET_ORDER: AssetKey[] = [
+  'window',
+  'pawcream',
+  'people',
+  'light',
+  'message',
+  'instax',
+  'sewing',
+]
+
+const STANDARD_ASSET_ORDER: AssetKey[] = [
+  'people',
+  'light',
+  'message',
+  'instax',
+  'sewing',
+]
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
   desktop: {
+    window: { x: 50, y: 22, width: 28 },
+    pawcream: { x: 50, y: 22, width: 28 },
+    people: { x: 50, y: 53, width: 30 },
     light: { x: 67, y: 18, width: 24 },
     message: { x: 25, y: 28, width: 22 },
     instax: { x: 25, y: 69, width: 22 },
     sewing: { x: 61, y: 64, width: 44 },
   },
   mobile: {
+    window: { x: 50, y: 20, width: 58 },
+    pawcream: { x: 50, y: 20, width: 58 },
+    people: { x: 50, y: 48, width: 58 },
     light: { x: 68, y: 15, width: 40 },
     message: { x: 27, y: 31, width: 38 },
     instax: { x: 27, y: 61, width: 38 },
@@ -100,6 +145,9 @@ const smallButtonStyle: CSSProperties = {
 
 function cloneLayout(source: AtelierTuning): AtelierTuning {
   return {
+    window: { ...source.window },
+    pawcream: { ...source.pawcream },
+    people: { ...source.people },
     light: { ...source.light },
     message: { ...source.message },
     instax: { ...source.instax },
@@ -148,7 +196,9 @@ function loadTuning(enabled: boolean): AtelierProfiles {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<Record<DeviceProfile, Partial<Record<AssetKey, Partial<AssetLayout>>>>>
+      const parsed = JSON.parse(raw) as Partial<
+        Record<DeviceProfile, Partial<Record<AssetKey, Partial<AssetLayout>>>>
+      >
       return {
         desktop: mergeLayout(parsed.desktop, ATELIER_TUNING_DEFAULTS.desktop),
         mobile: mergeLayout(parsed.mobile, ATELIER_TUNING_DEFAULTS.mobile),
@@ -157,7 +207,9 @@ function loadTuning(enabled: boolean): AtelierProfiles {
 
     const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY)
     if (legacyRaw) {
-      const legacy = JSON.parse(legacyRaw) as Partial<Record<AssetKey, Partial<AssetLayout>>>
+      const legacy = JSON.parse(legacyRaw) as Partial<
+        Record<AssetKey, Partial<AssetLayout>>
+      >
       return {
         desktop: mergeLayout(legacy, ATELIER_TUNING_DEFAULTS.desktop),
         mobile: cloneLayout(ATELIER_TUNING_DEFAULTS.mobile),
@@ -208,7 +260,13 @@ function RangeRow({
         onChange={(event) => onChange(Number(event.currentTarget.value))}
         style={{ width: '100%', accentColor: '#d58da8', cursor: 'ew-resize' }}
       />
-      <output style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#a17f8a' }}>
+      <output
+        style={{
+          textAlign: 'right',
+          fontVariantNumeric: 'tabular-nums',
+          color: '#a17f8a',
+        }}
+      >
         {value.toFixed(step < 1 ? 1 : 0)}{suffix}
       </output>
     </label>
@@ -221,11 +279,13 @@ export default function AtelierPlaceholder({
   onDeviceChange,
   mobilePreview,
 }: Props) {
-  const artboardRef = useRef<HTMLDivElement | null>(null)
+  const artboardRef = useRef<HTMLElement | null>(null)
   const dragRef = useRef<{ key: AssetKey; pointerId: number } | null>(null)
 
   const tuneMode = useMemo(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('tune') === '1',
     [],
   )
 
@@ -233,51 +293,100 @@ export default function AtelierPlaceholder({
   const [selectedKey, setSelectedKey] = useState<AssetKey>('sewing')
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
+  const [windowHovered, setWindowHovered] = useState(false)
 
   useEffect(() => {
     if (!tuneMode) return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tuning))
   }, [tuneMode, tuning])
 
+  useEffect(() => {
+    setWindowHovered(false)
+  }, [deviceProfile])
+
   const renderTuning = tuning[deviceProfile]
   const selected = tuning[deviceProfile][selectedKey]
   const mobile = deviceProfile === 'mobile'
+  const pairSelected = selectedKey === 'window' || selectedKey === 'pawcream'
+  const showPawcream = mobile || (tuneMode && pairSelected
+    ? selectedKey === 'pawcream'
+    : windowHovered)
 
   const updateSelected = (field: keyof AssetLayout, value: number) => {
-    setTuning((current) => ({
-      ...current,
-      [deviceProfile]: {
-        ...current[deviceProfile],
-        [selectedKey]: {
-          ...current[deviceProfile][selectedKey],
-          [field]: value,
+    setTuning((current) => {
+      const profile = current[deviceProfile]
+
+      if (pairSelected) {
+        return {
+          ...current,
+          [deviceProfile]: {
+            ...profile,
+            window: { ...profile.window, [field]: value },
+            pawcream: { ...profile.pawcream, [field]: value },
+          },
+        }
+      }
+
+      return {
+        ...current,
+        [deviceProfile]: {
+          ...profile,
+          [selectedKey]: {
+            ...profile[selectedKey],
+            [field]: value,
+          },
         },
-      },
-    }))
+      }
+    })
   }
 
-  const moveAssetFromPointer = (key: AssetKey, clientX: number, clientY: number) => {
+  const moveAssetFromPointer = (
+    key: AssetKey,
+    clientX: number,
+    clientY: number,
+  ) => {
     const artboard = artboardRef.current
     if (!artboard) return
 
     const rect = artboard.getBoundingClientRect()
     const x = clamp(((clientX - rect.left) / rect.width) * 100, 0, 100)
     const y = clamp(((clientY - rect.top) / rect.height) * 100, 0, 100)
+    const nextX = Number(x.toFixed(1))
+    const nextY = Number(y.toFixed(1))
+    const syncPair = key === 'window' || key === 'pawcream'
 
-    setTuning((current) => ({
-      ...current,
-      [deviceProfile]: {
-        ...current[deviceProfile],
-        [key]: {
-          ...current[deviceProfile][key],
-          x: Number(x.toFixed(1)),
-          y: Number(y.toFixed(1)),
+    setTuning((current) => {
+      const profile = current[deviceProfile]
+
+      if (syncPair) {
+        return {
+          ...current,
+          [deviceProfile]: {
+            ...profile,
+            window: { ...profile.window, x: nextX, y: nextY },
+            pawcream: { ...profile.pawcream, x: nextX, y: nextY },
+          },
+        }
+      }
+
+      return {
+        ...current,
+        [deviceProfile]: {
+          ...profile,
+          [key]: {
+            ...profile[key],
+            x: nextX,
+            y: nextY,
+          },
         },
-      },
-    }))
+      }
+    })
   }
 
-  const onAssetPointerDown = (key: AssetKey, event: ReactPointerEvent<HTMLDivElement>) => {
+  const onAssetPointerDown = (
+    key: AssetKey,
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
     if (!tuneMode) return
     setSelectedKey(key)
     dragRef.current = { key, pointerId: event.pointerId }
@@ -318,6 +427,7 @@ export default function AtelierPlaceholder({
       [deviceProfile]: cloneLayout(ATELIER_TUNING_DEFAULTS[deviceProfile]),
     }))
     setSelectedKey('sewing')
+    setWindowHovered(false)
   }
 
   const stageStyle: CSSProperties = mobile
@@ -339,6 +449,86 @@ export default function AtelierPlaceholder({
         overflow: 'hidden',
         background: '#ffffff',
       }
+
+  const renderAsset = (key: AssetKey) => {
+    const asset = ASSETS[key]
+    const layout = renderTuning[key]
+    const selectedAsset = tuneMode && selectedKey === key
+
+    return (
+      <div
+        key={key}
+        role={tuneMode ? 'button' : undefined}
+        tabIndex={tuneMode ? 0 : undefined}
+        aria-label={tuneMode ? `Move ${asset.label}` : undefined}
+        onPointerDown={(event) => onAssetPointerDown(key, event)}
+        onPointerMove={onAssetPointerMove}
+        onPointerUp={onAssetPointerUp}
+        onPointerCancel={onAssetPointerUp}
+        onClick={() => tuneMode && setSelectedKey(key)}
+        style={{
+          position: 'absolute',
+          left: `${layout.x}%`,
+          top: `${layout.y}%`,
+          width: `${layout.width}%`,
+          transform: 'translate(-50%, -50%)',
+          zIndex: asset.zIndex,
+          cursor: tuneMode ? 'grab' : 'default',
+          touchAction: tuneMode ? 'none' : 'auto',
+          userSelect: 'none',
+          outline: selectedAsset
+            ? '1.5px dashed rgba(213, 111, 157, 0.9)'
+            : 'none',
+          outlineOffset: selectedAsset ? 6 : 0,
+          borderRadius: selectedAsset ? 10 : 0,
+        }}
+      >
+        <img
+          src={asset.src}
+          alt={asset.label}
+          draggable={false}
+          decoding="async"
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 'auto',
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        />
+
+        {selectedAsset && (
+          <span
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: -27,
+              transform: 'translateX(-50%)',
+              padding: '3px 7px',
+              borderRadius: 999,
+              background: 'rgba(255, 249, 252, 0.96)',
+              color: '#a4687f',
+              fontSize: 10,
+              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {asset.label}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const pairLayout = renderTuning.window
+  const pairSelectedOutline = tuneMode && pairSelected
+  const pairDragKey: AssetKey = pairSelected
+    ? selectedKey
+    : showPawcream
+      ? 'pawcream'
+      : 'window'
 
   const stage = (
     <section
@@ -382,75 +572,80 @@ export default function AtelierPlaceholder({
         </span>
       )}
 
-      {ASSET_ORDER.map((key) => {
-        const asset = ASSETS[key]
-        const layout = renderTuning[key]
-        const selectedAsset = tuneMode && selectedKey === key
+      <div
+        role={tuneMode ? 'button' : undefined}
+        tabIndex={tuneMode ? 0 : undefined}
+        aria-label={tuneMode ? `Move ${showPawcream ? 'PawCream' : 'Window'}` : undefined}
+        onMouseEnter={() => {
+          if (!mobile && !(tuneMode && pairSelected)) setWindowHovered(true)
+        }}
+        onMouseLeave={() => {
+          if (!mobile && !(tuneMode && pairSelected)) setWindowHovered(false)
+        }}
+        onPointerDown={(event) => onAssetPointerDown(pairDragKey, event)}
+        onPointerMove={onAssetPointerMove}
+        onPointerUp={onAssetPointerUp}
+        onPointerCancel={onAssetPointerUp}
+        onClick={() => {
+          if (!tuneMode) return
+          setSelectedKey(showPawcream ? 'pawcream' : 'window')
+        }}
+        style={{
+          position: 'absolute',
+          left: `${pairLayout.x}%`,
+          top: `${pairLayout.y}%`,
+          width: `${pairLayout.width}%`,
+          transform: 'translate(-50%, -50%)',
+          zIndex: ASSETS.window.zIndex,
+          cursor: tuneMode ? 'grab' : mobile ? 'default' : 'pointer',
+          touchAction: tuneMode ? 'none' : 'auto',
+          userSelect: 'none',
+          outline: pairSelectedOutline
+            ? '1.5px dashed rgba(213, 111, 157, 0.9)'
+            : 'none',
+          outlineOffset: pairSelectedOutline ? 6 : 0,
+          borderRadius: pairSelectedOutline ? 10 : 0,
+        }}
+      >
+        <img
+          key={showPawcream ? 'pawcream' : 'window'}
+          src={showPawcream ? ASSETS.pawcream.src : ASSETS.window.src}
+          alt={showPawcream ? ASSETS.pawcream.label : ASSETS.window.label}
+          draggable={false}
+          decoding="async"
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 'auto',
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        />
 
-        return (
-          <div
-            key={key}
-            role={tuneMode ? 'button' : undefined}
-            tabIndex={tuneMode ? 0 : undefined}
-            aria-label={tuneMode ? `Move ${asset.label}` : undefined}
-            onPointerDown={(event) => onAssetPointerDown(key, event)}
-            onPointerMove={onAssetPointerMove}
-            onPointerUp={onAssetPointerUp}
-            onPointerCancel={onAssetPointerUp}
-            onClick={() => tuneMode && setSelectedKey(key)}
+        {pairSelectedOutline && (
+          <span
             style={{
               position: 'absolute',
-              left: `${layout.x}%`,
-              top: `${layout.y}%`,
-              width: `${layout.width}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: asset.zIndex,
-              cursor: tuneMode ? 'grab' : 'default',
-              touchAction: tuneMode ? 'none' : 'auto',
-              userSelect: 'none',
-              outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
-              outlineOffset: selectedAsset ? 6 : 0,
-              borderRadius: selectedAsset ? 10 : 0,
+              left: '50%',
+              top: -27,
+              transform: 'translateX(-50%)',
+              padding: '3px 7px',
+              borderRadius: 999,
+              background: 'rgba(255, 249, 252, 0.96)',
+              color: '#a4687f',
+              fontSize: 10,
+              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
             }}
           >
-            <img
-              src={asset.src}
-              alt={asset.label}
-              draggable={false}
-              decoding="async"
-              style={{
-                display: 'block',
-                width: '100%',
-                height: 'auto',
-                pointerEvents: 'none',
-                userSelect: 'none',
-              }}
-            />
+            {showPawcream ? 'PawCream' : 'Window'} · linked position
+          </span>
+        )}
+      </div>
 
-            {selectedAsset && (
-              <span
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: -27,
-                  transform: 'translateX(-50%)',
-                  padding: '3px 7px',
-                  borderRadius: 999,
-                  background: 'rgba(255, 249, 252, 0.96)',
-                  color: '#a4687f',
-                  fontSize: 10,
-                  fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                  boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
-                  pointerEvents: 'none',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {asset.label}
-              </span>
-            )}
-          </div>
-        )
-      })}
+      {STANDARD_ASSET_ORDER.map(renderAsset)}
     </section>
   )
 
@@ -461,7 +656,7 @@ export default function AtelierPlaceholder({
         display: mobilePreview ? 'block' : 'grid',
         placeItems: mobilePreview ? undefined : 'center',
         overflowX: 'hidden',
-        overflowY: mobilePreview ? 'visible' : 'hidden',
+        overflowY: mobilePreview ? 'auto' : 'hidden',
         background: mobilePreview ? '#fbf9fa' : '#ffffff',
         position: 'relative',
         isolation: 'isolate',
@@ -522,12 +717,16 @@ export default function AtelierPlaceholder({
               justifyContent: 'space-between',
               gap: 14,
               padding: '13px 14px 12px 16px',
-              borderBottom: collapsed ? 0 : '1px solid rgba(198, 133, 157, 0.15)',
+              borderBottom: collapsed
+                ? 0
+                : '1px solid rgba(198, 133, 157, 0.15)',
             }}
           >
             <div>
               <strong style={{ display: 'block', fontSize: 13 }}>Atelier Tune</strong>
-              <span style={{ fontSize: 10, color: '#aa8c96' }}>电脑端全屏 / 手机端真实屏幕</span>
+              <span style={{ fontSize: 10, color: '#aa8c96' }}>
+                电脑端 / 手机端 独立布局
+              </span>
             </div>
             <button
               type="button"
@@ -547,9 +746,22 @@ export default function AtelierPlaceholder({
           </header>
 
           {!collapsed && (
-            <div style={{ maxHeight: 'calc(100svh - 92px)', overflowY: 'auto', padding: '14px 16px 16px' }}>
-              <p style={{ margin: 0, fontSize: 11, lineHeight: 1.55, color: '#947a83' }}>
-                电脑端直接使用整个浏览器 viewport；手机端放进 390 × 844 手机模型中，页面本身可上下滚动。两套参数完全独立。
+            <div
+              style={{
+                maxHeight: 'calc(100svh - 92px)',
+                overflowY: 'auto',
+                padding: '14px 16px 16px',
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 11,
+                  lineHeight: 1.55,
+                  color: '#947a83',
+                }}
+              >
+                Desktop：Window 默认显示，悬停切换 PawCream。Mobile：直接显示 PawCream。Window 与 PawCream 的位置和大小联动，确保切换时严格重合。
               </p>
 
               <div
@@ -570,14 +782,18 @@ export default function AtelierPlaceholder({
                       minHeight: 38,
                       fontWeight: 650,
                       background:
-                        deviceProfile === profile ? 'rgba(248, 232, 238, 0.98)' : 'rgba(255,255,255,0.78)',
+                        deviceProfile === profile
+                          ? 'rgba(248, 232, 238, 0.98)'
+                          : 'rgba(255,255,255,0.78)',
                       borderColor:
                         deviceProfile === profile
                           ? 'rgba(213, 111, 157, 0.55)'
                           : 'rgba(198, 133, 157, 0.24)',
                     }}
                   >
-                    {profile === 'desktop' ? '电脑端 · 全屏' : '手机端 · 390×844'}
+                    {profile === 'desktop'
+                      ? '电脑端 · 全屏'
+                      : '手机端 · 390×844'}
                   </button>
                 ))}
               </div>
@@ -600,7 +816,9 @@ export default function AtelierPlaceholder({
                     style={{
                       ...smallButtonStyle,
                       background:
-                        selectedKey === key ? 'rgba(248, 232, 238, 0.98)' : 'rgba(255,255,255,0.78)',
+                        selectedKey === key
+                          ? 'rgba(248, 232, 238, 0.98)'
+                          : 'rgba(255,255,255,0.78)',
                       borderColor:
                         selectedKey === key
                           ? 'rgba(213, 111, 157, 0.5)'
@@ -612,6 +830,19 @@ export default function AtelierPlaceholder({
                 ))}
               </div>
 
+              {pairSelected && (
+                <p
+                  style={{
+                    margin: '8px 0 0',
+                    fontSize: 10,
+                    lineHeight: 1.5,
+                    color: '#aa8c96',
+                  }}
+                >
+                  Window / PawCream 为同一交互位置。调整任意一个都会同步另一张图；点击两个按钮可切换调试时显示的状态。
+                </p>
+              )}
+
               <section
                 style={{
                   marginTop: 15,
@@ -619,7 +850,9 @@ export default function AtelierPlaceholder({
                   borderTop: '1px solid rgba(198, 133, 157, 0.13)',
                 }}
               >
-                <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>
+                <strong
+                  style={{ display: 'block', marginBottom: 7, fontSize: 11 }}
+                >
                   {deviceProfile === 'desktop' ? '电脑端' : '手机端'} · {ASSETS[selectedKey].label}
                 </strong>
                 <RangeRow
@@ -659,7 +892,11 @@ export default function AtelierPlaceholder({
                   marginTop: 16,
                 }}
               >
-                <button type="button" style={{ ...smallButtonStyle, background: '#f8e8ee' }} onClick={copySettings}>
+                <button
+                  type="button"
+                  style={{ ...smallButtonStyle, background: '#f8e8ee' }}
+                  onClick={copySettings}
+                >
                   {copyStatus}
                 </button>
                 <button
@@ -671,8 +908,15 @@ export default function AtelierPlaceholder({
                 </button>
               </div>
 
-              <p style={{ margin: '10px 0 0', fontSize: 10, lineHeight: 1.5, color: '#aa8c96' }}>
-                切换设备会保留当前场景和两套独立参数；全部调好后复制双端参数即可固化。
+              <p
+                style={{
+                  margin: '10px 0 0',
+                  fontSize: 10,
+                  lineHeight: 1.5,
+                  color: '#aa8c96',
+                }}
+              >
+                7 个素材都会保存在双端调试配置中。全部调好后点“复制双端参数”发给我即可固化。
               </p>
             </div>
           )}
