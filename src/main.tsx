@@ -104,7 +104,7 @@ const ensureLightlineLayer = (section: HTMLElement, profile: AtelierProfile) => 
   if (!image) {
     image = document.createElement('img')
     image.dataset.pawcreamLightline = 'true'
-    image.alt = 'Lightline'
+    image.alt = 'LightOn'
     image.draggable = false
     image.decoding = 'async'
     image.src = lightlineAssetUrl
@@ -197,26 +197,26 @@ const ensureLightlineTunePanel = (section: HTMLElement, profile: AtelierProfile)
 
     const copyButton = document.createElement('button')
     copyButton.type = 'button'
-    copyButton.textContent = '复制 Lightline 双端参数'
+    copyButton.textContent = '复制 LightOn 双端参数'
     copyButton.addEventListener('click', async () => {
-      const text = `ATELIER_LIGHTLINE_DEFAULTS = ${JSON.stringify(lightlineProfiles, null, 2)}`
+      const text = `ATELIER_LIGHTON_DEFAULTS = ${JSON.stringify(lightlineProfiles, null, 2)}`
       try {
         await navigator.clipboard.writeText(text)
-        copyButton.textContent = '已复制 Lightline 参数'
+        copyButton.textContent = '已复制 LightOn 参数'
         window.setTimeout(() => {
-          copyButton.textContent = '复制 Lightline 双端参数'
+          copyButton.textContent = '复制 LightOn 双端参数'
         }, 1200)
       } catch {
         copyButton.textContent = '复制失败'
         window.setTimeout(() => {
-          copyButton.textContent = '复制 Lightline 双端参数'
+          copyButton.textContent = '复制 LightOn 双端参数'
         }, 1400)
       }
     })
 
     const resetButton = document.createElement('button')
     resetButton.type = 'button'
-    resetButton.textContent = '恢复 Lightline 当前端'
+    resetButton.textContent = '恢复 LightOn 当前端'
     resetButton.addEventListener('click', () => {
       const currentSection = getAtelierSection()
       if (!currentSection) return
@@ -234,14 +234,15 @@ const ensureLightlineTunePanel = (section: HTMLElement, profile: AtelierProfile)
 
     const note = document.createElement('p')
     note.className = 'lightline-tune-note'
-    note.textContent = 'Lightline 位于全场压暗磨砂层下方；正式模式只在点亮 Light 后显示。'
+    note.textContent = 'LightOn 位于全场压暗磨砂层下方；调试模式会同时显示夜景遮罩，方便直接对位。'
     panel.appendChild(note)
 
-    scrollArea.appendChild(panel)
+    const insertBefore = scrollArea.children.item(2)
+    scrollArea.insertBefore(panel, insertBefore ?? null)
   }
 
   const title = panel.querySelector<HTMLElement>('[data-lightline-title="true"]')
-  if (title) title.textContent = `${profile === 'desktop' ? '电脑端' : '手机端'} · Lightline`
+  if (title) title.textContent = `${profile === 'desktop' ? '电脑端' : '手机端'} · LightOn`
 
   const layout = lightlineProfiles[profile]
   ;(['x', 'y', 'width', 'opacity'] as (keyof LightlineLayout)[]).forEach((field) => {
@@ -256,7 +257,7 @@ const syncAtelierLightline = () => {
   const section = getAtelierSection()
   if (!section) return
   const profile = getProfile(section)
-  const nightActive = !isTuneMode() && isToolbarOpen(section)
+  const nightActive = isTuneMode() || isToolbarOpen(section)
 
   section.classList.toggle('atelier-night-active', nightActive)
   ensureLightlineLayer(section, profile)
