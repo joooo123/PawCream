@@ -1,0 +1,25 @@
+section[aria-label^="PawCream Atelier Room"] {
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-width: none !important;
+  background-color: #ffffff !important;
+  background-image: var(--atelier-background-image) !important;
+  background-repeat: no-repeat !important;
+  background-position: 50% 50% !important;
+  background-size: cover !important;
+}
+
+@supports (height: 100dvh) {
+  section[aria-label^="PawCream Atelier Room"] {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+}
+
+/* Desktop-based mobile tuning keeps a literal 390 × 844 phone viewport. */
+.mobile-device-screen > section[aria-label^="PawCream Atelier Room"] {
+  width: 390px !important;
+  height: 844px !important;
+  min-height: 844px !important;
+}
