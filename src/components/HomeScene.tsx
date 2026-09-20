@@ -32,7 +32,7 @@ type Props = {
   onDeviceChange: (profile: DeviceProfile) => void
 }
 
-type SceneState = 'idle' | 'awake' | 'entering'
+type SceneState = 'idle' | 'entering'
 type TuneHandleKind = 'spawn' | 'curve' | 'end'
 type NumericTuningKey = Exclude<keyof StarTuning, 'tracks'>
 type SourceSize = { width: number; height: number }
@@ -235,24 +235,15 @@ export default function HomeScene({
   const [renderedHomeRect, setRenderedHomeRect] = useState<RenderedHomeRect | null>(null)
   const [mobileClipRect, setMobileClipRect] = useState<DreamClipRect | null>(null)
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [sourceSize, setSourceSize] = useState<SourceSize>({ ...HOME_SOURCE })
   const [starTuning, setStarTuning] = useState<StarTuning>(() => loadStoredTuning(tuneMode, mobile))
   const [activeTrackIndex, setActiveTrackIndex] = useState(0)
 
   const entering = sceneState === 'entering'
-  const awake = mobile || tuneMode || sceneState === 'awake' || entering
-  const imageSrc = mobile ? ASSETS.homeMobile : ASSETS.home
+  const awake = true
+  const imageSrc = ASSETS.homeMobile
 
   const hotspotStyle = useMemo(() => sourceRectToPercent(), [])
-
-  useEffect(() => {
-    const media = window.matchMedia('(pointer: coarse)')
-    const update = () => setIsCoarsePointer(media.matches)
-    update()
-    media.addEventListener?.('change', update)
-    return () => media.removeEventListener?.('change', update)
-  }, [])
 
   useEffect(() => {
     const update = () => {
@@ -289,14 +280,6 @@ export default function HomeScene({
       window.removeEventListener('scroll', update)
     }
   }, [sourceSize, mobile, mobilePreview])
-
-  useEffect(() => {
-    if (mobile || !isCoarsePointer || entering || tuneMode) return
-    const timer = window.setTimeout(() => {
-      setSceneState((current) => (current === 'idle' ? 'awake' : current))
-    }, MOTION.mobileAutoWakeMs)
-    return () => window.clearTimeout(timer)
-  }, [mobile, isCoarsePointer, entering, tuneMode])
 
   useEffect(() => {
     if (!tuneMode) return
@@ -342,14 +325,6 @@ export default function HomeScene({
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
     window.setTimeout(onEnter, MOTION.enterDurationMs)
-  }
-
-  const onPointerEnter = () => {
-    if (!mobile && !entering) setSceneState('awake')
-  }
-
-  const onPointerLeave = () => {
-    if (!mobile && !entering && !isCoarsePointer && !tuneMode) setSceneState('idle')
   }
 
   const updateTuneHandleFromPointer = (
@@ -449,8 +424,6 @@ export default function HomeScene({
     <div
       ref={artboardRef}
       className="home-artboard"
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
     >
       <img
         key={imageSrc}
@@ -471,8 +444,6 @@ export default function HomeScene({
         style={hotspotStyle}
         type="button"
         aria-label="Enter PawCream atelier"
-        onFocus={onPointerEnter}
-        onBlur={onPointerLeave}
         onClick={beginEnter}
       >
         <span className="sr-only">Enter PawCream atelier</span>
