@@ -131,16 +131,16 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
     bear: { x: 96.5, y: 89.4, width: 9.5 },
   },
   mobile: {
-    window: { x: 31.3, y: 27.3, width: 95 },
-    pawcream: { x: 31.3, y: 27.3, width: 95 },
+    window: { x: 31.5, y: 17, width: 95 },
+    pawcream: { x: 31.5, y: 17, width: 95 },
     cabinet: { x: 66, y: 38.5, width: 90 },
-    people: { x: 32.5, y: 51.1, width: 27 },
+    people: { x: 35.5, y: 61.5, width: 27 },
     light: { x: 79.5, y: 15.4, width: 70.5 },
     message: { x: 25.4, y: 80.1, width: 63.5 },
     instax: { x: 83.1, y: 78, width: 57.5 },
     sewing: { x: 74, y: 53.6, width: 74 },
-    note: { x: 14.6, y: 50.1, width: 80 },
-    bear: { x: 16, y: 66.5, width: 22.5 },
+    note: { x: 15.6, y: 50.4, width: 80 },
+    bear: { x: 37.5, y: 36, width: 27 },
   },
 }
 
