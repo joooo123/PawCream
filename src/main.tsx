@@ -17,8 +17,8 @@ const NOTE_ASSET_VERSION = '517196166abc61e4216196dc5b317b39c36d2c86'
 const noteAssetUrl = `${import.meta.env.BASE_URL}assets/atelier/note.png?v=${NOTE_ASSET_VERSION}`
 const absoluteNoteAssetUrl = new URL(noteAssetUrl, window.location.href).href
 
-const LIGHTLINE_ASSET_VERSION = 'e0765ea212b53b889ab8913ea12178073069fd62'
-const lightlineAssetUrl = `${import.meta.env.BASE_URL}assets/atelier/lightline.jpg?v=${LIGHTLINE_ASSET_VERSION}`
+const LIGHTLINE_ASSET_VERSION = '8471f8d314049d1699e1d2e9ebc6b37a832a667e'
+const lightlineAssetUrl = `${import.meta.env.BASE_URL}assets/atelier/lighton.png?v=${LIGHTLINE_ASSET_VERSION}`
 const LIGHTLINE_STORAGE_KEY = 'pawcream-lightline-tuning-v1'
 
 type AtelierProfile = 'desktop' | 'mobile'
