@@ -48,8 +48,8 @@ type BoardMessage = {
   createdAt: number
 }
 
-const STORAGE_KEY = 'pawcream-atelier-tuning-v4'
-const PREVIOUS_STORAGE_KEY = 'pawcream-atelier-tuning-v3'
+const STORAGE_KEY = 'pawcream-atelier-tuning-v5'
+const PREVIOUS_STORAGE_KEY = 'pawcream-atelier-tuning-v4'
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const BOARD_STORAGE_KEY = 'pawcream-message-board-v1'
 const BACKGROUND_STORAGE_KEY = 'pawcream-atelier-background-v1'
@@ -91,32 +91,32 @@ const L = (x: number, y: number, width: number, rotation = 0): AssetLayout => ({
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
   desktop: {
-    window: L(13.7, 17.9, 39),
-    pawcream: L(13.7, 17.9, 39),
-    cabinet: L(78, 20.5, 33.5),
-    people: L(64.6, 47.1, 9.5),
-    light: L(52, 9, 21.5),
-    message: L(7.8, 65.5, 27),
-    instax: L(31.5, 66, 31),
-    sewing: L(85.2, 48.4, 42),
-    note: L(9, 67.4, 38.5),
-    bear: L(96.5, 89.4, 9.5),
-    music: L(40, 44.6, 38),
-    color: L(88, 82, 14),
+    window: L(13.7, 17.9, 39, 0),
+    pawcream: L(13.7, 17.9, 39, 0),
+    cabinet: L(78, 20.5, 33.5, 0),
+    people: L(64.6, 47.1, 9.5, 0),
+    light: L(52, 9, 21.5, 0),
+    message: L(7.8, 65.5, 27, 0),
+    instax: L(31.5, 66, 31, 0),
+    sewing: L(85.2, 48.4, 42, 0),
+    note: L(9, 67.4, 38.5, 0),
+    bear: L(96.5, 89.4, 9.5, 0),
+    music: L(37, 40.7, 38, 0),
+    color: L(81.5, 16.5, 30, -89),
   },
   mobile: {
-    window: L(31.5, 17, 95),
-    pawcream: L(31.5, 17, 95),
-    cabinet: L(74.5, 38.5, 90),
-    people: L(85.5, 71.5, 24.5),
-    light: L(81.5, 14.8, 70.5),
-    message: L(16.4, 50.1, 55.5),
-    instax: L(22.6, 86.3, 57.5),
-    sewing: L(74.9, 53.4, 74),
-    note: L(18.2, 50.8, 80),
-    bear: L(22.6, 71.3, 27),
-    music: L(35.5, 36.3, 93.5),
-    color: L(75, 88, 30),
+    window: L(31.5, 17, 95, 0),
+    pawcream: L(31.5, 17, 95, 0),
+    cabinet: L(74.5, 38.5, 90, 0),
+    people: L(36, 50.5, 21.5, 0),
+    light: L(81.5, 14.8, 70.5, 0),
+    message: L(18.5, 68, 55.5, 0),
+    instax: L(51, 86.3, 68.5, 7),
+    sewing: L(74.9, 53.4, 74, 0),
+    note: L(20.5, 69, 83.5, 0),
+    bear: L(83.5, 75.5, 30.5, 11),
+    music: L(35.5, 36.3, 93.5, 0),
+    color: L(84, 36.5, 83, -89),
   },
 }
 
