@@ -19,11 +19,13 @@ type Props = {
 type AssetKey =
   | 'window'
   | 'pawcream'
+  | 'cabinet'
   | 'people'
   | 'light'
   | 'message'
   | 'instax'
   | 'sewing'
+  | 'note'
 
 type AssetLayout = {
   x: number
@@ -36,7 +38,6 @@ type AtelierProfiles = Record<DeviceProfile, AtelierTuning>
 
 const STORAGE_KEY = 'pawcream-atelier-tuning-v2'
 const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
-const SWAP_KEYS: AssetKey[] = ['window', 'pawcream']
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
   window: {
@@ -49,69 +50,87 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     label: 'PawCream',
     zIndex: 1,
   },
+  cabinet: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/wall-mounted%20cabinet.png`,
+    label: 'Wall cabinet',
+    zIndex: 2,
+  },
   people: {
     src: `${import.meta.env.BASE_URL}assets/atelier/people.png`,
     label: 'People',
-    zIndex: 2,
+    zIndex: 3,
   },
   light: {
     src: `${import.meta.env.BASE_URL}assets/atelier/light.png`,
     label: 'Light',
-    zIndex: 3,
+    zIndex: 4,
   },
   message: {
     src: `${import.meta.env.BASE_URL}assets/atelier/message.png`,
     label: 'Message',
-    zIndex: 4,
+    zIndex: 5,
   },
   instax: {
     src: `${import.meta.env.BASE_URL}assets/atelier/instax.png`,
     label: 'Instax',
-    zIndex: 5,
+    zIndex: 6,
   },
   sewing: {
     src: `${import.meta.env.BASE_URL}assets/atelier/sewing%20machine.png`,
     label: 'Sewing machine',
-    zIndex: 6,
+    zIndex: 7,
+  },
+  note: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/note.png`,
+    label: 'Note',
+    zIndex: 8,
   },
 }
 
 const ASSET_ORDER: AssetKey[] = [
   'window',
   'pawcream',
+  'cabinet',
   'people',
   'light',
   'message',
   'instax',
   'sewing',
+  'note',
 ]
 
 const STANDARD_ASSET_ORDER: AssetKey[] = [
+  'cabinet',
   'people',
   'light',
   'message',
   'instax',
   'sewing',
+  'note',
 ]
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
   desktop: {
     window: { x: 21.3, y: 27, width: 39 },
     pawcream: { x: 21.3, y: 27, width: 39 },
+    cabinet: { x: 76, y: 23, width: 22 },
     people: { x: 64.6, y: 47.1, width: 9.5 },
     light: { x: 49.7, y: 19.5, width: 21.5 },
     message: { x: 48.8, y: 70.6, width: 28.5 },
     instax: { x: 24.1, y: 67.4, width: 32 },
     sewing: { x: 85.7, y: 48.7, width: 42 },
+    note: { x: 63, y: 78, width: 14 },
   },
   mobile: {
     window: { x: 31.3, y: 27.3, width: 95 },
     pawcream: { x: 31.3, y: 27.3, width: 95 },
+    cabinet: { x: 66, y: 24, width: 56 },
     people: { x: 24.4, y: 51.1, width: 27 },
     light: { x: 79.5, y: 15.4, width: 70.5 },
     message: { x: 25.4, y: 80.1, width: 63.5 },
     instax: { x: 83.1, y: 78, width: 57.5 },
     sewing: { x: 70.5, y: 53.6, width: 74 },
+    note: { x: 49, y: 68, width: 34 },
   },
 }
 
@@ -144,15 +163,10 @@ const smallButtonStyle: CSSProperties = {
 }
 
 function cloneLayout(source: AtelierTuning): AtelierTuning {
-  return {
-    window: { ...source.window },
-    pawcream: { ...source.pawcream },
-    people: { ...source.people },
-    light: { ...source.light },
-    message: { ...source.message },
-    instax: { ...source.instax },
-    sewing: { ...source.sewing },
-  }
+  return ASSET_ORDER.reduce((next, key) => {
+    next[key] = { ...source[key] }
+    return next
+  }, {} as AtelierTuning)
 }
 
 function cloneDefaults(): AtelierProfiles {
@@ -207,9 +221,7 @@ function loadTuning(enabled: boolean): AtelierProfiles {
 
     const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY)
     if (legacyRaw) {
-      const legacy = JSON.parse(legacyRaw) as Partial<
-        Record<AssetKey, Partial<AssetLayout>>
-      >
+      const legacy = JSON.parse(legacyRaw) as Partial<Record<AssetKey, Partial<AssetLayout>>>
       return {
         desktop: mergeLayout(legacy, ATELIER_TUNING_DEFAULTS.desktop),
         mobile: cloneLayout(ATELIER_TUNING_DEFAULTS.mobile),
@@ -305,7 +317,7 @@ export default function AtelierPlaceholder({
   }, [deviceProfile])
 
   const renderTuning = tuning[deviceProfile]
-  const selected = tuning[deviceProfile][selectedKey]
+  const selected = renderTuning[selectedKey]
   const mobile = deviceProfile === 'mobile'
   const pairSelected = selectedKey === 'window' || selectedKey === 'pawcream'
   const showPawcream = mobile || (tuneMode && pairSelected
@@ -331,20 +343,13 @@ export default function AtelierPlaceholder({
         ...current,
         [deviceProfile]: {
           ...profile,
-          [selectedKey]: {
-            ...profile[selectedKey],
-            [field]: value,
-          },
+          [selectedKey]: { ...profile[selectedKey], [field]: value },
         },
       }
     })
   }
 
-  const moveAssetFromPointer = (
-    key: AssetKey,
-    clientX: number,
-    clientY: number,
-  ) => {
+  const moveAssetFromPointer = (key: AssetKey, clientX: number, clientY: number) => {
     const artboard = artboardRef.current
     if (!artboard) return
 
@@ -373,11 +378,7 @@ export default function AtelierPlaceholder({
         ...current,
         [deviceProfile]: {
           ...profile,
-          [key]: {
-            ...profile[key],
-            x: nextX,
-            y: nextY,
-          },
+          [key]: { ...profile[key], x: nextX, y: nextY },
         },
       }
     })
@@ -761,7 +762,7 @@ export default function AtelierPlaceholder({
                   color: '#947a83',
                 }}
               >
-                Desktop：Window 默认显示，悬停切换 PawCream。Mobile：直接显示 PawCream。Window 与 PawCream 的位置和大小联动，确保切换时严格重合。
+                Desktop：Window 默认显示，悬停切换 PawCream。Mobile：直接显示 PawCream。Window 与 PawCream 的位置和大小联动。
               </p>
 
               <div
@@ -839,7 +840,7 @@ export default function AtelierPlaceholder({
                     color: '#aa8c96',
                   }}
                 >
-                  Window / PawCream 为同一交互位置。调整任意一个都会同步另一张图；点击两个按钮可切换调试时显示的状态。
+                  Window / PawCream 为同一交互位置。调整任意一个都会同步另一张图；点击两个按钮可切换调试时显示状态。
                 </p>
               )}
 
@@ -850,9 +851,7 @@ export default function AtelierPlaceholder({
                   borderTop: '1px solid rgba(198, 133, 157, 0.13)',
                 }}
               >
-                <strong
-                  style={{ display: 'block', marginBottom: 7, fontSize: 11 }}
-                >
+                <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>
                   {deviceProfile === 'desktop' ? '电脑端' : '手机端'} · {ASSETS[selectedKey].label}
                 </strong>
                 <RangeRow
@@ -916,7 +915,7 @@ export default function AtelierPlaceholder({
                   color: '#aa8c96',
                 }}
               >
-                7 个素材都会保存在双端调试配置中。全部调好后点“复制双端参数”发给我即可固化。
+                9 个素材都会保存在双端调试配置中。新加入的 Note 和 Wall cabinet 也可独立拖动并调节 X / Y / Size。
               </p>
             </div>
           )}
