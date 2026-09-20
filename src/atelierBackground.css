@@ -50,10 +50,9 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 }
 
 /*
- * User-provided lightline.jpg is the only lamp-light artwork. It sits above
- * the ordinary Atelier assets but below the full-scene dark/frosted veil.
- * Because JPG has no alpha channel, screen blending lets a dark-backed light
- * artwork merge naturally without changing the source pixels.
+ * User-provided lighton.png is the lamp-light artwork. It sits above the
+ * ordinary Atelier assets but below the full-scene dark/frosted veil.
+ * Render it normally so the PNG's own transparency and painted light are kept.
  */
 .atelier-lightline-layer {
   position: absolute;
@@ -65,7 +64,7 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
   opacity: 0;
   pointer-events: none;
   user-select: none;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
   transition: opacity 260ms ease;
 }
 
@@ -74,8 +73,8 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 }
 
 /*
- * Night layer is deliberately one layer ABOVE lightline, matching the desired
- * hierarchy: room assets < lightline < dark frosted veil < lamp < toolbar.
+ * Night layer is deliberately one layer ABOVE the user light artwork, matching
+ * the hierarchy: room assets < lighton < dark frosted veil < lamp < toolbar.
  */
 section[aria-label^="PawCream Atelier Room"]::after {
   content: "";
@@ -96,7 +95,7 @@ section[aria-label^="PawCream Atelier Room"].atelier-night-active::after {
 
 /*
  * Remove all generated yellow frame/glow feedback from the lamp itself. The
- * light visual now comes exclusively from lightline.jpg.
+ * light visual now comes exclusively from lighton.png.
  */
 section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction"] {
   outline: none !important;
