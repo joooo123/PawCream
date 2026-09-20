@@ -31,8 +31,8 @@ type LightlineLayout = {
 type LightlineProfiles = Record<AtelierProfile, LightlineLayout>
 
 const LIGHTLINE_DEFAULTS: LightlineProfiles = {
-  desktop: { x: 50.6, y: 34, width: 54, opacity: 72 },
-  mobile: { x: 81.5, y: 34, width: 105, opacity: 72 },
+  desktop: { x: 51.5, y: 25.5, width: 28.5, opacity: 100 },
+  mobile: { x: 79.5, y: 27, width: 88, opacity: 100 },
 }
 
 const cloneLightlineDefaults = (): LightlineProfiles => ({
