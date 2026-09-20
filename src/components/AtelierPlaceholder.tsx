@@ -27,6 +27,7 @@ type AssetKey =
   | 'sewing'
   | 'note'
   | 'bear'
+  | 'music'
 
 type AssetLayout = {
   x: number
@@ -91,6 +92,11 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     label: 'Bear',
     zIndex: 9,
   },
+  music: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/music.png?v=c33cc962958420cb7d90922e25b09847446f27a1`,
+    label: 'Music',
+    zIndex: 10,
+  },
 }
 
 const ASSET_ORDER: AssetKey[] = [
@@ -104,6 +110,7 @@ const ASSET_ORDER: AssetKey[] = [
   'sewing',
   'note',
   'bear',
+  'music',
 ]
 
 const STANDARD_ASSET_ORDER: AssetKey[] = [
@@ -115,6 +122,7 @@ const STANDARD_ASSET_ORDER: AssetKey[] = [
   'sewing',
   'note',
   'bear',
+  'music',
 ]
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
@@ -129,6 +137,7 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
     sewing: { x: 85.2, y: 48.4, width: 42 },
     note: { x: 9, y: 67.4, width: 38.5 },
     bear: { x: 96.5, y: 89.4, width: 9.5 },
+    music: { x: 50, y: 50, width: 20 },
   },
   mobile: {
     window: { x: 31.5, y: 17, width: 95 },
@@ -141,6 +150,7 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
     sewing: { x: 74, y: 53.6, width: 74 },
     note: { x: 15.6, y: 50.4, width: 80 },
     bear: { x: 37.5, y: 36, width: 27 },
+    music: { x: 50, y: 68, width: 45 },
   },
 }
 
@@ -166,7 +176,7 @@ const smallButtonStyle: CSSProperties = {
   minHeight: 32,
   border: '1px solid rgba(198, 133, 157, 0.24)',
   borderRadius: 11,
-  background: 'rgba(255, 255, 255, 0.78)',
+  background: 'rgba(255,255,255,0.78)',
   color: '#876974',
   cursor: 'pointer',
   fontSize: 11,
@@ -312,7 +322,7 @@ export default function AtelierPlaceholder({
   )
 
   const [tuning, setTuning] = useState<AtelierProfiles>(() => loadTuning(tuneMode))
-  const [selectedKey, setSelectedKey] = useState<AssetKey>('bear')
+  const [selectedKey, setSelectedKey] = useState<AssetKey>('music')
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
   const [windowHovered, setWindowHovered] = useState(false)
@@ -364,10 +374,8 @@ export default function AtelierPlaceholder({
     if (!artboard) return
 
     const rect = artboard.getBoundingClientRect()
-    const x = clamp(((clientX - rect.left) / rect.width) * 100, 0, 100)
-    const y = clamp(((clientY - rect.top) / rect.height) * 100, 0, 100)
-    const nextX = Number(x.toFixed(1))
-    const nextY = Number(y.toFixed(1))
+    const nextX = Number(clamp(((clientX - rect.left) / rect.width) * 100, 0, 100).toFixed(1))
+    const nextY = Number(clamp(((clientY - rect.top) / rect.height) * 100, 0, 100).toFixed(1))
     const syncPair = key === 'window' || key === 'pawcream'
 
     setTuning((current) => {
@@ -437,29 +445,19 @@ export default function AtelierPlaceholder({
       ...current,
       [deviceProfile]: cloneLayout(ATELIER_TUNING_DEFAULTS[deviceProfile]),
     }))
-    setSelectedKey('bear')
+    setSelectedKey('music')
     setWindowHovered(false)
   }
 
-  const stageStyle: CSSProperties = mobile
-    ? {
-        position: 'relative',
-        width: mobilePreview ? 390 : '100vw',
-        height: mobilePreview ? 844 : '100svh',
-        minHeight: mobilePreview ? 844 : '100svh',
-        maxWidth: 'none',
-        overflow: 'hidden',
-        background: '#ffffff',
-      }
-    : {
-        position: 'relative',
-        width: '100vw',
-        height: '100svh',
-        minHeight: '100svh',
-        maxWidth: 'none',
-        overflow: 'hidden',
-        background: '#ffffff',
-      }
+  const stageStyle: CSSProperties = {
+    position: 'relative',
+    width: mobile ? (mobilePreview ? 390 : '100vw') : '100vw',
+    height: mobile ? (mobilePreview ? 844 : '100svh') : '100svh',
+    minHeight: mobile ? (mobilePreview ? 844 : '100svh') : '100svh',
+    maxWidth: 'none',
+    overflow: 'hidden',
+    background: '#ffffff',
+  }
 
   const renderAsset = (key: AssetKey) => {
     const asset = ASSETS[key]
@@ -925,7 +923,7 @@ export default function AtelierPlaceholder({
                   color: '#aa8c96',
                 }}
               >
-                10 个素材都会保存在双端调试配置中。Bear、Note 和 Wall cabinet 都可独立拖动并调节 X / Y / Size。
+                11 个素材都会保存在双端调试配置中。Music、Bear、Note 和 Wall cabinet 都可独立拖动并调节 X / Y / Size。
               </p>
             </div>
           )}
