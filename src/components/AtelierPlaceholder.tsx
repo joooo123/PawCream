@@ -8,6 +8,7 @@ import {
 } from 'react'
 
 type DeviceProfile = 'desktop' | 'mobile'
+type Language = 'zh' | 'en'
 
 type Props = {
   onBack: () => void
@@ -38,8 +39,16 @@ type AssetLayout = {
 type AtelierTuning = Record<AssetKey, AssetLayout>
 type AtelierProfiles = Record<DeviceProfile, AtelierTuning>
 
+type BoardMessage = {
+  id: string
+  text: string
+  createdAt: number
+}
+
 const STORAGE_KEY = 'pawcream-atelier-tuning-v2'
 const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
+const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
+const BOARD_STORAGE_KEY = 'pawcream-message-board-v1'
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
   window: {
@@ -67,11 +76,6 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     label: 'Light',
     zIndex: 4,
   },
-  message: {
-    src: `${import.meta.env.BASE_URL}assets/atelier/message.png`,
-    label: 'Message',
-    zIndex: 5,
-  },
   instax: {
     src: `${import.meta.env.BASE_URL}assets/atelier/instax.png`,
     label: 'Instax',
@@ -82,11 +86,6 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     label: 'Sewing machine',
     zIndex: 7,
   },
-  note: {
-    src: `${import.meta.env.BASE_URL}assets/atelier/note.png?v=517196166abc61e4216196dc5b317b39c36d2c86`,
-    label: 'Note',
-    zIndex: 8,
-  },
   bear: {
     src: `${import.meta.env.BASE_URL}assets/atelier/bear.png?v=3f981c19b7b4bc06c34a4cfb27bf86e50dd0cb06`,
     label: 'Bear',
@@ -96,6 +95,16 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     src: `${import.meta.env.BASE_URL}assets/atelier/music.png?v=c33cc962958420cb7d90922e25b09847446f27a1`,
     label: 'Music',
     zIndex: 10,
+  },
+  note: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/note.png?v=517196166abc61e4216196dc5b317b39c36d2c86`,
+    label: 'Note',
+    zIndex: 11,
+  },
+  message: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/message.png`,
+    label: 'Message',
+    zIndex: 12,
   },
 }
 
@@ -117,12 +126,12 @@ const STANDARD_ASSET_ORDER: AssetKey[] = [
   'cabinet',
   'people',
   'light',
-  'message',
   'instax',
   'sewing',
-  'note',
   'bear',
   'music',
+  'note',
+  'message',
 ]
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
@@ -181,6 +190,8 @@ const smallButtonStyle: CSSProperties = {
   cursor: 'pointer',
   fontSize: 11,
 }
+
+const floatingUiFont = "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
 
 function cloneLayout(source: AtelierTuning): AtelierTuning {
   return ASSET_ORDER.reduce((next, key) => {
@@ -254,6 +265,31 @@ function loadTuning(enabled: boolean): AtelierProfiles {
   return cloneDefaults()
 }
 
+function loadLanguage(): Language {
+  if (typeof window === 'undefined') return 'zh'
+  return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
+}
+
+function loadBoardMessages(): BoardMessage[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(BOARD_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as BoardMessage[]
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter(
+        (item) =>
+          typeof item?.id === 'string' &&
+          typeof item?.text === 'string' &&
+          typeof item?.createdAt === 'number',
+      )
+      .slice(0, 20)
+  } catch {
+    return []
+  }
+}
+
 function RangeRow({
   label,
   value,
@@ -312,7 +348,8 @@ export default function AtelierPlaceholder({
   mobilePreview,
 }: Props) {
   const artboardRef = useRef<HTMLElement | null>(null)
-  const dragRef = useRef<{ key: AssetKey; pointerId: number } | null>(null)
+  const tuneDragRef = useRef<{ key: AssetKey; pointerId: number } | null>(null)
+  const messageDragRef = useRef<{ pointerId: number } | null>(null)
 
   const tuneMode = useMemo(
     () =>
@@ -327,13 +364,76 @@ export default function AtelierPlaceholder({
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
   const [windowHovered, setWindowHovered] = useState(false)
 
+  const [language, setLanguage] = useState<Language>(loadLanguage)
+  const [topBarOpen, setTopBarOpen] = useState(false)
+  const [hintMode, setHintMode] = useState(false)
+  const [messageMoveMode, setMessageMoveMode] = useState(false)
+  const [runtimeMessagePosition, setRuntimeMessagePosition] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const [boardOpen, setBoardOpen] = useState(false)
+  const [boardDraft, setBoardDraft] = useState('')
+  const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(loadBoardMessages)
+  const [loginNoticeOpen, setLoginNoticeOpen] = useState(false)
+
+  const copy = language === 'zh'
+    ? {
+        notePrompt: '留下你想对 PawCream 说的话吧',
+        messageHint: '拖动这封信',
+        noteHint: '打开留言板',
+        lightHint: '打开工具栏',
+        toolbarHint: '提示',
+        toolbarHome: '返回 Home',
+        toolbarLogin: '登入',
+        toolbarClose: '收起',
+        boardTitle: 'PawCream 留言板',
+        boardSubtitle: '写下一句话，留在这间小小的工作室里。',
+        boardPlaceholder: '想对 PawCream 说点什么？',
+        boardSubmit: '贴上留言',
+        boardEmpty: '这里还没有留言。',
+        boardLocal: '当前留言保存在此浏览器中。',
+        loginTitle: '登入',
+        loginBody: '账号系统还没有接入。这个入口已经预留，后续可以连接真实账号与云端留言。',
+        close: '关闭',
+      }
+    : {
+        notePrompt: 'Leave a little note for PawCream',
+        messageHint: 'Drag this letter',
+        noteHint: 'Open message board',
+        lightHint: 'Open toolbar',
+        toolbarHint: 'Hints',
+        toolbarHome: 'Home',
+        toolbarLogin: 'Sign in',
+        toolbarClose: 'Hide',
+        boardTitle: 'PawCream Message Board',
+        boardSubtitle: 'Leave a small thought in this tiny atelier.',
+        boardPlaceholder: 'What would you like to tell PawCream?',
+        boardSubmit: 'Leave note',
+        boardEmpty: 'No notes here yet.',
+        boardLocal: 'Messages are currently stored in this browser.',
+        loginTitle: 'Sign in',
+        loginBody: 'The account system is not connected yet. This entry point is ready for real accounts and cloud messages later.',
+        close: 'Close',
+      }
+
   useEffect(() => {
     if (!tuneMode) return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tuning))
   }, [tuneMode, tuning])
 
   useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
+  }, [language])
+
+  useEffect(() => {
+    window.localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(boardMessages))
+  }, [boardMessages])
+
+  useEffect(() => {
     setWindowHovered(false)
+    setRuntimeMessagePosition(null)
+    setMessageMoveMode(false)
   }, [deviceProfile])
 
   const renderTuning = tuning[deviceProfile]
@@ -369,13 +469,19 @@ export default function AtelierPlaceholder({
     })
   }
 
-  const moveAssetFromPointer = (key: AssetKey, clientX: number, clientY: number) => {
+  const pointToPercent = (clientX: number, clientY: number) => {
     const artboard = artboardRef.current
-    if (!artboard) return
-
+    if (!artboard) return null
     const rect = artboard.getBoundingClientRect()
-    const nextX = Number(clamp(((clientX - rect.left) / rect.width) * 100, 0, 100).toFixed(1))
-    const nextY = Number(clamp(((clientY - rect.top) / rect.height) * 100, 0, 100).toFixed(1))
+    return {
+      x: Number(clamp(((clientX - rect.left) / rect.width) * 100, 0, 100).toFixed(1)),
+      y: Number(clamp(((clientY - rect.top) / rect.height) * 100, 0, 100).toFixed(1)),
+    }
+  }
+
+  const moveAssetFromPointer = (key: AssetKey, clientX: number, clientY: number) => {
+    const point = pointToPercent(clientX, clientY)
+    if (!point) return
     const syncPair = key === 'window' || key === 'pawcream'
 
     setTuning((current) => {
@@ -386,8 +492,8 @@ export default function AtelierPlaceholder({
           ...current,
           [deviceProfile]: {
             ...profile,
-            window: { ...profile.window, x: nextX, y: nextY },
-            pawcream: { ...profile.pawcream, x: nextX, y: nextY },
+            window: { ...profile.window, x: point.x, y: point.y },
+            pawcream: { ...profile.pawcream, x: point.x, y: point.y },
           },
         }
       }
@@ -396,35 +502,83 @@ export default function AtelierPlaceholder({
         ...current,
         [deviceProfile]: {
           ...profile,
-          [key]: { ...profile[key], x: nextX, y: nextY },
+          [key]: { ...profile[key], x: point.x, y: point.y },
         },
       }
     })
+  }
+
+  const moveRuntimeMessage = (clientX: number, clientY: number) => {
+    const point = pointToPercent(clientX, clientY)
+    if (!point) return
+    setRuntimeMessagePosition(point)
   }
 
   const onAssetPointerDown = (
     key: AssetKey,
     event: ReactPointerEvent<HTMLDivElement>,
   ) => {
-    if (!tuneMode) return
-    setSelectedKey(key)
-    dragRef.current = { key, pointerId: event.pointerId }
-    event.currentTarget.setPointerCapture(event.pointerId)
-    moveAssetFromPointer(key, event.clientX, event.clientY)
+    if (tuneMode) {
+      setSelectedKey(key)
+      tuneDragRef.current = { key, pointerId: event.pointerId }
+      event.currentTarget.setPointerCapture(event.pointerId)
+      moveAssetFromPointer(key, event.clientX, event.clientY)
+      return
+    }
+
+    if (key === 'message') {
+      setMessageMoveMode(true)
+      messageDragRef.current = { pointerId: event.pointerId }
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
   }
 
   const onAssetPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const active = dragRef.current
-    if (!active || active.pointerId !== event.pointerId) return
-    moveAssetFromPointer(active.key, event.clientX, event.clientY)
+    const tuneDrag = tuneDragRef.current
+    if (tuneDrag && tuneDrag.pointerId === event.pointerId) {
+      moveAssetFromPointer(tuneDrag.key, event.clientX, event.clientY)
+      return
+    }
+
+    const messageDrag = messageDragRef.current
+    if (messageDrag && messageDrag.pointerId === event.pointerId) {
+      moveRuntimeMessage(event.clientX, event.clientY)
+    }
   }
 
   const onAssetPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const active = dragRef.current
-    if (!active || active.pointerId !== event.pointerId) return
-    dragRef.current = null
+    if (tuneDragRef.current?.pointerId === event.pointerId) {
+      tuneDragRef.current = null
+    }
+    if (messageDragRef.current?.pointerId === event.pointerId) {
+      messageDragRef.current = null
+    }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const handleNormalAssetClick = (key: AssetKey) => {
+    if (tuneMode) {
+      setSelectedKey(key)
+      return
+    }
+
+    if (key === 'message') {
+      setMessageMoveMode(true)
+      return
+    }
+
+    if (key === 'note') {
+      setBoardOpen(true)
+      return
+    }
+
+    if (key === 'light') {
+      const nextOpen = !topBarOpen
+      setTopBarOpen(nextOpen)
+      setHintMode(nextOpen)
+      if (!nextOpen) setLoginNoticeOpen(false)
     }
   }
 
@@ -449,6 +603,24 @@ export default function AtelierPlaceholder({
     setWindowHovered(false)
   }
 
+  const submitBoardMessage = () => {
+    const text = boardDraft.trim()
+    if (!text) return
+    const next: BoardMessage = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text: text.slice(0, 280),
+      createdAt: Date.now(),
+    }
+    setBoardMessages((current) => [next, ...current].slice(0, 20))
+    setBoardDraft('')
+  }
+
+  const closeToolbar = () => {
+    setTopBarOpen(false)
+    setHintMode(false)
+    setLoginNoticeOpen(false)
+  }
+
   const stageStyle: CSSProperties = {
     position: 'relative',
     width: mobile ? (mobilePreview ? 390 : '100vw') : '100vw',
@@ -459,22 +631,50 @@ export default function AtelierPlaceholder({
     background: '#ffffff',
   }
 
+  const hintTextFor = (key: AssetKey) => {
+    if (!hintMode || tuneMode) return null
+    if (key === 'message') return copy.messageHint
+    if (key === 'note') return copy.noteHint
+    if (key === 'light') return copy.lightHint
+    return null
+  }
+
   const renderAsset = (key: AssetKey) => {
     const asset = ASSETS[key]
-    const layout = renderTuning[key]
+    const baseLayout = renderTuning[key]
+    const layout =
+      !tuneMode && key === 'message' && runtimeMessagePosition
+        ? { ...baseLayout, ...runtimeMessagePosition }
+        : baseLayout
     const selectedAsset = tuneMode && selectedKey === key
+    const interactive = !tuneMode && (key === 'message' || key === 'note' || key === 'light')
+    const hintText = hintTextFor(key)
+    const movingMessage = !tuneMode && key === 'message' && messageMoveMode
+    const lightActive = !tuneMode && key === 'light' && topBarOpen
 
     return (
       <div
         key={key}
-        role={tuneMode ? 'button' : undefined}
-        tabIndex={tuneMode ? 0 : undefined}
-        aria-label={tuneMode ? `Move ${asset.label}` : undefined}
+        role={tuneMode || interactive ? 'button' : undefined}
+        tabIndex={tuneMode || interactive ? 0 : undefined}
+        aria-label={
+          tuneMode
+            ? `Move ${asset.label}`
+            : interactive
+              ? `${asset.label} interaction`
+              : undefined
+        }
         onPointerDown={(event) => onAssetPointerDown(key, event)}
         onPointerMove={onAssetPointerMove}
         onPointerUp={onAssetPointerUp}
         onPointerCancel={onAssetPointerUp}
-        onClick={() => tuneMode && setSelectedKey(key)}
+        onClick={() => handleNormalAssetClick(key)}
+        onKeyDown={(event) => {
+          if ((event.key === 'Enter' || event.key === ' ') && (tuneMode || interactive)) {
+            event.preventDefault()
+            handleNormalAssetClick(key)
+          }
+        }}
         style={{
           position: 'absolute',
           left: `${layout.x}%`,
@@ -482,14 +682,25 @@ export default function AtelierPlaceholder({
           width: `${layout.width}%`,
           transform: 'translate(-50%, -50%)',
           zIndex: asset.zIndex,
-          cursor: tuneMode ? 'grab' : 'default',
-          touchAction: tuneMode ? 'none' : 'auto',
+          cursor: tuneMode
+            ? 'grab'
+            : key === 'message'
+              ? movingMessage
+                ? 'move'
+                : 'grab'
+              : interactive
+                ? 'pointer'
+                : 'default',
+          touchAction: tuneMode || key === 'message' ? 'none' : 'auto',
           userSelect: 'none',
           outline: selectedAsset
             ? '1.5px dashed rgba(213, 111, 157, 0.9)'
-            : 'none',
-          outlineOffset: selectedAsset ? 6 : 0,
-          borderRadius: selectedAsset ? 10 : 0,
+            : lightActive
+              ? '1.5px solid rgba(239, 196, 123, 0.72)'
+              : 'none',
+          outlineOffset: selectedAsset || lightActive ? 6 : 0,
+          borderRadius: selectedAsset || lightActive ? 10 : 0,
+          boxShadow: lightActive ? '0 0 32px rgba(247, 214, 146, 0.32)' : undefined,
         }}
       >
         <img
@@ -518,13 +729,63 @@ export default function AtelierPlaceholder({
               background: 'rgba(255, 249, 252, 0.96)',
               color: '#a4687f',
               fontSize: 10,
-              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              fontFamily: floatingUiFont,
               boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
             }}
           >
             {asset.label}
+          </span>
+        )}
+
+        {hintText && (
+          <span
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: -34,
+              transform: 'translateX(-50%)',
+              padding: '6px 10px',
+              borderRadius: 999,
+              border: '1px solid rgba(213, 141, 168, 0.2)',
+              background: 'rgba(255, 251, 253, 0.94)',
+              color: '#986d7d',
+              fontFamily: floatingUiFont,
+              fontSize: mobile ? 9 : 11,
+              lineHeight: 1,
+              boxShadow: '0 6px 20px rgba(114, 82, 93, 0.1)',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {hintText}
+          </span>
+        )}
+
+        {!tuneMode && key === 'note' && messageMoveMode && (
+          <span
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: mobile ? '58%' : '48%',
+              maxWidth: 220,
+              padding: mobile ? '8px 10px' : '10px 13px',
+              borderRadius: 14,
+              border: '1px solid rgba(215, 151, 174, 0.18)',
+              background: 'rgba(255, 252, 253, 0.9)',
+              color: '#946d7a',
+              fontFamily: floatingUiFont,
+              fontSize: mobile ? 9 : 11,
+              lineHeight: 1.5,
+              textAlign: 'center',
+              boxShadow: '0 8px 26px rgba(113, 81, 91, 0.11)',
+              pointerEvents: 'none',
+            }}
+          >
+            {copy.notePrompt}
           </span>
         )}
       </div>
@@ -572,7 +833,7 @@ export default function AtelierPlaceholder({
             borderRadius: 999,
             background: 'rgba(255, 249, 252, 0.9)',
             color: '#a4687f',
-            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontFamily: floatingUiFont,
             fontSize: 10,
             pointerEvents: 'none',
           }}
@@ -643,7 +904,7 @@ export default function AtelierPlaceholder({
               background: 'rgba(255, 249, 252, 0.96)',
               color: '#a4687f',
               fontSize: 10,
-              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              fontFamily: floatingUiFont,
               boxShadow: '0 4px 14px rgba(113, 81, 91, 0.1)',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
@@ -655,6 +916,323 @@ export default function AtelierPlaceholder({
       </div>
 
       {STANDARD_ASSET_ORDER.map(renderAsset)}
+
+      {!tuneMode && (
+        <nav
+          aria-label="PawCream Atelier toolbar"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: mobile ? 10 : 16,
+            zIndex: 55,
+            width: mobile ? 'calc(100% - 24px)' : 'min(720px, calc(100% - 40px))',
+            minHeight: mobile ? 48 : 54,
+            transform: topBarOpen
+              ? 'translate(-50%, 0)'
+              : 'translate(-50%, calc(-100% - 24px))',
+            opacity: topBarOpen ? 1 : 0,
+            pointerEvents: topBarOpen ? 'auto' : 'none',
+            transition: 'transform 320ms ease, opacity 240ms ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            padding: mobile ? '7px 8px 7px 12px' : '8px 10px 8px 16px',
+            border: '1px solid rgba(205, 148, 168, 0.2)',
+            borderRadius: mobile ? 18 : 999,
+            background: 'rgba(255, 252, 253, 0.9)',
+            boxShadow: '0 14px 40px rgba(100, 76, 85, 0.12)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            color: '#80636d',
+            fontFamily: floatingUiFont,
+          }}
+        >
+          <strong style={{ fontSize: mobile ? 11 : 12, whiteSpace: 'nowrap' }}>PawCream</strong>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flexWrap: mobile ? 'wrap' : 'nowrap',
+              gap: 6,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                padding: 2,
+                borderRadius: 999,
+                background: 'rgba(243, 231, 235, 0.7)',
+              }}
+            >
+              {(['zh', 'en'] as Language[]).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setLanguage(item)}
+                  style={{
+                    border: 0,
+                    borderRadius: 999,
+                    padding: mobile ? '5px 7px' : '6px 9px',
+                    background: language === item ? 'rgba(255,255,255,0.94)' : 'transparent',
+                    color: '#8d6d78',
+                    fontSize: mobile ? 9 : 10,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {item === 'zh' ? '中文' : 'EN'}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setHintMode((current) => !current)}
+              style={{
+                ...smallButtonStyle,
+                minHeight: mobile ? 28 : 32,
+                padding: '0 10px',
+                background: hintMode ? '#f8e8ee' : 'rgba(255,255,255,0.76)',
+              }}
+            >
+              {copy.toolbarHint} {hintMode ? '✓' : ''}
+            </button>
+
+            <button
+              type="button"
+              onClick={onBack}
+              style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}
+            >
+              {copy.toolbarHome}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLoginNoticeOpen((current) => !current)}
+              style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}
+            >
+              {copy.toolbarLogin}
+            </button>
+
+            <button
+              type="button"
+              onClick={closeToolbar}
+              aria-label={copy.toolbarClose}
+              title={copy.toolbarClose}
+              style={{
+                width: mobile ? 28 : 32,
+                height: mobile ? 28 : 32,
+                border: '1px solid rgba(198, 133, 157, 0.2)',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.78)',
+                color: '#9b7682',
+                cursor: 'pointer',
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </nav>
+      )}
+
+      {!tuneMode && loginNoticeOpen && topBarOpen && (
+        <div
+          role="dialog"
+          aria-label={copy.loginTitle}
+          style={{
+            position: 'absolute',
+            right: mobile ? 12 : 22,
+            top: mobile ? 76 : 84,
+            zIndex: 56,
+            width: mobile ? 'min(300px, calc(100% - 24px))' : 320,
+            padding: 16,
+            border: '1px solid rgba(205, 148, 168, 0.2)',
+            borderRadius: 18,
+            background: 'rgba(255, 252, 253, 0.95)',
+            boxShadow: '0 16px 42px rgba(100, 76, 85, 0.14)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            color: '#80636d',
+            fontFamily: floatingUiFont,
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: 7, fontSize: 13 }}>{copy.loginTitle}</strong>
+          <p style={{ margin: 0, fontSize: 11, lineHeight: 1.6 }}>{copy.loginBody}</p>
+          <button
+            type="button"
+            onClick={() => setLoginNoticeOpen(false)}
+            style={{ ...smallButtonStyle, marginTop: 12, padding: '0 12px' }}
+          >
+            {copy.close}
+          </button>
+        </div>
+      )}
+
+      {!tuneMode && boardOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={copy.boardTitle}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 80,
+            display: 'grid',
+            placeItems: 'center',
+            padding: mobile ? 14 : 28,
+            background: 'rgba(255, 249, 251, 0.62)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            fontFamily: floatingUiFont,
+          }}
+        >
+          <section
+            style={{
+              width: mobile ? '100%' : 'min(620px, 100%)',
+              maxHeight: mobile ? 'calc(100% - 20px)' : 'min(720px, calc(100% - 32px))',
+              overflow: 'auto',
+              padding: mobile ? 18 : 24,
+              border: '1px solid rgba(205, 148, 168, 0.22)',
+              borderRadius: mobile ? 22 : 28,
+              background: 'rgba(255, 253, 253, 0.96)',
+              boxShadow: '0 24px 70px rgba(101, 74, 84, 0.16)',
+              color: '#765d66',
+            }}
+          >
+            <header style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <strong style={{ display: 'block', fontSize: mobile ? 17 : 20 }}>{copy.boardTitle}</strong>
+                <p style={{ margin: '6px 0 0', fontSize: 11, lineHeight: 1.55, color: '#9d818a' }}>
+                  {copy.boardSubtitle}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBoardOpen(false)}
+                aria-label={copy.close}
+                style={{
+                  width: 34,
+                  height: 34,
+                  flex: '0 0 auto',
+                  border: '1px solid rgba(198, 133, 157, 0.2)',
+                  borderRadius: '50%',
+                  background: '#fff',
+                  color: '#98737f',
+                  cursor: 'pointer',
+                }}
+              >
+                ×
+              </button>
+            </header>
+
+            <textarea
+              value={boardDraft}
+              maxLength={280}
+              onChange={(event) => setBoardDraft(event.currentTarget.value)}
+              placeholder={copy.boardPlaceholder}
+              style={{
+                width: '100%',
+                minHeight: mobile ? 110 : 130,
+                marginTop: 18,
+                resize: 'vertical',
+                border: '1px solid rgba(205, 148, 168, 0.24)',
+                borderRadius: 18,
+                padding: '13px 14px',
+                outline: 'none',
+                background: 'rgba(255, 249, 251, 0.78)',
+                color: '#715a63',
+                font: `13px/1.65 ${floatingUiFont}`,
+                boxSizing: 'border-box',
+              }}
+            />
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginTop: 9,
+              }}
+            >
+              <span style={{ fontSize: 9, color: '#b0969f' }}>{copy.boardLocal}</span>
+              <button
+                type="button"
+                disabled={!boardDraft.trim()}
+                onClick={submitBoardMessage}
+                style={{
+                  minHeight: 34,
+                  border: '1px solid rgba(203, 130, 158, 0.28)',
+                  borderRadius: 999,
+                  padding: '0 15px',
+                  background: boardDraft.trim() ? '#f7e6ed' : '#f5f1f2',
+                  color: boardDraft.trim() ? '#8f6072' : '#b7a7ad',
+                  cursor: boardDraft.trim() ? 'pointer' : 'default',
+                  fontSize: 11,
+                }}
+              >
+                {copy.boardSubmit}
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: 9, marginTop: 20 }}>
+              {boardMessages.length === 0 ? (
+                <p
+                  style={{
+                    margin: 0,
+                    padding: '18px 12px',
+                    borderRadius: 16,
+                    background: 'rgba(249, 241, 244, 0.62)',
+                    color: '#ad919b',
+                    fontSize: 11,
+                    textAlign: 'center',
+                  }}
+                >
+                  {copy.boardEmpty}
+                </p>
+              ) : (
+                boardMessages.map((item) => (
+                  <article
+                    key={item.id}
+                    style={{
+                      padding: '12px 14px',
+                      border: '1px solid rgba(209, 156, 176, 0.16)',
+                      borderRadius: 16,
+                      background: 'rgba(253, 247, 249, 0.78)',
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                        color: '#765d66',
+                        fontSize: 12,
+                        lineHeight: 1.65,
+                      }}
+                    >
+                      {item.text}
+                    </p>
+                    <time
+                      dateTime={new Date(item.createdAt).toISOString()}
+                      style={{ display: 'block', marginTop: 7, color: '#b097a0', fontSize: 9 }}
+                    >
+                      {new Date(item.createdAt).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </time>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   )
 
@@ -671,27 +1249,29 @@ export default function AtelierPlaceholder({
         isolation: 'isolate',
       }}
     >
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label="Back to PawCream home"
-        style={{
-          position: 'fixed',
-          left: 18,
-          top: 18,
-          zIndex: 65,
-          border: '1px solid rgba(164, 132, 143, 0.2)',
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.82)',
-          color: '#8e757d',
-          padding: '8px 13px',
-          cursor: 'pointer',
-          boxShadow: '0 8px 28px rgba(100, 79, 86, 0.07)',
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        ← Home
-      </button>
+      {tuneMode && (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to PawCream home"
+          style={{
+            position: 'fixed',
+            left: 18,
+            top: 18,
+            zIndex: 65,
+            border: '1px solid rgba(164, 132, 143, 0.2)',
+            borderRadius: 999,
+            background: 'rgba(255,255,255,0.82)',
+            color: '#8e757d',
+            padding: '8px 13px',
+            cursor: 'pointer',
+            boxShadow: '0 8px 28px rgba(100, 79, 86, 0.07)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          ← Home
+        </button>
+      )}
 
       {mobilePreview ? (
         <div
@@ -923,7 +1503,7 @@ export default function AtelierPlaceholder({
                   color: '#aa8c96',
                 }}
               >
-                11 个素材都会保存在双端调试配置中。Music、Bear、Note 和 Wall cabinet 都可独立拖动并调节 X / Y / Size。
+                11 个素材都会保存在双端调试配置中。Music、Bear、Note、Message 和 Wall cabinet 都可独立拖动并调节 X / Y / Size。
               </p>
             </div>
           )}
