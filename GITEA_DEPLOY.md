@@ -14,7 +14,7 @@ http://<服务器内网IP>:8088/
 
 ## 1. 上传仓库到 Gitea
 
-把当前仓库完整上传到 Gitea，保留 `public/assets`、`src`、`package-lock.json` 等文件。
+把当前仓库完整上传到 Gitea，保留 `public/assets`、`src`、`package.json` 等文件。
 
 Gitea 版本使用：
 
@@ -38,7 +38,7 @@ sudo chown -R "$USER":"$USER" /var/www/pawcream
 脚本会执行：
 
 ```text
-npm ci
+npm install
 npm run build:gitea
 dist/ -> /var/www/pawcream/
 ```
@@ -99,7 +99,7 @@ git pull
 
 即可更新网页。
 
-仓库还包含 `.gitea/workflows/build.yml`。如果 Gitea Actions + act_runner 已启用，每次 push main 会自动执行 `npm ci` 和 `npm run build:gitea` 做构建检查。
+仓库还包含 `.gitea/workflows/build.yml`。如果 Gitea Actions + act_runner 已启用，每次 push main 会自动执行 `npm install` 和 `npm run build:gitea` 做构建检查。
 
 > 当前 Actions 文件只做构建验证，不直接写 `/var/www/pawcream`，因为 Gitea runner 可能运行在 Docker 容器里。等确认你的 act_runner 是 Host 模式还是 Docker 模式后，再接自动发布最稳妥。
 
