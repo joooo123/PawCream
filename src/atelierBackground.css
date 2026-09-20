@@ -23,3 +23,33 @@ section[aria-label^="PawCream Atelier Room"] {
   height: 844px !important;
   min-height: 844px !important;
 }
+
+/*
+ * Atelier tuning panel background reference.
+ * This keeps the full-size canvas clean while making background.png visible
+ * inside the debug UI on both desktop and mobile preview modes.
+ */
+main:has(section[aria-label^="PawCream Atelier Room"]) > aside::before {
+  content: "Background · cover";
+  display: flex;
+  align-items: flex-end;
+  width: calc(100% - 28px);
+  height: 118px;
+  margin: 14px 14px 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(198, 133, 157, 0.18);
+  border-radius: 14px;
+  background-color: #ffffff;
+  background-image: var(--atelier-background-image);
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  color: rgba(103, 79, 88, 0.9);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.95);
+  pointer-events: none;
+}
