@@ -51,13 +51,13 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 
 /*
  * User-provided lighton.png is the illuminated lamp artwork. It uses the same
- * artboard coordinate system as the ordinary Light asset. Keep LightOn above
- * the original Light but below the full-scene dark/frosted veil so the live
- * page matches the tuning preview exactly.
+ * artboard coordinate system as the ordinary Light asset. LightOn is the top
+ * visual layer of the Atelier scene, above the full-scene frosted veil; the
+ * toolbar/dialog UI remains above it.
  */
 .atelier-lightline-layer {
   position: absolute;
-  z-index: 19;
+  z-index: 54;
   display: block;
   height: auto;
   transform: translate(-50%, -50%);
@@ -74,10 +74,8 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 }
 
 /*
- * Night hierarchy is now identical in tune and live views:
- * room assets (including Light) < LightOn < dark frosted veil < toolbar.
- * Do not promote the normal Light above the veil in production; doing that
- * made the two lamp drawings look separated even when tuning showed overlap.
+ * Night hierarchy in both tune and live views:
+ * room assets (including Light) < dark frosted veil < LightOn < toolbar/dialogs.
  */
 section[aria-label^="PawCream Atelier Room"]::after {
   content: "";
@@ -169,11 +167,19 @@ section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction
   background: #f8e8ee;
 }
 
+.lightline-tune-status,
 .lightline-tune-note {
   margin: 9px 0 0;
-  color: #aa8c96;
   font-size: 10px;
   line-height: 1.5;
+}
+
+.lightline-tune-status {
+  color: #8a6c76;
+}
+
+.lightline-tune-note {
+  color: #aa8c96;
 }
 
 /*
