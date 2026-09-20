@@ -45,7 +45,7 @@ type BoardMessage = {
   createdAt: number
 }
 
-const STORAGE_KEY = 'pawcream-atelier-tuning-v2'
+const STORAGE_KEY = 'pawcream-atelier-tuning-v3'
 const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const BOARD_STORAGE_KEY = 'pawcream-message-board-v1'
@@ -138,15 +138,15 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
   desktop: {
     window: { x: 13.7, y: 17.9, width: 39 },
     pawcream: { x: 13.7, y: 17.9, width: 39 },
-    cabinet: { x: 80.6, y: 17.6, width: 33.5 },
+    cabinet: { x: 78, y: 20.5, width: 33.5 },
     people: { x: 64.6, y: 47.1, width: 9.5 },
-    light: { x: 50.6, y: 19.8, width: 21.5 },
+    light: { x: 52, y: 9, width: 21.5 },
     message: { x: 7.8, y: 65.5, width: 27 },
     instax: { x: 31.5, y: 66, width: 31 },
     sewing: { x: 85.2, y: 48.4, width: 42 },
     note: { x: 9, y: 67.4, width: 38.5 },
     bear: { x: 96.5, y: 89.4, width: 9.5 },
-    music: { x: 36.2, y: 43.9, width: 38 },
+    music: { x: 40, y: 44.6, width: 38 },
   },
   mobile: {
     window: { x: 31.5, y: 17, width: 95 },
@@ -159,7 +159,7 @@ const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
     sewing: { x: 74.9, y: 53.4, width: 74 },
     note: { x: 18.2, y: 50.8, width: 80 },
     bear: { x: 22.6, y: 71.3, width: 27 },
-    music: { x: 31, y: 36.3, width: 93.5 },
+    music: { x: 35.5, y: 36.3, width: 93.5 },
   },
 }
 
