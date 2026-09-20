@@ -45,46 +45,71 @@ const clamp = (value: number, min: number, max: number) =>
 
 const isTuneMode = () => new URLSearchParams(window.location.search).get('tune') === '1'
 
-const loadLightlineProfiles = (): LightlineProfiles => {
-  // Production must always use the committed defaults. Browser-local tuning is
-  // only for ?tune=1 so stale debug values can never move LightOn in the live page.
-  if (!isTuneMode()) return cloneLightlineDefaults()
+const mergeLightlineProfiles = (
+  parsed: Partial<Record<AtelierProfile, Partial<LightlineLayout>>>,
+): LightlineProfiles => {
+  const next = cloneLightlineDefaults()
 
+  ;(['desktop', 'mobile'] as AtelierProfile[]).forEach((profile) => {
+    const source = parsed[profile]
+    if (!source) return
+    const fallback = next[profile]
+    next[profile] = {
+      x: typeof source.x === 'number' && Number.isFinite(source.x) ? source.x : fallback.x,
+      y: typeof source.y === 'number' && Number.isFinite(source.y) ? source.y : fallback.y,
+      width:
+        typeof source.width === 'number' && Number.isFinite(source.width)
+          ? source.width
+          : fallback.width,
+      opacity:
+        typeof source.opacity === 'number' && Number.isFinite(source.opacity)
+          ? source.opacity
+          : fallback.opacity,
+    }
+  })
+
+  return next
+}
+
+const loadLightlineProfiles = (): LightlineProfiles => {
+  // Tune mode and the live page intentionally read the SAME browser-local
+  // LightOn profile. This guarantees that what is aligned in the tuning panel
+  // is rendered at the same X / Y / Size / Opacity when the live page is opened
+  // in that browser. Visitors without local tuning still use committed defaults.
   try {
     const raw = window.localStorage.getItem(LIGHTLINE_STORAGE_KEY)
     if (!raw) return cloneLightlineDefaults()
-    const parsed = JSON.parse(raw) as Partial<Record<AtelierProfile, Partial<LightlineLayout>>>
-    const next = cloneLightlineDefaults()
-
-    ;(['desktop', 'mobile'] as AtelierProfile[]).forEach((profile) => {
-      const source = parsed[profile]
-      if (!source) return
-      const fallback = next[profile]
-      next[profile] = {
-        x: typeof source.x === 'number' && Number.isFinite(source.x) ? source.x : fallback.x,
-        y: typeof source.y === 'number' && Number.isFinite(source.y) ? source.y : fallback.y,
-        width:
-          typeof source.width === 'number' && Number.isFinite(source.width)
-            ? source.width
-            : fallback.width,
-        opacity:
-          typeof source.opacity === 'number' && Number.isFinite(source.opacity)
-            ? source.opacity
-            : fallback.opacity,
-      }
-    })
-
-    return next
+    return mergeLightlineProfiles(
+      JSON.parse(raw) as Partial<Record<AtelierProfile, Partial<LightlineLayout>>>,
+    )
   } catch {
     return cloneLightlineDefaults()
   }
 }
 
 let lightlineProfiles = loadLightlineProfiles()
+let lightlineStorageVerified = false
 
 const saveLightlineProfiles = () => {
-  if (!isTuneMode()) return
-  window.localStorage.setItem(LIGHTLINE_STORAGE_KEY, JSON.stringify(lightlineProfiles))
+  try {
+    const serialized = JSON.stringify(lightlineProfiles)
+    window.localStorage.setItem(LIGHTLINE_STORAGE_KEY, serialized)
+    const readBack = window.localStorage.getItem(LIGHTLINE_STORAGE_KEY)
+    if (!readBack) {
+      lightlineStorageVerified = false
+      return false
+    }
+    const verified = mergeLightlineProfiles(
+      JSON.parse(readBack) as Partial<Record<AtelierProfile, Partial<LightlineLayout>>>,
+    )
+    lightlineStorageVerified =
+      JSON.stringify(verified.desktop) === JSON.stringify(lightlineProfiles.desktop) &&
+      JSON.stringify(verified.mobile) === JSON.stringify(lightlineProfiles.mobile)
+    return lightlineStorageVerified
+  } catch {
+    lightlineStorageVerified = false
+    return false
+  }
 }
 
 const refreshNoteAsset = () => {
@@ -204,7 +229,7 @@ const ensureLightlineTunePanel = (section: HTMLElement, profile: AtelierProfile)
     copyButton.type = 'button'
     copyButton.textContent = '复制 LightOn 双端参数'
     copyButton.addEventListener('click', async () => {
-      const text = `ATELIER_LIGHTON_DEFAULTS = ${JSON.stringify(lightlineProfiles, null, 2)}`
+      const text = `ATELIER_LIGHTLINE_DEFAULTS = ${JSON.stringify(lightlineProfiles, null, 2)}`
       try {
         await navigator.clipboard.writeText(text)
         copyButton.textContent = '已复制 LightOn 参数'
@@ -237,9 +262,14 @@ const ensureLightlineTunePanel = (section: HTMLElement, profile: AtelierProfile)
     actions.append(copyButton, resetButton)
     panel.appendChild(actions)
 
+    const status = document.createElement('p')
+    status.dataset.lightlineStorageStatus = 'true'
+    status.className = 'lightline-tune-status'
+    panel.appendChild(status)
+
     const note = document.createElement('p')
     note.className = 'lightline-tune-note'
-    note.textContent = 'LightOn 位于全场压暗磨砂层下方；调试模式会同时显示夜景遮罩，方便直接对位。'
+    note.textContent = 'LightOn 位于黑色磨砂层上方。调试参数会实时写入浏览器，本浏览器打开正式页时读取同一份参数。'
     panel.appendChild(note)
 
     const insertBefore = scrollArea.children.item(2)
@@ -256,6 +286,13 @@ const ensureLightlineTunePanel = (section: HTMLElement, profile: AtelierProfile)
     if (input && document.activeElement !== input) input.value = String(layout[field])
     if (output) output.textContent = `${layout[field].toFixed(field === 'opacity' ? 0 : 1)}%`
   })
+
+  const status = panel.querySelector<HTMLElement>('[data-lightline-storage-status="true"]')
+  if (status) {
+    status.textContent = lightlineStorageVerified
+      ? '✓ 参数已记录；正式页将读取同一份 LightOn 参数'
+      : '调节任一参数后会立即记录，并用于正式页预览'
+  }
 }
 
 const syncAtelierLightline = () => {
