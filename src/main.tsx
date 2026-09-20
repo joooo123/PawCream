@@ -19,7 +19,7 @@ const absoluteNoteAssetUrl = new URL(noteAssetUrl, window.location.href).href
 
 const LIGHTLINE_ASSET_VERSION = '8471f8d314049d1699e1d2e9ebc6b37a832a667e'
 const lightlineAssetUrl = `${import.meta.env.BASE_URL}assets/atelier/lighton.png?v=${LIGHTLINE_ASSET_VERSION}`
-const LIGHTLINE_STORAGE_KEY = 'pawcream-lightline-tuning-v1'
+const LIGHTLINE_STORAGE_KEY = 'pawcream-lighton-tuning-v2'
 
 type AtelierProfile = 'desktop' | 'mobile'
 type LightlineLayout = {
@@ -43,7 +43,13 @@ const cloneLightlineDefaults = (): LightlineProfiles => ({
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
 
+const isTuneMode = () => new URLSearchParams(window.location.search).get('tune') === '1'
+
 const loadLightlineProfiles = (): LightlineProfiles => {
+  // Production must always use the committed defaults. Browser-local tuning is
+  // only for ?tune=1 so stale debug values can never move LightOn in the live page.
+  if (!isTuneMode()) return cloneLightlineDefaults()
+
   try {
     const raw = window.localStorage.getItem(LIGHTLINE_STORAGE_KEY)
     if (!raw) return cloneLightlineDefaults()
@@ -77,6 +83,7 @@ const loadLightlineProfiles = (): LightlineProfiles => {
 let lightlineProfiles = loadLightlineProfiles()
 
 const saveLightlineProfiles = () => {
+  if (!isTuneMode()) return
   window.localStorage.setItem(LIGHTLINE_STORAGE_KEY, JSON.stringify(lightlineProfiles))
 }
 
@@ -91,8 +98,6 @@ const getAtelierSection = () =>
 
 const getProfile = (section: HTMLElement): AtelierProfile =>
   section.getAttribute('aria-label')?.toLowerCase().includes('mobile') ? 'mobile' : 'desktop'
-
-const isTuneMode = () => new URLSearchParams(window.location.search).get('tune') === '1'
 
 const isToolbarOpen = (section: HTMLElement) => {
   const toolbar = section.querySelector<HTMLElement>('nav[aria-label="PawCream Atelier toolbar"]')
