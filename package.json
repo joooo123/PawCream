@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:gitea": "tsc -b && vite build --mode gitea",
     "preview": "vite preview"
   },
   "dependencies": {
