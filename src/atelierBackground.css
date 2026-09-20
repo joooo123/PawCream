@@ -51,9 +51,11 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 
 /*
  * Lamp / night mode.
- * The React component already exposes the active lamp through its inline
- * box-shadow state. CSS uses that state only as a hook; the old yellow frame
- * itself is suppressed below.
+ * The previous implementation tried to detect the active lamp by matching the
+ * browser-serialized inline box-shadow string. Browsers normalize inline
+ * styles, so that selector was brittle and the night layer never activated.
+ * The toolbar already reflects the exact same React state as the lamp, so use
+ * its visible state as the stable CSS hook instead.
  */
 section[aria-label^="PawCream Atelier Room"]::after {
   content: "";
@@ -63,26 +65,30 @@ section[aria-label^="PawCream Atelier Room"]::after {
   pointer-events: none;
   opacity: 0;
   background:
+    linear-gradient(rgba(5, 5, 7, 0.58), rgba(4, 4, 6, 0.66)),
     radial-gradient(
       ellipse at 50% 42%,
-      rgba(11, 9, 11, 0.50) 0%,
-      rgba(7, 6, 8, 0.61) 54%,
-      rgba(3, 3, 4, 0.74) 100%
+      rgba(14, 12, 15, 0.20) 0%,
+      rgba(8, 7, 10, 0.36) 55%,
+      rgba(2, 2, 3, 0.52) 100%
     );
-  backdrop-filter: blur(4px) saturate(0.72) brightness(0.82);
-  -webkit-backdrop-filter: blur(4px) saturate(0.72) brightness(0.82);
+  backdrop-filter: blur(4px) saturate(0.72) brightness(0.78);
+  -webkit-backdrop-filter: blur(4px) saturate(0.72) brightness(0.78);
   transition: opacity 320ms ease;
 }
 
 section[aria-label^="PawCream Atelier Room"]:has(
-    > div[aria-label="Light interaction"][style*="box-shadow: 0 0 32px"]
+    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
   )::after {
   opacity: 1;
 }
 
-/* Keep the active lamp itself above the dark frosted layer. */
-section[aria-label^="PawCream Atelier Room"]
-  > div[aria-label="Light interaction"][style*="box-shadow: 0 0 32px"] {
+/* Keep the active lamp itself above the dark frosted layer and remove every
+ * trace of the old outline/box-shadow feedback. */
+section[aria-label^="PawCream Atelier Room"]:has(
+    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
+  )
+  > div[aria-label="Light interaction"] {
   z-index: 22 !important;
   isolation: isolate;
   outline: none !important;
@@ -92,59 +98,67 @@ section[aria-label^="PawCream Atelier Room"]
 }
 
 /* Soft warm halo immediately behind the lamp. */
-section[aria-label^="PawCream Atelier Room"]
-  > div[aria-label="Light interaction"][style*="box-shadow: 0 0 32px"]::before {
+section[aria-label^="PawCream Atelier Room"]:has(
+    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
+  )
+  > div[aria-label="Light interaction"]::before {
   content: "";
   position: absolute;
   left: 50%;
   top: 58%;
   z-index: -1;
-  width: 118%;
-  height: 155%;
+  width: 125%;
+  height: 165%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% 38%,
-    rgba(255, 233, 171, 0.94) 0%,
-    rgba(255, 218, 135, 0.78) 12%,
-    rgba(250, 193, 92, 0.50) 28%,
-    rgba(241, 163, 66, 0.26) 48%,
-    rgba(228, 135, 49, 0.10) 63%,
-    rgba(221, 123, 42, 0) 78%
+    rgba(255, 238, 183, 0.98) 0%,
+    rgba(255, 220, 139, 0.82) 13%,
+    rgba(250, 194, 93, 0.54) 29%,
+    rgba(241, 163, 66, 0.28) 48%,
+    rgba(228, 135, 49, 0.11) 64%,
+    rgba(221, 123, 42, 0) 80%
   );
-  filter: blur(15px);
-  opacity: 0.96;
+  filter: blur(17px);
+  opacity: 0.98;
 }
 
-/* A softer pool of light falling downward, closer to the supplied reference. */
-section[aria-label^="PawCream Atelier Room"]
-  > div[aria-label="Light interaction"][style*="box-shadow: 0 0 32px"]::after {
+/* A softer pool of light falling downward, close to the supplied night-mode
+ * reference: the warm light sits under the lamp, while the rest of the scene
+ * remains behind the frosted black veil. */
+section[aria-label^="PawCream Atelier Room"]:has(
+    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
+  )
+  > div[aria-label="Light interaction"]::after {
   content: "";
   position: absolute;
   left: 50%;
-  top: 86%;
+  top: 92%;
   z-index: -1;
-  width: 94%;
-  height: 190%;
+  width: 105%;
+  height: 205%;
   transform: translate(-50%, -50%);
-  border-radius: 48% 48% 58% 58%;
+  border-radius: 48% 48% 60% 60%;
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% 8%,
-    rgba(255, 225, 150, 0.46) 0%,
-    rgba(249, 192, 91, 0.30) 24%,
-    rgba(236, 158, 59, 0.14) 48%,
-    rgba(224, 135, 46, 0) 74%
+    rgba(255, 228, 154, 0.50) 0%,
+    rgba(249, 193, 92, 0.32) 25%,
+    rgba(236, 158, 59, 0.15) 49%,
+    rgba(224, 135, 46, 0) 76%
   );
-  filter: blur(24px);
-  opacity: 0.9;
+  filter: blur(27px);
+  opacity: 0.94;
 }
 
-section[aria-label^="PawCream Atelier Room"]
-  > div[aria-label="Light interaction"][style*="box-shadow: 0 0 32px"]
+section[aria-label^="PawCream Atelier Room"]:has(
+    > nav[aria-label="PawCream Atelier toolbar"][style*="opacity: 1"]
+  )
+  > div[aria-label="Light interaction"]
   > img[alt="Light"] {
-  filter: brightness(1.08) saturate(0.92) drop-shadow(0 0 10px rgba(255, 218, 139, 0.32));
+  filter: brightness(1.12) saturate(0.94) drop-shadow(0 0 11px rgba(255, 221, 143, 0.38));
 }
 
 /*
