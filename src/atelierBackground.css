@@ -25,6 +25,16 @@ section[aria-label^="PawCream Atelier Room"] {
 }
 
 /*
+ * bear.png has a large transparent canvas around the drawing. Keep the
+ * original pixels untouched, but compensate at render time so the bear is
+ * actually visible at the existing tuning values.
+ */
+img[alt="Bear"] {
+  transform: scale(4);
+  transform-origin: 50% 50%;
+}
+
+/*
  * Atelier tuning panel background reference.
  * This keeps the full-size canvas clean while making background.png visible
  * inside the debug UI on both desktop and mobile preview modes.
