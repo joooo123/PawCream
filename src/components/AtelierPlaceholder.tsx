@@ -96,22 +96,22 @@ const STANDARD_ASSET_ORDER: AssetKey[] = [
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
   desktop: {
-    window: { x: 50, y: 22, width: 28 },
-    pawcream: { x: 50, y: 22, width: 28 },
-    people: { x: 50, y: 53, width: 30 },
-    light: { x: 67, y: 18, width: 24 },
-    message: { x: 25, y: 28, width: 22 },
-    instax: { x: 25, y: 69, width: 22 },
-    sewing: { x: 61, y: 64, width: 44 },
+    window: { x: 21.3, y: 27, width: 39 },
+    pawcream: { x: 21.3, y: 27, width: 39 },
+    people: { x: 64.6, y: 47.1, width: 9.5 },
+    light: { x: 49.7, y: 19.5, width: 21.5 },
+    message: { x: 48.8, y: 70.6, width: 28.5 },
+    instax: { x: 24.1, y: 67.4, width: 32 },
+    sewing: { x: 85.7, y: 48.7, width: 42 },
   },
   mobile: {
-    window: { x: 50, y: 20, width: 58 },
-    pawcream: { x: 50, y: 20, width: 58 },
-    people: { x: 50, y: 48, width: 58 },
-    light: { x: 68, y: 15, width: 40 },
-    message: { x: 27, y: 31, width: 38 },
-    instax: { x: 27, y: 61, width: 38 },
-    sewing: { x: 58, y: 79, width: 74 },
+    window: { x: 31.3, y: 27.3, width: 95 },
+    pawcream: { x: 31.3, y: 27.3, width: 95 },
+    people: { x: 24.4, y: 51.1, width: 27 },
+    light: { x: 79.5, y: 15.4, width: 70.5 },
+    message: { x: 25.4, y: 80.1, width: 63.5 },
+    instax: { x: 83.1, y: 78, width: 57.5 },
+    sewing: { x: 70.5, y: 53.6, width: 74 },
   },
 }
 
