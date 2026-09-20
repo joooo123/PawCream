@@ -29,11 +29,13 @@ type AssetKey =
   | 'note'
   | 'bear'
   | 'music'
+  | 'color'
 
 type AssetLayout = {
   x: number
   y: number
   width: number
+  rotation: number
 }
 
 type AtelierTuning = Record<AssetKey, AssetLayout>
@@ -45,10 +47,17 @@ type BoardMessage = {
   createdAt: number
 }
 
-const STORAGE_KEY = 'pawcream-atelier-tuning-v3'
-const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v1'
+const STORAGE_KEY = 'pawcream-atelier-tuning-v4'
+const LEGACY_STORAGE_KEY = 'pawcream-atelier-tuning-v3'
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const BOARD_STORAGE_KEY = 'pawcream-message-board-v1'
+const BACKGROUND_STORAGE_KEY = 'pawcream-atelier-background-v1'
+
+const BACKGROUND_URLS = [
+  `${import.meta.env.BASE_URL}assets/atelier/background.png?v=490fae2d4e560f1ab427c535f2caa0f59efd27f8`,
+  `${import.meta.env.BASE_URL}assets/atelier/background2.png?v=952b5d1b813f6a6872b54a509847dc5ce6e96879`,
+  `${import.meta.env.BASE_URL}assets/atelier/background3.png?v=8e09df228690d4971861a7b18d1b10a88199e12e`,
+] as const
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
   window: {
@@ -76,6 +85,11 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     label: 'Light',
     zIndex: 4,
   },
+  color: {
+    src: `${import.meta.env.BASE_URL}assets/atelier/color.png?v=7f85d4bc59223223e05171ccc40e4009d1f99529`,
+    label: 'Color',
+    zIndex: 5,
+  },
   instax: {
     src: `${import.meta.env.BASE_URL}assets/atelier/instax.png`,
     label: 'Instax',
@@ -87,7 +101,7 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
     zIndex: 7,
   },
   bear: {
-    src: `${import.meta.env.BASE_URL}assets/atelier/bear.png?v=3f981c19b7b4bc06c34a4cfb27bf86e50dd0cb06`,
+    src: `${import.meta.env.BASE_URL}assets/atelier/bear.png?v=c9b3f50b5ee19c81b5bcd761a739cb6e7b8a7ca1`,
     label: 'Bear',
     zIndex: 9,
   },
@@ -120,12 +134,14 @@ const ASSET_ORDER: AssetKey[] = [
   'note',
   'bear',
   'music',
+  'color',
 ]
 
 const STANDARD_ASSET_ORDER: AssetKey[] = [
   'cabinet',
   'people',
   'light',
+  'color',
   'instax',
   'sewing',
   'bear',
@@ -136,30 +152,32 @@ const STANDARD_ASSET_ORDER: AssetKey[] = [
 
 const ATELIER_TUNING_DEFAULTS: AtelierProfiles = {
   desktop: {
-    window: { x: 13.7, y: 17.9, width: 39 },
-    pawcream: { x: 13.7, y: 17.9, width: 39 },
-    cabinet: { x: 78, y: 20.5, width: 33.5 },
-    people: { x: 64.6, y: 47.1, width: 9.5 },
-    light: { x: 52, y: 9, width: 21.5 },
-    message: { x: 7.8, y: 65.5, width: 27 },
-    instax: { x: 31.5, y: 66, width: 31 },
-    sewing: { x: 85.2, y: 48.4, width: 42 },
-    note: { x: 9, y: 67.4, width: 38.5 },
-    bear: { x: 96.5, y: 89.4, width: 9.5 },
-    music: { x: 40, y: 44.6, width: 38 },
+    window: { x: 13.7, y: 17.9, width: 39, rotation: 0 },
+    pawcream: { x: 13.7, y: 17.9, width: 39, rotation: 0 },
+    cabinet: { x: 78, y: 20.5, width: 33.5, rotation: 0 },
+    people: { x: 64.6, y: 47.1, width: 9.5, rotation: 0 },
+    light: { x: 52, y: 9, width: 21.5, rotation: 0 },
+    message: { x: 7.8, y: 65.5, width: 27, rotation: 0 },
+    instax: { x: 31.5, y: 66, width: 31, rotation: 0 },
+    sewing: { x: 85.2, y: 48.4, width: 42, rotation: 0 },
+    note: { x: 9, y: 67.4, width: 38.5, rotation: 0 },
+    bear: { x: 96.5, y: 89.4, width: 9.5, rotation: 0 },
+    music: { x: 37, y: 40.7, width: 38, rotation: 0 },
+    color: { x: 81.5, y: 16.5, width: 30, rotation: -89 },
   },
   mobile: {
-    window: { x: 31.5, y: 17, width: 95 },
-    pawcream: { x: 31.5, y: 17, width: 95 },
-    cabinet: { x: 74.5, y: 38.5, width: 90 },
-    people: { x: 85.5, y: 71.5, width: 24.5 },
-    light: { x: 81.5, y: 14.8, width: 70.5 },
-    message: { x: 16.4, y: 50.1, width: 55.5 },
-    instax: { x: 22.6, y: 86.3, width: 57.5 },
-    sewing: { x: 74.9, y: 53.4, width: 74 },
-    note: { x: 18.2, y: 50.8, width: 80 },
-    bear: { x: 22.6, y: 71.3, width: 27 },
-    music: { x: 35.5, y: 36.3, width: 93.5 },
+    window: { x: 31.5, y: 17, width: 95, rotation: 0 },
+    pawcream: { x: 31.5, y: 17, width: 95, rotation: 0 },
+    cabinet: { x: 74.5, y: 38.5, width: 90, rotation: 0 },
+    people: { x: 36, y: 50.5, width: 21.5, rotation: 0 },
+    light: { x: 81.5, y: 14.8, width: 70.5, rotation: 0 },
+    message: { x: 18.5, y: 68, width: 55.5, rotation: 0 },
+    instax: { x: 51, y: 86.3, width: 68.5, rotation: 7 },
+    sewing: { x: 74.9, y: 53.4, width: 74, rotation: 0 },
+    note: { x: 20.5, y: 69, width: 83.5, rotation: 0 },
+    bear: { x: 83.5, y: 75.5, width: 30.5, rotation: 11 },
+    music: { x: 35.5, y: 36.3, width: 93.5, rotation: 0 },
+    color: { x: 84, y: 36.5, width: 83, rotation: -89 },
   },
 }
 
@@ -229,6 +247,10 @@ function mergeLayout(
         typeof item.width === 'number' && Number.isFinite(item.width)
           ? item.width
           : current.width,
+      rotation:
+        typeof item.rotation === 'number' && Number.isFinite(item.rotation)
+          ? item.rotation
+          : current.rotation,
     }
   }
 
@@ -252,10 +274,12 @@ function loadTuning(enabled: boolean): AtelierProfiles {
 
     const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY)
     if (legacyRaw) {
-      const legacy = JSON.parse(legacyRaw) as Partial<Record<AssetKey, Partial<AssetLayout>>>
+      const legacy = JSON.parse(legacyRaw) as Partial<
+        Record<DeviceProfile, Partial<Record<AssetKey, Partial<AssetLayout>>>>
+      >
       return {
-        desktop: mergeLayout(legacy, ATELIER_TUNING_DEFAULTS.desktop),
-        mobile: cloneLayout(ATELIER_TUNING_DEFAULTS.mobile),
+        desktop: mergeLayout(legacy.desktop, ATELIER_TUNING_DEFAULTS.desktop),
+        mobile: mergeLayout(legacy.mobile, ATELIER_TUNING_DEFAULTS.mobile),
       }
     }
   } catch {
@@ -268,6 +292,12 @@ function loadTuning(enabled: boolean): AtelierProfiles {
 function loadLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
+}
+
+function loadBackgroundIndex() {
+  if (typeof window === 'undefined') return 0
+  const value = Number(window.localStorage.getItem(BACKGROUND_STORAGE_KEY))
+  return Number.isInteger(value) && value >= 0 && value < BACKGROUND_URLS.length ? value : 0
 }
 
 function loadBoardMessages(): BoardMessage[] {
@@ -350,6 +380,7 @@ export default function AtelierPlaceholder({
   const artboardRef = useRef<HTMLElement | null>(null)
   const tuneDragRef = useRef<{ key: AssetKey; pointerId: number } | null>(null)
   const messageDragRef = useRef<{ pointerId: number } | null>(null)
+  const noteHitCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const tuneMode = useMemo(
     () =>
@@ -363,6 +394,7 @@ export default function AtelierPlaceholder({
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
   const [windowHovered, setWindowHovered] = useState(false)
+  const [backgroundIndex, setBackgroundIndex] = useState(loadBackgroundIndex)
 
   const [language, setLanguage] = useState<Language>(loadLanguage)
   const [topBarOpen, setTopBarOpen] = useState(false)
@@ -421,6 +453,14 @@ export default function AtelierPlaceholder({
     if (!tuneMode) return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tuning))
   }, [tuneMode, tuning])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--atelier-background-image',
+      `url("${BACKGROUND_URLS[backgroundIndex]}")`,
+    )
+    window.localStorage.setItem(BACKGROUND_STORAGE_KEY, String(backgroundIndex))
+  }, [backgroundIndex])
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
@@ -514,6 +554,52 @@ export default function AtelierPlaceholder({
     setRuntimeMessagePosition(point)
   }
 
+  const isOpaqueNotePoint = (
+    clientX: number,
+    clientY: number,
+    container: HTMLDivElement,
+  ) => {
+    const image = container.querySelector<HTMLImageElement>('img[alt="Note"]')
+    if (!image || !image.complete || !image.naturalWidth || !image.naturalHeight) return true
+
+    const rect = image.getBoundingClientRect()
+    if (
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom ||
+      rect.width <= 0 ||
+      rect.height <= 0
+    ) {
+      return false
+    }
+
+    const sourceX = clamp(
+      Math.floor(((clientX - rect.left) / rect.width) * image.naturalWidth),
+      0,
+      image.naturalWidth - 1,
+    )
+    const sourceY = clamp(
+      Math.floor(((clientY - rect.top) / rect.height) * image.naturalHeight),
+      0,
+      image.naturalHeight - 1,
+    )
+
+    try {
+      const canvas = noteHitCanvasRef.current ?? document.createElement('canvas')
+      noteHitCanvasRef.current = canvas
+      canvas.width = 1
+      canvas.height = 1
+      const context = canvas.getContext('2d', { willReadFrequently: true })
+      if (!context) return true
+      context.clearRect(0, 0, 1, 1)
+      context.drawImage(image, sourceX, sourceY, 1, 1, 0, 0, 1, 1)
+      return context.getImageData(0, 0, 1, 1).data[3] >= 28
+    } catch {
+      return true
+    }
+  }
+
   const onAssetPointerDown = (
     key: AssetKey,
     event: ReactPointerEvent<HTMLDivElement>,
@@ -547,15 +633,15 @@ export default function AtelierPlaceholder({
   }
 
   const onAssetPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (tuneDragRef.current?.pointerId === event.pointerId) {
-      tuneDragRef.current = null
-    }
-    if (messageDragRef.current?.pointerId === event.pointerId) {
-      messageDragRef.current = null
-    }
+    if (tuneDragRef.current?.pointerId === event.pointerId) tuneDragRef.current = null
+    if (messageDragRef.current?.pointerId === event.pointerId) messageDragRef.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
+  }
+
+  const cycleBackground = () => {
+    setBackgroundIndex((current) => (current + 1) % BACKGROUND_URLS.length)
   }
 
   const handleNormalAssetClick = (key: AssetKey) => {
@@ -571,6 +657,11 @@ export default function AtelierPlaceholder({
 
     if (key === 'note') {
       setBoardOpen(true)
+      return
+    }
+
+    if (key === 'color') {
+      cycleBackground()
       return
     }
 
@@ -647,10 +738,10 @@ export default function AtelierPlaceholder({
         ? { ...baseLayout, ...runtimeMessagePosition }
         : baseLayout
     const selectedAsset = tuneMode && selectedKey === key
-    const interactive = !tuneMode && (key === 'message' || key === 'note' || key === 'light')
+    const interactive =
+      !tuneMode && (key === 'message' || key === 'note' || key === 'light' || key === 'color')
     const hintText = hintTextFor(key)
     const movingMessage = !tuneMode && key === 'message' && messageMoveMode
-    const lightActive = !tuneMode && key === 'light' && topBarOpen
 
     return (
       <div
@@ -668,7 +759,12 @@ export default function AtelierPlaceholder({
         onPointerMove={onAssetPointerMove}
         onPointerUp={onAssetPointerUp}
         onPointerCancel={onAssetPointerUp}
-        onClick={() => handleNormalAssetClick(key)}
+        onClick={(event) => {
+          if (!tuneMode && key === 'note' && !isOpaqueNotePoint(event.clientX, event.clientY, event.currentTarget)) {
+            return
+          }
+          handleNormalAssetClick(key)
+        }}
         onKeyDown={(event) => {
           if ((event.key === 'Enter' || event.key === ' ') && (tuneMode || interactive)) {
             event.preventDefault()
@@ -680,7 +776,8 @@ export default function AtelierPlaceholder({
           left: `${layout.x}%`,
           top: `${layout.y}%`,
           width: `${layout.width}%`,
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) rotate(${layout.rotation}deg)`,
+          transformOrigin: '50% 50%',
           zIndex: asset.zIndex,
           cursor: tuneMode
             ? 'grab'
@@ -693,14 +790,9 @@ export default function AtelierPlaceholder({
                 : 'default',
           touchAction: tuneMode || key === 'message' ? 'none' : 'auto',
           userSelect: 'none',
-          outline: selectedAsset
-            ? '1.5px dashed rgba(213, 111, 157, 0.9)'
-            : lightActive
-              ? '1.5px solid rgba(239, 196, 123, 0.72)'
-              : 'none',
-          outlineOffset: selectedAsset || lightActive ? 6 : 0,
-          borderRadius: selectedAsset || lightActive ? 10 : 0,
-          boxShadow: lightActive ? '0 0 32px rgba(247, 214, 146, 0.32)' : undefined,
+          outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
+          outlineOffset: selectedAsset ? 6 : 0,
+          borderRadius: selectedAsset ? 10 : 0,
         }}
       >
         <img
@@ -723,7 +815,7 @@ export default function AtelierPlaceholder({
               position: 'absolute',
               left: '50%',
               top: -27,
-              transform: 'translateX(-50%)',
+              transform: `translateX(-50%) rotate(${-layout.rotation}deg)`,
               padding: '3px 7px',
               borderRadius: 999,
               background: 'rgba(255, 249, 252, 0.96)',
@@ -745,7 +837,7 @@ export default function AtelierPlaceholder({
               position: 'absolute',
               left: '50%',
               top: -34,
-              transform: 'translateX(-50%)',
+              transform: `translateX(-50%) rotate(${-layout.rotation}deg)`,
               padding: '6px 10px',
               borderRadius: 999,
               border: '1px solid rgba(213, 141, 168, 0.2)',
@@ -769,7 +861,7 @@ export default function AtelierPlaceholder({
               position: 'absolute',
               left: '50%',
               top: '50%',
-              transform: 'translate(-50%, -50%)',
+              transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`,
               width: mobile ? '58%' : '48%',
               maxWidth: 220,
               padding: mobile ? '8px 10px' : '10px 13px',
@@ -838,7 +930,7 @@ export default function AtelierPlaceholder({
             pointerEvents: 'none',
           }}
         >
-          {mobile ? 'Mobile phone · 390 × 844' : 'Desktop · full viewport'}
+          {mobile ? 'Mobile phone · 390 × 844 · lights off' : 'Desktop · full viewport · lights off'}
         </span>
       )}
 
@@ -865,7 +957,8 @@ export default function AtelierPlaceholder({
           left: `${pairLayout.x}%`,
           top: `${pairLayout.y}%`,
           width: `${pairLayout.width}%`,
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) rotate(${pairLayout.rotation}deg)`,
+          transformOrigin: '50% 50%',
           zIndex: ASSETS.window.zIndex,
           cursor: tuneMode ? 'grab' : mobile ? 'default' : 'pointer',
           touchAction: tuneMode ? 'none' : 'auto',
@@ -898,7 +991,7 @@ export default function AtelierPlaceholder({
               position: 'absolute',
               left: '50%',
               top: -27,
-              transform: 'translateX(-50%)',
+              transform: `translateX(-50%) rotate(${-pairLayout.rotation}deg)`,
               padding: '3px 7px',
               borderRadius: 999,
               background: 'rgba(255, 249, 252, 0.96)',
@@ -923,13 +1016,12 @@ export default function AtelierPlaceholder({
           style={{
             position: 'absolute',
             left: '50%',
-            top: mobile ? 10 : 16,
             zIndex: 55,
             width: mobile ? 'calc(100% - 24px)' : 'min(720px, calc(100% - 40px))',
             minHeight: mobile ? 48 : 54,
             transform: topBarOpen
               ? 'translate(-50%, 0)'
-              : 'translate(-50%, calc(-100% - 24px))',
+              : 'translate(-50%, calc(100% + 32px))',
             opacity: topBarOpen ? 1 : 0,
             pointerEvents: topBarOpen ? 'auto' : 'none',
             transition: 'transform 320ms ease, opacity 240ms ease',
@@ -1044,7 +1136,6 @@ export default function AtelierPlaceholder({
           style={{
             position: 'absolute',
             right: mobile ? 12 : 22,
-            top: mobile ? 76 : 84,
             zIndex: 56,
             width: mobile ? 'min(300px, calc(100% - 24px))' : 320,
             padding: 16,
@@ -1314,7 +1405,7 @@ export default function AtelierPlaceholder({
             <div>
               <strong style={{ display: 'block', fontSize: 13 }}>Atelier Tune</strong>
               <span style={{ fontSize: 10, color: '#aa8c96' }}>
-                电脑端 / 手机端 独立布局
+                关灯状态 · 电脑端 / 手机端 独立布局
               </span>
             </div>
             <button
@@ -1350,7 +1441,7 @@ export default function AtelierPlaceholder({
                   color: '#947a83',
                 }}
               >
-                Desktop：Window 默认显示，悬停切换 PawCream。Mobile：直接显示 PawCream。Window 与 PawCream 的位置和大小联动。
+                Color 已并入普通素材调试。所有素材可调 X / Y / Size / Rotation；当前调试固定为关灯状态，LightOn 与夜景层不会显示。
               </p>
 
               <div
@@ -1380,9 +1471,7 @@ export default function AtelierPlaceholder({
                           : 'rgba(198, 133, 157, 0.24)',
                     }}
                   >
-                    {profile === 'desktop'
-                      ? '电脑端 · 全屏'
-                      : '手机端 · 390×844'}
+                    {profile === 'desktop' ? '电脑端 · 全屏' : '手机端 · 390×844'}
                   </button>
                 ))}
               </div>
@@ -1428,7 +1517,7 @@ export default function AtelierPlaceholder({
                     color: '#aa8c96',
                   }}
                 >
-                  Window / PawCream 为同一交互位置。调整任意一个都会同步另一张图；点击两个按钮可切换调试时显示状态。
+                  Window / PawCream 共用位置、大小和旋转参数；点击两个按钮仅切换调试时显示哪张图。
                 </p>
               )}
 
@@ -1442,33 +1531,38 @@ export default function AtelierPlaceholder({
                 <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>
                   {deviceProfile === 'desktop' ? '电脑端' : '手机端'} · {ASSETS[selectedKey].label}
                 </strong>
-                <RangeRow
-                  label="X"
-                  value={selected.x}
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  suffix="%"
-                  onChange={(value) => updateSelected('x', value)}
-                />
-                <RangeRow
-                  label="Y"
-                  value={selected.y}
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  suffix="%"
-                  onChange={(value) => updateSelected('y', value)}
-                />
-                <RangeRow
-                  label="Size"
-                  value={selected.width}
-                  min={5}
-                  max={95}
-                  step={0.5}
-                  suffix="%"
-                  onChange={(value) => updateSelected('width', value)}
-                />
+                <RangeRow label="X" value={selected.x} min={0} max={100} step={0.5} suffix="%" onChange={(value) => updateSelected('x', value)} />
+                <RangeRow label="Y" value={selected.y} min={0} max={100} step={0.5} suffix="%" onChange={(value) => updateSelected('y', value)} />
+                <RangeRow label="Size" value={selected.width} min={5} max={180} step={0.5} suffix="%" onChange={(value) => updateSelected('width', value)} />
+                <RangeRow label="Rotation" value={selected.rotation} min={-180} max={180} step={1} suffix="°" onChange={(value) => updateSelected('rotation', value)} />
+              </section>
+
+              <section
+                style={{
+                  marginTop: 15,
+                  paddingTop: 12,
+                  borderTop: '1px solid rgba(198, 133, 157, 0.13)',
+                }}
+              >
+                <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>背景预览</strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+                  {BACKGROUND_URLS.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setBackgroundIndex(index)}
+                      style={{
+                        ...smallButtonStyle,
+                        background: backgroundIndex === index ? '#f8e8ee' : 'rgba(255,255,255,0.78)',
+                        borderColor: backgroundIndex === index
+                          ? 'rgba(213, 111, 157, 0.5)'
+                          : 'rgba(198, 133, 157, 0.24)',
+                      }}
+                    >
+                      BG {index + 1}
+                    </button>
+                  ))}
+                </div>
               </section>
 
               <div
@@ -1486,11 +1580,7 @@ export default function AtelierPlaceholder({
                 >
                   {copyStatus}
                 </button>
-                <button
-                  type="button"
-                  style={smallButtonStyle}
-                  onClick={resetCurrentProfile}
-                >
+                <button type="button" style={smallButtonStyle} onClick={resetCurrentProfile}>
                   恢复当前端
                 </button>
               </div>
@@ -1503,7 +1593,7 @@ export default function AtelierPlaceholder({
                   color: '#aa8c96',
                 }}
               >
-                11 个素材都会保存在双端调试配置中。Music、Bear、Note、Message 和 Wall cabinet 都可独立拖动并调节 X / Y / Size。
+                12 个素材统一保存在 ATELIER_TUNING_DEFAULTS 中。正式页 Note 使用 PNG alpha 命中检测，透明底不会触发留言板。
               </p>
             </div>
           )}
