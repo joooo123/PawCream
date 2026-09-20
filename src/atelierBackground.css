@@ -50,9 +50,10 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 }
 
 /*
- * User-provided lighton.png is the lamp-light artwork. It sits above the
- * ordinary Atelier assets but below the full-scene dark/frosted veil.
- * Render it normally so the PNG's own transparency and painted light are kept.
+ * User-provided lighton.png is the illuminated lamp artwork. It uses the same
+ * artboard coordinate system as the ordinary Light asset. Keep LightOn above
+ * the original Light but below the full-scene dark/frosted veil so the live
+ * page matches the tuning preview exactly.
  */
 .atelier-lightline-layer {
   position: absolute;
@@ -73,8 +74,10 @@ section[aria-label^="PawCream Atelier Room"] > div:not([role]):has(> img[alt="Mu
 }
 
 /*
- * Night layer is deliberately one layer ABOVE the user light artwork, matching
- * the hierarchy: room assets < lighton < dark frosted veil < lamp < toolbar.
+ * Night hierarchy is now identical in tune and live views:
+ * room assets (including Light) < LightOn < dark frosted veil < toolbar.
+ * Do not promote the normal Light above the veil in production; doing that
+ * made the two lamp drawings look separated even when tuning showed overlap.
  */
 section[aria-label^="PawCream Atelier Room"]::after {
   content: "";
@@ -93,10 +96,7 @@ section[aria-label^="PawCream Atelier Room"].atelier-night-active::after {
   opacity: 1;
 }
 
-/*
- * Remove all generated yellow frame/glow feedback from the lamp itself. The
- * light visual now comes exclusively from lighton.png.
- */
+/* Remove the old generated yellow frame/glow feedback from the clickable lamp. */
 section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction"] {
   outline: none !important;
   outline-offset: 0 !important;
@@ -110,19 +110,7 @@ section[aria-label^="PawCream Atelier Room"] > div[aria-label="Light interaction
   display: none !important;
 }
 
-section[aria-label^="PawCream Atelier Room"].atelier-night-active
-  > div[aria-label="Light interaction"] {
-  z-index: 22 !important;
-  isolation: isolate;
-}
-
-section[aria-label^="PawCream Atelier Room"].atelier-night-active
-  > div[aria-label="Light interaction"]
-  > img[alt="Light"] {
-  filter: none !important;
-}
-
-/* Lightline controls are injected into the existing Atelier Tune panel. */
+/* LightOn controls are injected into the existing Atelier Tune panel. */
 .lightline-tune-panel {
   margin-top: 16px;
   padding-top: 13px;
