@@ -4,7 +4,7 @@ set -euo pipefail
 DEPLOY_DIR="${1:-${PAWCREAM_DEPLOY_DIR:-/var/www/pawcream}}"
 
 echo "[PawCream] install dependencies"
-npm ci
+npm install
 
 echo "[PawCream] build for Gitea/Nginx"
 npm run build:gitea
