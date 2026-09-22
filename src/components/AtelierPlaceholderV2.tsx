@@ -69,7 +69,7 @@ const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> =
   instax: { src: `${import.meta.env.BASE_URL}assets/atelier/instax.png`, label: 'Instax', zIndex: 6 },
   sewing: { src: `${import.meta.env.BASE_URL}assets/atelier/sewing%20machine.png`, label: 'Sewing machine', zIndex: 7 },
   bear: { src: `${import.meta.env.BASE_URL}assets/atelier/bear.png?v=c9b3f50b5ee19c81b5bcd761a739cb6e7b8a7ca1`, label: 'Bear', zIndex: 9 },
-  music: { src: `${import.meta.env.BASE_URL}assets/atelier/music.png?v=c33cc962958420cb7d90922e25b09847446f27a1`, label: 'Music', zIndex: 10 },
+  music: { src: `${import.meta.env.BASE_URL}assets/atelier/music.png?v=9fd6532ea84d73fd23fcc5c27376ccb66d2042e8`, label: 'Music', zIndex: 10 },
   note: { src: `${import.meta.env.BASE_URL}assets/atelier/note.png?v=517196166abc61e4216196dc5b317b39c36d2c86`, label: 'Note', zIndex: 11 },
   message: { src: `${import.meta.env.BASE_URL}assets/atelier/message.png`, label: 'Message', zIndex: 12 },
   color: { src: `${import.meta.env.BASE_URL}assets/atelier/color.png?v=7f85d4bc59223223e05171ccc40e4009d1f99529`, label: 'Color', zIndex: 13 },
