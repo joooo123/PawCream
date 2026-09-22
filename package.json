@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "optimize:atelier": "node scripts/optimize-atelier.mjs",
     "build": "tsc -b && vite build",
+    "build:webp": "tsc -b && vite build --mode webp",
     "preview": "vite preview"
   },
   "dependencies": {
