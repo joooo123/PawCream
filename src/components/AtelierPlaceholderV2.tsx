@@ -58,6 +58,7 @@ const BACKGROUND_URLS = [
   `${import.meta.env.BASE_URL}assets/atelier/background.png?v=490fae2d4e560f1ab427c535f2caa0f59efd27f8`,
   `${import.meta.env.BASE_URL}assets/atelier/background2.png?v=952b5d1b813f6a6872b54a509847dc5ce6e96879`,
   `${import.meta.env.BASE_URL}assets/atelier/background3.png?v=8e09df228690d4971861a7b18d1b10a88199e12e`,
+  `${import.meta.env.BASE_URL}assets/atelier/background4.png?v=1a26f197a42f8dd21b65760526491d93d77ab753`,
 ] as const
 
 const ASSETS: Record<AssetKey, { src: string; label: string; zIndex: number }> = {
@@ -779,7 +780,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
               {selectedKey === 'color' && (
                 <section style={{ marginTop: 13, paddingTop: 12, borderTop: '1px solid rgba(198,133,157,.13)' }}>
                   <strong style={{ display: 'block', marginBottom: 7, fontSize: 11 }}>Color · 背景预览</strong>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {BACKGROUND_URLS.map((_, index) => (
                       <button key={index} type="button" onClick={() => setBackgroundIndex(index)} style={{ ...smallButtonStyle, background: backgroundIndex === index ? '#f8e8ee' : 'rgba(255,255,255,.78)', borderColor: backgroundIndex === index ? 'rgba(213,111,157,.5)' : 'rgba(198,133,157,.24)' }}>BG {index + 1}</button>
                     ))}
