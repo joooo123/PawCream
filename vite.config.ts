@@ -5,6 +5,7 @@ const atelierAssetNames = [
   'background.png',
   'background2.png',
   'background3.png',
+  'background4.png',
   'window.png',
   'pawcream.png',
   'wall-mounted cabinet.png',
@@ -22,6 +23,27 @@ const atelierAssetNames = [
 
 const replaceAllText = (source: string, from: string, to: string) =>
   source.split(from).join(to)
+
+function atelierTuningDefaults() {
+  const replacements = [
+    ['music: L(37, 40.7, 38, 0)', 'music: L(35.5, 34.8, 38, 0)'],
+    ['color: L(81.5, 16.5, 30, -89)', 'color: L(80.2, 17.3, 30, -89)'],
+    ['music: L(35.5, 36.3, 93.5, 0)', 'music: L(25.4, 32.5, 93.5, 0)'],
+    ['color: L(84, 36.5, 83, -89)', 'color: L(82.1, 36.6, 83, -89)'],
+  ] as const
+
+  return {
+    name: 'atelier-tuning-defaults',
+    enforce: 'pre' as const,
+    transform(code: string, id: string) {
+      if (id.indexOf('/src/components/AtelierPlaceholderV2.tsx') === -1) return null
+
+      let next = code
+      for (const [from, to] of replacements) next = replaceAllText(next, from, to)
+      return next === code ? null : { code: next, map: null }
+    },
+  }
+}
 
 function atelierWebpReferences() {
   return {
@@ -48,6 +70,7 @@ function atelierWebpReferences() {
 
 export default defineConfig(({ command, mode }) => ({
   plugins: [
+    atelierTuningDefaults(),
     command === 'build' && mode === 'webp' ? atelierWebpReferences() : null,
     react(),
   ],
