@@ -20,20 +20,24 @@ const atelierAssetNames = [
   'color.png',
 ]
 
+const replaceAllText = (source: string, from: string, to: string) =>
+  source.split(from).join(to)
+
 function atelierWebpReferences() {
   return {
     name: 'atelier-webp-references',
     enforce: 'pre' as const,
     transform(code: string, id: string) {
-      if (!id.includes('/src/')) return null
+      if (id.indexOf('/src/') === -1) return null
 
       let next = code
       for (const pngName of atelierAssetNames) {
         const webpName = pngName.replace(/\.png$/i, '.webp')
-        next = next.replaceAll(pngName, webpName)
-        next = next.replaceAll(
-          pngName.replaceAll(' ', '%20'),
-          webpName.replaceAll(' ', '%20'),
+        next = replaceAllText(next, pngName, webpName)
+        next = replaceAllText(
+          next,
+          pngName.split(' ').join('%20'),
+          webpName.split(' ').join('%20'),
         )
       }
 
