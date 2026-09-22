@@ -8,6 +8,7 @@ const assets = [
   { file: 'background.png', maxWidth: 2560, quality: 82 },
   { file: 'background2.png', maxWidth: 2560, quality: 82 },
   { file: 'background3.png', maxWidth: 2560, quality: 82 },
+  { file: 'background4.png', maxWidth: 2560, quality: 82 },
   { file: 'window.png', maxWidth: 1800, quality: 84 },
   { file: 'pawcream.png', maxWidth: 1800, quality: 84 },
   { file: 'wall-mounted cabinet.png', maxWidth: 1200, quality: 84 },
