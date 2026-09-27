@@ -40,6 +40,9 @@ jobs:
       - name: Optimize Atelier images
         run: npm run optimize:atelier
 
+      - name: Optimize Home images
+        run: npm run optimize:home
+
       - name: Convert PawCream fonts to WOFF2
         run: python3 scripts/convert-fonts.py
 
