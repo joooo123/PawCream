@@ -47,10 +47,12 @@ section[aria-label^="PawCream Atelier Room"].pawcream-guides-active .pawcream-gu
 
 html.pawcream-lang-zh .pawcream-guide-label {
   font-family: 'PawCream CN Ready', 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif;
+  font-size: 20px;
 }
 
 html.pawcream-lang-en .pawcream-guide-label {
   font-family: 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif;
+  font-size: 23px;
 }
 
 /* Hide the legacy Message / Light hint bubbles while the full guide layer is active. */
@@ -76,7 +78,7 @@ section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 7px;
   white-space: nowrap;
   font-family: 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif;
   line-height: 1;
@@ -84,13 +86,13 @@ section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
 }
 
 .pawcream-light-intro-label {
-  font-size: 24px;
+  font-size: 30px;
 }
 
 .pawcream-light-intro-arrow {
   display: inline-block;
   font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 31px;
+  font-size: 38px;
   font-weight: 600;
   line-height: .8;
   transform: translateY(-1px);
@@ -145,16 +147,20 @@ div[role="dialog"][aria-label="Sign in"] {
 }
 
 @media (max-width: 600px) {
-  .pawcream-guide-label {
+  html.pawcream-lang-zh .pawcream-guide-label {
     font-size: 16px;
   }
 
-  .pawcream-light-intro-label {
+  html.pawcream-lang-en .pawcream-guide-label {
     font-size: 19px;
   }
 
+  .pawcream-light-intro-label {
+    font-size: 24px;
+  }
+
   .pawcream-light-intro-arrow {
-    font-size: 25px;
+    font-size: 31px;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] {
