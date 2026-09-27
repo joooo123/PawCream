@@ -132,17 +132,30 @@ export default function P5DreamLayer({
   useEffect(() => {
     if (!hostRef.current) return
 
-    let starImages: p5.Image[] = []
+    let starImages: Array<p5.Image | null> = Array.from({ length: ASSETS.stars.length }, () => null)
+    let loadedStarIndexes: number[] = []
     let ecgImage: p5.Image | null = null
     let particles: StarParticle[] = []
     let pendingSpawns: PendingStarSpawn[] = []
     let nextStarSpawnAt = 0
     let nextTrackIndex = 0
+    let disposed = false
+    const progressiveLoadTimers: number[] = []
 
     const sketch = (s: p5) => {
-      s.preload = () => {
-        starImages = ASSETS.stars.map((src) => s.loadImage(src))
-        ecgImage = s.loadImage(ASSETS.ecg)
+      const loadStar = (index: number) => {
+        const src = ASSETS.stars[index]
+        if (!src || starImages[index]) return
+
+        s.loadImage(
+          src,
+          (image) => {
+            if (disposed) return
+            starImages[index] = image
+            if (!loadedStarIndexes.includes(index)) loadedStarIndexes.push(index)
+          },
+          () => undefined,
+        )
       }
 
       s.setup = () => {
@@ -153,6 +166,22 @@ export default function P5DreamLayer({
         s.imageMode(s.CENTER)
         s.clear()
         nextStarSpawnAt = s.millis() + s.random(350, 650)
+
+        // Start drawing immediately; images arrive progressively instead of blocking setup.
+        ASSETS.stars.slice(0, 3).forEach((_, index) => loadStar(index))
+        s.loadImage(
+          ASSETS.ecg,
+          (image) => {
+            if (!disposed) ecgImage = image
+          },
+          () => undefined,
+        )
+
+        ASSETS.stars.slice(3).forEach((_, offset) => {
+          progressiveLoadTimers.push(
+            window.setTimeout(() => loadStar(offset + 3), 180 + offset * 90),
+          )
+        })
       }
 
       const getEmitterPosition = () => {
@@ -172,9 +201,11 @@ export default function P5DreamLayer({
       ) => {
         const state = stateRef.current
         const emitter = getEmitterPosition()
-        if (!emitter || !starImages.length || !state.tuning.tracks.length) return
+        if (!emitter || !loadedStarIndexes.length || !state.tuning.tracks.length) return
 
-        const imageIndex = Math.floor(s.random(starImages.length))
+        const imageIndex = loadedStarIndexes[
+          Math.floor(s.random(loadedStarIndexes.length))
+        ]
 
         const burstRadius = burstCount > 1
           ? Math.min(10, Math.max(4, state.tuning.sizeMin * 0.12))
@@ -267,6 +298,7 @@ export default function P5DreamLayer({
 
         if (
           shouldEmit &&
+          loadedStarIndexes.length > 0 &&
           now >= nextStarSpawnAt &&
           particles.length + pendingSpawns.length < maxStars &&
           canSpawnStarSpatially()
@@ -450,7 +482,13 @@ export default function P5DreamLayer({
     }
 
     const instance = new p5(sketch)
-    return () => instance.remove()
+    return () => {
+      disposed = true
+      progressiveLoadTimers.forEach((timer) => window.clearTimeout(timer))
+      starImages = []
+      loadedStarIndexes = []
+      instance.remove()
+    }
   }, [])
 
   return <div ref={hostRef} className="p5-dream-layer" aria-hidden="true" />
