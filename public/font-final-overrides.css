@@ -1,0 +1,120 @@
+/* Final PawCream typography overrides. Loaded before app CSS but uses higher specificity. */
+@font-face {
+  font-family: 'PawCream EN Ready';
+  src: url('/PawCream/assets/font/pawcream-en.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'PawCream CN Ready';
+  src: url('/PawCream/assets/font/pawcream-cn.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+/* Use the preloaded faces site-wide. Chinese areas are overridden explicitly below. */
+html body #root,
+html body #root *,
+html body button,
+html body input,
+html body textarea,
+html body select {
+  font-family: 'PawCream EN Ready', 'PawCream CN Ready', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Chinese message board: explicit Chinese face and larger visual sizes. */
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section,
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section * {
+  font-family: 'PawCream CN Ready', 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section header strong {
+  font-size: 27px !important;
+  line-height: 1.25 !important;
+  color: #58778f !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section header p {
+  font-size: 16px !important;
+  line-height: 1.7 !important;
+  color: #627f94 !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section textarea {
+  font-size: 21px !important;
+  line-height: 1.7 !important;
+  color: #5f7c91 !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section button {
+  font-size: 20px !important;
+  color: #5d7f99 !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section span {
+  font-size: 15px !important;
+  color: #607f95 !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article p {
+  font-size: 20px !important;
+  line-height: 1.7 !important;
+  color: #5e7c92 !important;
+}
+
+html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article time {
+  font-size: 15px !important;
+  color: #7896ab !important;
+}
+
+/* Instax stays Apple/English and the heading is explicitly deep blue. */
+html body section[role="dialog"][aria-label="Pick an Instax frame"],
+html body section[role="dialog"][aria-label="Pick an Instax frame"] * {
+  font-family: 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+html body section[role="dialog"][aria-label="Pick an Instax frame"] > div:first-of-type {
+  color: #527792 !important;
+  font-size: 35px !important;
+}
+
+html body section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
+html body section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file {
+  font-size: 23px !important;
+}
+
+html body section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] * {
+  font-size: 21px !important;
+  color: #527792 !important;
+}
+
+/* Chinese toolbar uses Chinese face when language controller marks zh. */
+html.pawcream-lang-zh body nav[aria-label="PawCream Atelier toolbar"],
+html.pawcream-lang-zh body nav[aria-label="PawCream Atelier toolbar"] * {
+  font-family: 'PawCream CN Ready', 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+html.pawcream-lang-en body nav[aria-label="PawCream Atelier toolbar"],
+html.pawcream-lang-en body nav[aria-label="PawCream Atelier toolbar"] * {
+  font-family: 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+@media (max-width: 600px) {
+  html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section header strong {
+    font-size: 23px !important;
+  }
+  html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section textarea,
+  html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article p {
+    font-size: 18px !important;
+  }
+  html body section[role="dialog"][aria-label="Pick an Instax frame"] > div:first-of-type {
+    font-size: 31px !important;
+  }
+  html body section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
+  html body section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file {
+    font-size: 20px !important;
+  }
+}
