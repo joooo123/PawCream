@@ -12,6 +12,7 @@ const atelierAssetNames = [
   'light.png',
   'lighton.png',
   'instax.png',
+  'letter.png',
   'sewing machine.png',
   'bear.png',
   'music.png',
