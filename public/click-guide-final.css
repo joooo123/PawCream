@@ -1,0 +1,52 @@
+/* Final Light click-guide adjustment: keep it left of the chandelier, larger, and gently floating. */
+.pawcream-light-intro-content {
+  transform: translate(-100%, -50%) translateX(-42px) !important;
+  animation: pawcream-click-guide-float 1.25s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.pawcream-light-intro-label {
+  font-size: 33px !important;
+}
+
+.pawcream-light-intro-arrow {
+  font-size: 41px !important;
+}
+
+@keyframes pawcream-click-guide-float {
+  from {
+    transform: translate(-100%, -50%) translateX(-42px) translateY(-2px);
+  }
+  to {
+    transform: translate(-100%, -50%) translateX(-42px) translateY(4px);
+  }
+}
+
+@media (max-width: 600px) {
+  .pawcream-light-intro-content {
+    transform: translate(-100%, -50%) translateX(-26px) !important;
+  }
+
+  .pawcream-light-intro-label {
+    font-size: 27px !important;
+  }
+
+  .pawcream-light-intro-arrow {
+    font-size: 34px !important;
+  }
+
+  @keyframes pawcream-click-guide-float {
+    from {
+      transform: translate(-100%, -50%) translateX(-26px) translateY(-2px);
+    }
+    to {
+      transform: translate(-100%, -50%) translateX(-26px) translateY(3px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pawcream-light-intro-content {
+    animation: none !important;
+  }
+}
