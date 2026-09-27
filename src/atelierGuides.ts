@@ -1,3 +1,5 @@
+export {}
+
 const STAGE_SELECTOR = 'section[aria-label^="PawCream Atelier Room"]'
 const TOOLBAR_SELECTOR = 'nav[aria-label="PawCream Atelier toolbar"]'
 const LIGHT_SELECTOR = 'img[alt="Light"]'
