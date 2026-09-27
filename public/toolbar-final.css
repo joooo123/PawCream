@@ -1,31 +1,113 @@
-/* Final chandelier toolbar sizing and color refinement. */
+/* Final chandelier toolbar sizing, color, and language slider refinement. */
 nav[aria-label="PawCream Atelier toolbar"] {
-  background: rgba(228, 240, 250, .90) !important;
-  border-color: rgba(129, 170, 202, .26) !important;
-  box-shadow: 0 12px 32px rgba(74, 108, 134, .12) !important;
-  backdrop-filter: blur(18px) saturate(112%) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(112%) !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  padding: 6px 9px 6px 14px !important;
+  background: rgba(239, 247, 253, .94) !important;
+  border-color: rgba(140, 180, 210, .20) !important;
+  box-shadow: 0 10px 28px rgba(74, 108, 134, .09) !important;
+  backdrop-filter: blur(18px) saturate(108%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(108%) !important;
 }
 
 nav[aria-label="PawCream Atelier toolbar"] button {
-  background-color: rgba(249, 253, 255, .92) !important;
-  border-color: rgba(119, 165, 201, .24) !important;
-  box-shadow: 0 3px 10px rgba(74, 108, 134, .05) !important;
+  background-color: rgba(253, 255, 255, .94) !important;
+  border-color: rgba(132, 173, 204, .18) !important;
+  box-shadow: 0 2px 8px rgba(74, 108, 134, .035) !important;
 }
 
-nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child {
-  background: rgba(205, 226, 243, .56) !important;
+nav[aria-label="PawCream Atelier toolbar"] > div {
+  gap: 5px !important;
+}
+
+/* Language switch becomes one pill with a sliding thumb. */
+nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child {
+  position: relative !important;
+  isolation: isolate;
+  width: 82px !important;
+  min-width: 82px !important;
+  height: 30px !important;
+  padding: 2px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(129, 170, 202, .16) !important;
+  border-radius: 999px !important;
+  background: rgba(215, 233, 247, .52) !important;
+  box-sizing: border-box !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 2px;
+  top: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 2px 8px rgba(85, 120, 147, .10);
+  transform: translateX(0);
+  transition: transform 260ms cubic-bezier(.22, .72, .28, 1), box-shadow 220ms ease;
+  pointer-events: none;
+}
+
+html.pawcream-lang-en nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child::before {
+  transform: translateX(100%);
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button {
+  position: relative !important;
+  z-index: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 26px !important;
+  padding: 0 4px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: color 220ms ease, transform 180ms ease !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button:active {
+  transform: scale(.96);
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button {
+  color: #88a1b3 !important;
+}
+
+html.pawcream-lang-zh nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button:first-child,
+html.pawcream-lang-en nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button:last-child {
+  color: #587b94 !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div > button:not([aria-label]) {
+  width: 90px !important;
+  min-width: 90px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 7px !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div > button[aria-label] {
+  width: 30px !important;
+  min-width: 30px !important;
+  height: 30px !important;
 }
 
 @media (max-width: 600px) {
   nav[aria-label="PawCream Atelier toolbar"] {
-    height: 62px !important;
-    min-height: 62px !important;
+    height: 48px !important;
+    min-height: 48px !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 0 !important;
-    padding: 8px 10px !important;
+    padding: 5px 7px !important;
+    background: rgba(241, 248, 253, .95) !important;
   }
 
   /* Hide the PawCream title on phones so the controls stay on one compact row. */
@@ -35,51 +117,47 @@ nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child {
 
   nav[aria-label="PawCream Atelier toolbar"] > div {
     width: auto !important;
-    height: 40px !important;
+    height: 34px !important;
     display: grid !important;
-    grid-template-columns: 64px 72px 72px 82px 30px !important;
+    grid-template-columns: 62px 68px 68px 76px 28px !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child {
-    width: 64px !important;
-    min-width: 64px !important;
-    height: 30px !important;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    align-items: center !important;
+    width: 62px !important;
+    min-width: 62px !important;
+    height: 28px !important;
+    padding: 2px !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button {
-    width: auto !important;
-    min-width: 0 !important;
-    height: 28px !important;
+    height: 24px !important;
     padding: 0 2px !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] > div > button:not([aria-label]) {
     width: 100% !important;
     min-width: 0 !important;
-    height: 30px !important;
-    min-height: 30px !important;
-    padding: 0 4px !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    padding: 0 3px !important;
     overflow: hidden !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] > div > button[aria-label] {
-    width: 30px !important;
-    min-width: 30px !important;
-    height: 30px !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] *,
   html.pawcream-lang-zh nav[aria-label="PawCream Atelier toolbar"] * {
     font-size: 14px !important;
-    line-height: 1.05 !important;
+    line-height: 1.02 !important;
   }
 
   html.pawcream-lang-en nav[aria-label="PawCream Atelier toolbar"] *,
@@ -91,18 +169,31 @@ nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child {
 
 @media (max-width: 340px) {
   nav[aria-label="PawCream Atelier toolbar"] {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] > div {
-    grid-template-columns: 58px 60px 60px 70px 28px !important;
-    gap: 4px !important;
+    grid-template-columns: 56px 58px 58px 68px 26px !important;
+    gap: 3px !important;
   }
 
   nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child {
-    width: 58px !important;
-    min-width: 58px !important;
+    width: 56px !important;
+    min-width: 56px !important;
+    height: 26px !important;
+  }
+
+  nav[aria-label="PawCream Atelier toolbar"] > div > div:first-child > button {
+    height: 22px !important;
+  }
+
+  nav[aria-label="PawCream Atelier toolbar"] > div > button[aria-label] {
+    width: 26px !important;
+    min-width: 26px !important;
+    height: 26px !important;
   }
 
   html.pawcream-lang-en nav[aria-label="PawCream Atelier toolbar"] *,
