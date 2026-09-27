@@ -162,10 +162,15 @@ if (!isTuneMode) {
     }
 
     const color = currentBackgroundColor()
-    const x = Math.max(72, lightRect.left - stageRect.left - 14)
+    // Put the arrow tip on the chandelier body rather than on its outer edge.
+    // The content itself grows leftward because CSS uses translateX(-100%).
+    const x = Math.min(
+      stageRect.width - 24,
+      Math.max(96, lightRect.left - stageRect.left + lightRect.width * 0.52),
+    )
     const y = Math.min(
       stageRect.height - 34,
-      Math.max(34, lightRect.top - stageRect.top + lightRect.height * 0.53),
+      Math.max(34, lightRect.top - stageRect.top + lightRect.height * 0.55),
     )
     const signature = `${x.toFixed(1)}:${y.toFixed(1)}:${color}`
 
