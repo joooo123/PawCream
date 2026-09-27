@@ -107,7 +107,7 @@ nav[aria-label="PawCream Atelier toolbar"] {
   border-color: rgba(119, 165, 201, .38) !important;
   box-shadow: 0 14px 38px rgba(74, 108, 134, .18) !important;
   color: #63839a !important;
-  font-family: 'PawCreamWanWan', 'PawCreamApple', ui-sans-serif, system-ui, sans-serif !important;
+  font-family: 'PawCreamApple', 'PawCreamWanWan', ui-sans-serif, system-ui, sans-serif !important;
   backdrop-filter: blur(18px) saturate(118%) !important;
   -webkit-backdrop-filter: blur(18px) saturate(118%) !important;
 }
@@ -116,7 +116,7 @@ nav[aria-label="PawCream Atelier toolbar"] button {
   border-color: rgba(119, 165, 201, .30) !important;
   background-color: rgba(242, 248, 253, .84) !important;
   color: #66869d !important;
-  font-family: 'PawCreamWanWan', 'PawCreamApple', ui-sans-serif, system-ui, sans-serif !important;
+  font-family: 'PawCreamApple', 'PawCreamWanWan', ui-sans-serif, system-ui, sans-serif !important;
   box-shadow: 0 4px 14px rgba(74, 108, 134, .07) !important;
 }
 
