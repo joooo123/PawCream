@@ -4,18 +4,8 @@ const STAGE_SELECTOR = 'section[aria-label^="PawCream Atelier Room"]'
 const TOOLBAR_SELECTOR = 'nav[aria-label="PawCream Atelier toolbar"]'
 const LIGHT_SELECTOR = 'img[alt="Light"]'
 const ASSET_ALTS = new Set([
-  'Window',
-  'PawCream',
-  'Wall cabinet',
-  'People',
-  'Light',
-  'Message',
-  'Instax',
-  'Sewing machine',
-  'Note',
-  'Bear',
-  'Music',
-  'Color',
+  'Window', 'PawCream', 'Wall cabinet', 'People', 'Light', 'Message',
+  'Instax', 'Sewing machine', 'Note', 'Bear', 'Music', 'Color',
 ])
 
 const isTuneMode = new URLSearchParams(window.location.search).get('tune') === '1'
@@ -65,31 +55,31 @@ if (!isTuneMode) {
       stage.appendChild(intro)
     }
 
-    return { dim, labels, intro }
+    return { labels, intro }
   }
 
   const positionAssetLabels = (stage: HTMLElement, layer: HTMLElement) => {
     const stageRect = stage.getBoundingClientRect()
     const images = Array.from(stage.querySelectorAll<HTMLImageElement>('img[alt]'))
       .filter((image) => ASSET_ALTS.has(image.alt))
-
     const seen = new Set<string>()
-    const next: Array<{ label: string; x: number; y: number }> = []
+    const entries: Array<{ label: string; x: number; y: number }> = []
 
     for (const image of images) {
       const rect = image.getBoundingClientRect()
-      if (!rect.width || !rect.height) continue
-      const key = image.alt
-      if (seen.has(key)) continue
-      seen.add(key)
-      next.push({
+      if (!rect.width || !rect.height || seen.has(image.alt)) continue
+      seen.add(image.alt)
+      entries.push({
         label: image.alt,
         x: rect.left - stageRect.left + rect.width / 2,
         y: rect.top - stageRect.top + rect.height / 2,
       })
     }
 
-    layer.replaceChildren(...next.map(({ label, x, y }) => {
+    const signature = entries.map(({ label, x, y }) => `${label}:${x.toFixed(1)}:${y.toFixed(1)}`).join('|')
+    if (layer.dataset.signature === signature) return
+    layer.dataset.signature = signature
+    layer.replaceChildren(...entries.map(({ label, x, y }) => {
       const span = document.createElement('span')
       span.className = 'pawcream-guide-label'
       span.textContent = label
@@ -99,27 +89,31 @@ if (!isTuneMode) {
     }))
   }
 
+  const hideIntro = (intro: HTMLElement) => {
+    if (intro.style.display !== 'none') intro.style.display = 'none'
+    if (intro.childNodes.length) intro.replaceChildren()
+    delete intro.dataset.signature
+  }
+
   const drawIntro = (stage: HTMLElement, intro: HTMLElement) => {
     if (introDismissed || toolbarIsOpen(stage)) {
-      intro.replaceChildren()
-      intro.style.display = 'none'
+      hideIntro(intro)
       return
     }
 
     const light = stage.querySelector<HTMLImageElement>(LIGHT_SELECTOR)
     if (!light) {
-      intro.style.display = 'none'
+      hideIntro(intro)
       return
     }
 
     const stageRect = stage.getBoundingClientRect()
     const lightRect = light.getBoundingClientRect()
     if (!lightRect.width || !lightRect.height) {
-      intro.style.display = 'none'
+      hideIntro(intro)
       return
     }
 
-    intro.style.display = 'block'
     const width = stageRect.width
     const height = stageRect.height
     const targetX = lightRect.left - stageRect.left + lightRect.width * 0.52
@@ -135,6 +129,11 @@ if (!isTuneMode) {
     const control1Y = startY - 54
     const control2X = lightOnRight ? targetX - 44 : targetX + 44
     const control2Y = targetY + 34
+    const signature = [width, height, targetX, targetY, labelX, labelY].map((v) => v.toFixed(1)).join(':')
+
+    if (intro.dataset.signature === signature && intro.style.display === 'block') return
+    intro.dataset.signature = signature
+    intro.style.display = 'block'
 
     const ns = 'http://www.w3.org/2000/svg'
     const svg = document.createElementNS(ns, 'svg')
@@ -170,7 +169,6 @@ if (!isTuneMode) {
     label.textContent = 'click here!'
     label.style.left = `${labelX}px`
     label.style.top = `${labelY}px`
-
     intro.replaceChildren(svg, label)
   }
 
@@ -191,7 +189,10 @@ if (!isTuneMode) {
     stage.classList.toggle('pawcream-guides-active', active)
 
     if (active) positionAssetLabels(stage, labels)
-    else labels.replaceChildren()
+    else if (labels.childNodes.length) {
+      labels.replaceChildren()
+      delete labels.dataset.signature
+    }
 
     drawIntro(stage, intro)
   }
@@ -199,9 +200,7 @@ if (!isTuneMode) {
   document.addEventListener('click', (event) => {
     const target = event.target as Element | null
     if (!target) return
-    const lightControl = target.closest('[aria-label="Light interaction"]')
-    const lightImage = target.closest('img[alt="Light"]')
-    if (!lightControl && !lightImage) return
+    if (!target.closest('[aria-label="Light interaction"]') && !target.closest('img[alt="Light"]')) return
     introDismissed = true
     schedule()
   }, true)
@@ -209,7 +208,13 @@ if (!isTuneMode) {
   window.addEventListener('resize', schedule, { passive: true })
   window.addEventListener('scroll', schedule, { passive: true })
 
-  const observer = new MutationObserver(schedule)
+  const observer = new MutationObserver((records) => {
+    const externalChange = records.some((record) => {
+      const target = record.target instanceof Element ? record.target : record.target.parentElement
+      return !target?.closest('.pawcream-guide-dim, .pawcream-guide-label-layer, .pawcream-light-intro')
+    })
+    if (externalChange) schedule()
+  })
   observer.observe(document.documentElement, {
     subtree: true,
     childList: true,
