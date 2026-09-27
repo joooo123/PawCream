@@ -15,6 +15,7 @@ const assets = [
   { file: 'light.png', maxWidth: 1200, quality: 84 },
   { file: 'lighton.png', maxWidth: 1400, quality: 84 },
   { file: 'instax.png', maxWidth: 1600, quality: 84 },
+  { file: 'letter.png', maxWidth: 1600, quality: 86 },
   { file: 'sewing machine.png', maxWidth: 2000, quality: 84 },
   { file: 'bear.png', maxWidth: 700, quality: 84 },
   { file: 'music.png', maxWidth: 1200, quality: 84 },
