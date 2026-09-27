@@ -1,16 +1,22 @@
 /* Blue frosted overlays with the user's blue-dot pattern on the floating cards. */
 
+/* Production loads build-generated WOFF2 files with simple ASCII names.
+   TTF sources remain as a local-development fallback. */
 @font-face {
-  font-family: 'PawCream Apple';
-  src: url('/PawCream/assets/font/Apple-Regular.ttf?v=153a63b9') format('truetype');
+  font-family: 'PawCream EN';
+  src:
+    url('/PawCream/assets/font/pawcream-en.woff2') format('woff2'),
+    url('/assets/font/Apple-Regular.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'PawCream WanWan';
-  src: url('/PawCream/assets/font/AaZiTiGuanJiaWanWanTi%EF%BC%88JianFan%EF%BC%89-2.ttf?v=7058a835') format('truetype');
+  font-family: 'PawCream CN';
+  src:
+    url('/PawCream/assets/font/pawcream-cn.woff2') format('woff2'),
+    url('/assets/font/AaZiTiGuanJiaWanWanTi%EF%BC%88JianFan%EF%BC%89-2.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -24,7 +30,7 @@ button,
 input,
 textarea,
 select {
-  font-family: 'PawCream Apple', 'PawCream WanWan', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-family: 'PawCream EN', 'PawCream CN', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 
 :root {
@@ -63,19 +69,37 @@ div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax
   color: var(--pawcream-blue-text) !important;
 }
 
-/* Chinese mode board: explicitly use the uploaded Chinese font instead of
-   relying on a Latin-font fallback. This also gives us a clear load test. */
+/* Chinese board uses the Chinese face explicitly. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section * {
-  font-family: 'PawCream WanWan', 'PawCream Apple', ui-sans-serif, system-ui, sans-serif !important;
+  font-family: 'PawCream CN', 'PawCream EN', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* English Instax UI uses Apple explicitly. */
+section[role="dialog"][aria-label="Pick an Instax frame"],
+section[role="dialog"][aria-label="Pick an Instax frame"] * {
+  font-family: 'PawCream EN', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Chandelier toolbar follows the selected UI language. */
+html.pawcream-lang-zh nav[aria-label="PawCream Atelier toolbar"],
+html.pawcream-lang-zh nav[aria-label="PawCream Atelier toolbar"] * {
+  font-family: 'PawCream CN', 'PawCream EN', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+html.pawcream-lang-en nav[aria-label="PawCream Atelier toolbar"],
+html.pawcream-lang-en nav[aria-label="PawCream Atelier toolbar"] * {
+  font-family: 'PawCream EN', ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* All formerly pink/red small board copy becomes blue-grey. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section header p,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header p,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section span,
-div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section span {
-  color: #6f8798 !important;
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section span,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section small,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section small {
+  color: #637f93 !important;
 }
 
 /* Blue-toned controls inside the message card. */
@@ -218,6 +242,33 @@ nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child bu
   background-color: rgba(245, 250, 254, .88) !important;
   color: #66869d !important;
   box-shadow: none !important;
+}
+
+/* Optional ?fonttest=1 diagnostics panel. */
+#pawcream-font-test {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 99999;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid rgba(105, 155, 192, .35);
+  border-radius: 16px;
+  background: rgba(246, 251, 255, .96);
+  box-shadow: 0 12px 36px rgba(74, 108, 134, .18);
+  color: #527792;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#pawcream-font-test .cn-sample {
+  font-family: 'PawCream CN', sans-serif !important;
+  font-size: 26px !important;
+}
+
+#pawcream-font-test .en-sample {
+  font-family: 'PawCream EN', sans-serif !important;
+  font-size: 26px !important;
 }
 
 @media (max-width: 600px) {
