@@ -1,0 +1,14 @@
+/* Keep the Instax frame picker geometry stable while cycling frame styles. */
+section[aria-label="Pick an Instax frame"]
+  div:has(> img[alt^="Instax frame"]):not(:has(> img[alt="Selected upload"])) {
+  width: min(285px, 68vw) !important;
+  max-width: 100% !important;
+  aspect-ratio: 422 / 459 !important;
+}
+
+@media (max-width: 700px) {
+  section[aria-label="Pick an Instax frame"]
+    div:has(> img[alt^="Instax frame"]):not(:has(> img[alt="Selected upload"])) {
+    width: min(250px, 68vw) !important;
+  }
+}
