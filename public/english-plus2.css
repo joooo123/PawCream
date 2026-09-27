@@ -101,6 +101,18 @@ html body section[role="dialog"][aria-label="关于 PawCream"] > div > div > div
   font-size: 15px !important;
 }
 
+/* Note prompt floats directly on the paper: no chip/card around it. */
+html body section[aria-label^="PawCream Atelier Room"]
+  div:has(> img[alt="Note"]) > span[style*="top: 50%"] {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 @media (max-width: 600px) {
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header strong {
     font-size: 29px !important;
