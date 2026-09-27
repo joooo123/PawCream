@@ -1,8 +1,5 @@
 /* Blue frosted overlays with the user's blue-dot pattern on the floating cards. */
 
-/* Use two real static font faces instead of a variable-weight unicode-range
-   family. Apple is Latin-first; when it has no Chinese glyph the browser
-   naturally falls through to WanWan. */
 @font-face {
   font-family: 'PawCream Apple';
   src: url('/PawCream/assets/font/Apple-Regular.ttf?v=153a63b9') format('truetype');
@@ -39,7 +36,7 @@ select {
   --pawcream-blue-shadow: rgba(74, 108, 134, .18);
 }
 
-/* Restore the lighter blue frosted layer from the previous round. */
+/* Light blue frosted full-screen layers. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"],
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"],
 div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"]) {
@@ -49,7 +46,7 @@ div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax
   -webkit-backdrop-filter: blur(11px) saturate(112%) !important;
 }
 
-/* Denser polka pattern on the floating cards. */
+/* Denser polka pattern on floating cards. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section,
 div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"])
@@ -64,6 +61,21 @@ div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax
   border-color: var(--pawcream-blue-border) !important;
   box-shadow: 0 28px 80px var(--pawcream-blue-shadow) !important;
   color: var(--pawcream-blue-text) !important;
+}
+
+/* Chinese mode board: explicitly use the uploaded Chinese font instead of
+   relying on a Latin-font fallback. This also gives us a clear load test. */
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section * {
+  font-family: 'PawCream WanWan', 'PawCream Apple', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* All formerly pink/red small board copy becomes blue-grey. */
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section header p,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header p,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section span,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section span {
+  color: #6f8798 !important;
 }
 
 /* Blue-toned controls inside the message card. */
@@ -99,12 +111,11 @@ div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > sec
 
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article time,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article time {
-  color: #90a9bc !important;
+  color: #7f9aae !important;
   font-size: 13px !important;
 }
 
-/* Instax controls. Apple-Regular has a small visual x-height, so deliberately
-   use generous nominal sizes. */
+/* Instax controls. */
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-close,
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-arrow,
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
@@ -132,7 +143,7 @@ section[role="dialog"][aria-label="Pick an Instax frame"] span:not([aria-hidden=
   font-size: 18px !important;
 }
 
-/* Upload-step drop zone stays blue rather than inheriting the old pink fill. */
+/* Upload-step drop zone. */
 section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] {
   background: rgba(229, 243, 253, .72) !important;
   border-color: rgba(113, 164, 202, .38) !important;
@@ -141,7 +152,16 @@ section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] {
 
 section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] * {
   color: #67879e !important;
-  font-size: 18px !important;
+  font-size: 21px !important;
+}
+
+/* Uploaded file name shown immediately below the finished Instax. */
+section[role="dialog"][aria-label="Pick an Instax frame"]
+  > div:has(> img[alt^="Instax frame"]) + div {
+  color: #6f8798 !important;
+  font-size: 16px !important;
+  line-height: 1.45 !important;
+  margin-top: 12px !important;
 }
 
 section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="font-variant-numeric"] {
@@ -212,6 +232,15 @@ nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child bu
   section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
   section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file {
     font-size: 18px !important;
+  }
+
+  section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] * {
+    font-size: 17px !important;
+  }
+
+  section[role="dialog"][aria-label="Pick an Instax frame"]
+    > div:has(> img[alt^="Instax frame"]) + div {
+    font-size: 14px !important;
   }
 
   section[aria-label^="PawCream Atelier Room"] span[style*="pointer-events: none"] {
