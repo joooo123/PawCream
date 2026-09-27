@@ -21,6 +21,14 @@ const atelierAssetNames = [
   'color.png',
 ]
 
+const homeAssetNames = [
+  'Home_mobile.png',
+  'pawcream-ecg.png',
+  ...[1,2,3,4,5,6,7,8,9,10,11,12,14,15].map((number) => `star-${String(number).padStart(2, '0')}.png`),
+]
+
+const webpAssetNames = [...atelierAssetNames, ...homeAssetNames]
+
 const replaceAllText = (source: string, from: string, to: string) =>
   source.split(from).join(to)
 
@@ -49,15 +57,15 @@ function atelierTuningDefaults() {
   }
 }
 
-function atelierWebpReferences() {
+function webpReferences() {
   return {
-    name: 'atelier-webp-references',
+    name: 'pawcream-webp-references',
     enforce: 'pre' as const,
     transform(code: string, id: string) {
       if (id.indexOf('/src/') === -1) return null
 
       let next = code
-      for (const pngName of atelierAssetNames) {
+      for (const pngName of webpAssetNames) {
         const webpName = pngName.replace(/\.png$/i, '.webp')
         next = replaceAllText(next, pngName, webpName)
         next = replaceAllText(
@@ -75,7 +83,7 @@ function atelierWebpReferences() {
 export default defineConfig(({ command, mode }) => ({
   plugins: [
     atelierTuningDefaults(),
-    command === 'build' && mode === 'webp' ? atelierWebpReferences() : null,
+    command === 'build' && mode === 'webp' ? webpReferences() : null,
     react(),
   ],
   // Local development stays at `/`; GitHub Pages serves this project at `/PawCream/`.
