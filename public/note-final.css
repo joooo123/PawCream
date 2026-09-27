@@ -13,6 +13,6 @@ html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
 @media (max-width: 600px) {
   html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
     div:has(> img[alt="Note"]) > span[style*="top: 50%"]::after {
-    font-size: 18px !important;
+    font-size: 17px !important;
   }
 }
