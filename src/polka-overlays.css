@@ -4,7 +4,7 @@
    WanWan for Chinese. This keeps mixed Chinese + English strings correct. */
 @font-face {
   font-family: 'PawCream UI';
-  src: url('/assets/font/Apple-Regular.ttf') format('truetype');
+  src: url('/assets/font/Apple-Regular.ttf?v=153a63b9') format('truetype');
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
@@ -13,7 +13,7 @@
 
 @font-face {
   font-family: 'PawCream UI';
-  src: url('/assets/font/AaZiTiGuanJiaWanWanTi（JianFan）-2.ttf') format('truetype');
+  src: url('/assets/font/AaZiTiGuanJiaWanWanTi%EF%BC%88JianFan%EF%BC%89-2.ttf?v=7058a835') format('truetype');
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
