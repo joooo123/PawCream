@@ -1,33 +1,73 @@
-/* Translucent polka overlay based on the user's blue-dot reference image. */
+/* Blue frosted overlays with the user's blue-dot pattern on the floating cards. */
 
 :root {
-  --pawcream-polka-bg: rgba(255, 254, 250, .36);
-  --pawcream-polka-dot: rgba(221, 236, 250, .46);
+  --pawcream-blue-overlay: rgba(211, 228, 242, .48);
+  --pawcream-blue-dot: rgba(210, 229, 246, .72);
+  --pawcream-blue-card: rgba(252, 254, 255, .96);
+  --pawcream-blue-border: rgba(139, 177, 207, .34);
+  --pawcream-blue-text: #6f8495;
+  --pawcream-blue-shadow: rgba(74, 108, 134, .18);
 }
 
-/* Message board overlay. */
+/* Restore the full-screen layer to a glassy overlay, now with a blue tint. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"],
-div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] {
-  background-color: var(--pawcream-polka-bg) !important;
-  background-image:
-    radial-gradient(circle at 46px 33px, var(--pawcream-polka-dot) 0 23px, transparent 24px),
-    radial-gradient(circle at 140px 127px, var(--pawcream-polka-dot) 0 23px, transparent 24px) !important;
-  background-repeat: repeat !important;
-  background-size: 188px 188px !important;
-  background-position: 0 0 !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"],
+div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"]) {
+  background: var(--pawcream-blue-overlay) !important;
+  background-image: none !important;
+  backdrop-filter: blur(11px) saturate(112%) !important;
+  -webkit-backdrop-filter: blur(11px) saturate(112%) !important;
 }
 
-/* Instax full-screen overlay. */
-div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"]) {
-  background-color: var(--pawcream-polka-bg) !important;
+/* Put the polka pattern on the actual floating cards instead of the whole screen. */
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section,
+div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"])
+  > section[role="dialog"][aria-label="Pick an Instax frame"] {
+  background-color: var(--pawcream-blue-card) !important;
   background-image:
-    radial-gradient(circle at 46px 33px, var(--pawcream-polka-dot) 0 23px, transparent 24px),
-    radial-gradient(circle at 140px 127px, var(--pawcream-polka-dot) 0 23px, transparent 24px) !important;
+    radial-gradient(circle at 46px 33px, var(--pawcream-blue-dot) 0 18px, transparent 19px),
+    radial-gradient(circle at 140px 127px, var(--pawcream-blue-dot) 0 18px, transparent 19px) !important;
   background-repeat: repeat !important;
   background-size: 188px 188px !important;
   background-position: 0 0 !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
+  border-color: var(--pawcream-blue-border) !important;
+  box-shadow: 0 28px 80px var(--pawcream-blue-shadow) !important;
+  color: var(--pawcream-blue-text) !important;
+}
+
+/* Blue-toned controls inside the message card. */
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section button,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section button {
+  border-color: rgba(134, 174, 205, .32) !important;
+  background: rgba(255, 255, 255, .88) !important;
+  color: #6f8ca2 !important;
+  box-shadow: 0 5px 18px rgba(78, 112, 138, .08) !important;
+}
+
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section textarea,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section textarea {
+  border-color: rgba(134, 174, 205, .30) !important;
+  background: rgba(255, 255, 255, .84) !important;
+  color: #667f92 !important;
+}
+
+/* Blue-toned Instax buttons, including hover states from the component stylesheet. */
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-close,
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-arrow,
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file {
+  border-color: rgba(134, 174, 205, .32) !important;
+  background: rgba(255, 255, 255, .90) !important;
+  color: #6f8ca2 !important;
+  box-shadow: 0 5px 18px rgba(78, 112, 138, .08) !important;
+}
+
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-close:hover,
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-arrow:hover,
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok:hover,
+section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file:hover {
+  background: #e9f3fb !important;
+  color: #527792 !important;
+  border-color: rgba(105, 155, 192, .42) !important;
 }
