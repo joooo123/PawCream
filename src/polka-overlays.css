@@ -19,17 +19,17 @@ div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax
   -webkit-backdrop-filter: blur(11px) saturate(112%) !important;
 }
 
-/* Put the polka pattern on the actual floating cards instead of the whole screen. */
+/* Denser polka pattern on the floating cards. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section,
 div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"])
   > section[role="dialog"][aria-label="Pick an Instax frame"] {
   background-color: var(--pawcream-blue-card) !important;
   background-image:
-    radial-gradient(circle at 46px 33px, var(--pawcream-blue-dot) 0 18px, transparent 19px),
-    radial-gradient(circle at 140px 127px, var(--pawcream-blue-dot) 0 18px, transparent 19px) !important;
+    radial-gradient(circle at 34px 28px, var(--pawcream-blue-dot) 0 15px, transparent 16px),
+    radial-gradient(circle at 102px 96px, var(--pawcream-blue-dot) 0 15px, transparent 16px) !important;
   background-repeat: repeat !important;
-  background-size: 188px 188px !important;
+  background-size: 136px 136px !important;
   background-position: 0 0 !important;
   border-color: var(--pawcream-blue-border) !important;
   box-shadow: 0 28px 80px var(--pawcream-blue-shadow) !important;
@@ -50,6 +50,23 @@ div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > sec
   border-color: rgba(134, 174, 205, .30) !important;
   background: rgba(255, 255, 255, .84) !important;
   color: #667f92 !important;
+}
+
+/* Existing message rows were still pink in the component inline styles; force them into the blue family. */
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article {
+  border-color: rgba(134, 174, 205, .22) !important;
+  background: rgba(238, 247, 253, .82) !important;
+}
+
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article p,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article p {
+  color: #667f92 !important;
+}
+
+div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article time,
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article time {
+  color: #90a9bc !important;
 }
 
 /* Blue-toned Instax buttons, including hover states from the component stylesheet. */
