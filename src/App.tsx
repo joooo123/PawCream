@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import HomeScene from './components/HomeScene'
-import AtelierPlaceholder from './components/AtelierWithInstax'
+import AtelierPlaceholder from './components/AtelierWithLetter'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
