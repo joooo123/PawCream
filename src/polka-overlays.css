@@ -1,25 +1,13 @@
 /* Polka overlay extracted from the user's blue-dot reference image. */
 
 :root {
-  --pawcream-polka-bg: #fffefa;
-  --pawcream-polka-dot: #ddecfa;
+  --pawcream-polka-bg: rgba(255, 254, 250, 0.58);
+  --pawcream-polka-dot: rgba(221, 236, 250, 0.62);
 }
 
-/* Message board overlay. */
+/* Shared floating-overlay treatment: keep the Atelier visible underneath. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"],
-div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] {
-  background-color: var(--pawcream-polka-bg) !important;
-  background-image:
-    radial-gradient(circle at 46px 33px, var(--pawcream-polka-dot) 0 23px, transparent 24px),
-    radial-gradient(circle at 140px 127px, var(--pawcream-polka-dot) 0 23px, transparent 24px) !important;
-  background-repeat: repeat !important;
-  background-size: 188px 188px !important;
-  background-position: 0 0 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-/* Instax full-screen overlay. */
+div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"],
 div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"]) {
   background-color: var(--pawcream-polka-bg) !important;
   background-image:
@@ -28,6 +16,6 @@ div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax
   background-repeat: repeat !important;
   background-size: 188px 188px !important;
   background-position: 0 0 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  backdrop-filter: blur(7px) saturate(0.94) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(0.94) !important;
 }
