@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import HomeScene from './components/HomeScene'
 import AtelierPlaceholder from './components/AtelierWithLetter'
+import { ASSETS } from './sceneConfig'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
@@ -20,6 +21,12 @@ function getForcedDevice(): DeviceProfile | null {
 function getDetectedDevice(): DeviceProfile {
   if (typeof window === 'undefined') return 'desktop'
   return window.matchMedia('(max-width: 700px)').matches ? 'mobile' : 'desktop'
+}
+
+function warmImage(src: string) {
+  const image = new Image()
+  image.decoding = 'async'
+  image.src = src
 }
 
 export default function App() {
@@ -49,11 +56,42 @@ export default function App() {
     return () => media.removeEventListener?.('change', update)
   }, [initialForcedDevice, tuneMode])
 
+  useEffect(() => {
+    if (scene !== 'atelier' || typeof window === 'undefined') return
+
+    // Warm the resources that make Home feel instant before the user asks to return.
+    const firstWave = [ASSETS.homeMobile, ASSETS.ecg, ...ASSETS.stars.slice(0, 3)]
+    firstWave.forEach(warmImage)
+
+    const timers = ASSETS.stars.slice(3).map((src, index) =>
+      window.setTimeout(() => warmImage(src), 450 + index * 110),
+    )
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer))
+  }, [scene])
+
   const switchDevice = (profile: DeviceProfile) => {
     setDeviceProfile(profile)
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     url.searchParams.set('device', profile)
+    window.history.replaceState(null, '', url)
+  }
+
+  const enterAtelier = () => {
+    setScene('atelier')
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    url.searchParams.set('scene', 'atelier')
+    window.history.replaceState(null, '', url)
+  }
+
+  const returnHome = () => {
+    setScene('home')
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    url.searchParams.delete('scene')
+    url.searchParams.delete('tune')
     window.history.replaceState(null, '', url)
   }
 
@@ -63,7 +101,7 @@ export default function App() {
   if (scene === 'atelier') {
     return (
       <AtelierPlaceholder
-        onBack={() => setScene('home')}
+        onBack={returnHome}
         deviceProfile={deviceProfile}
         onDeviceChange={switchDevice}
         mobilePreview={mobilePreview}
@@ -78,7 +116,7 @@ export default function App() {
       mobilePreview={mobilePreview}
       deviceProfile={deviceProfile}
       onDeviceChange={switchDevice}
-      onEnter={() => setScene('atelier')}
+      onEnter={enterAtelier}
     />
   )
 }
