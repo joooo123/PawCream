@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import './styles.css'
 import './atelierBackground.css'
+import './polka-overlays.css'
 
 const atelierBackgroundUrl = `${import.meta.env.BASE_URL}assets/atelier/background.png`
 document.documentElement.style.setProperty(
