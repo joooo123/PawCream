@@ -31,11 +31,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y webp
 
+      - name: Install font tools
+        run: python3 -m pip install --disable-pip-version-check fonttools brotli
+
       - name: Install dependencies
         run: npm install
 
       - name: Optimize Atelier images
         run: npm run optimize:atelier
+
+      - name: Convert PawCream fonts to WOFF2
+        run: python3 scripts/convert-fonts.py
 
       - name: Build
         run: npm run build:webp
