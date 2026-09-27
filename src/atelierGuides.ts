@@ -3,10 +3,37 @@ export {}
 const STAGE_SELECTOR = 'section[aria-label^="PawCream Atelier Room"]'
 const TOOLBAR_SELECTOR = 'nav[aria-label="PawCream Atelier toolbar"]'
 const LIGHT_SELECTOR = 'img[alt="Light"]'
-const ASSET_ALTS = new Set([
-  'Window', 'PawCream', 'Wall cabinet', 'People', 'Light', 'Message',
-  'Instax', 'Sewing machine', 'Note', 'Bear', 'Music', 'Color',
-])
+
+type GuideLanguage = 'zh' | 'en'
+
+const FUNCTION_LABELS: Record<GuideLanguage, Record<string, string>> = {
+  zh: {
+    Window: '品牌介绍',
+    PawCream: '品牌介绍',
+    'Wall cabinet': '看看收藏',
+    People: '认识朋友',
+    Message: '拖动信封',
+    Instax: '制作拍立得',
+    'Sewing machine': '看看手作',
+    Note: '打开留言板',
+    Bear: '发现小熊',
+    Music: '播放音乐',
+    Color: '切换背景',
+  },
+  en: {
+    Window: 'About PawCream',
+    PawCream: 'About PawCream',
+    'Wall cabinet': 'Explore collection',
+    People: 'Meet friends',
+    Message: 'Move the letter',
+    Instax: 'Make an Instax',
+    'Sewing machine': 'Explore handmade',
+    Note: 'Open message board',
+    Bear: 'Meet the bear',
+    Music: 'Play music',
+    Color: 'Change background',
+  },
+}
 
 const isTuneMode = new URLSearchParams(window.location.search).get('tune') === '1'
 
@@ -22,6 +49,19 @@ if (!isTuneMode) {
       scheduled = false
       updateGuides()
     })
+  }
+
+  const currentLanguage = (): GuideLanguage =>
+    document.documentElement.classList.contains('pawcream-lang-en') ? 'en' : 'zh'
+
+  const currentBackgroundColor = () => {
+    const background = getComputedStyle(document.documentElement)
+      .getPropertyValue('--atelier-background-image')
+      .toLowerCase()
+
+    if (background.includes('background2')) return '#8669b3'
+    if (background.includes('background3')) return '#d85d91'
+    return '#865f45'
   }
 
   const toolbarIsOpen = (stage: HTMLElement) => {
@@ -59,25 +99,32 @@ if (!isTuneMode) {
   }
 
   const positionAssetLabels = (stage: HTMLElement, layer: HTMLElement) => {
+    const language = currentLanguage()
+    const labels = FUNCTION_LABELS[language]
     const stageRect = stage.getBoundingClientRect()
     const images = Array.from(stage.querySelectorAll<HTMLImageElement>('img[alt]'))
-      .filter((image) => ASSET_ALTS.has(image.alt))
+      .filter((image) => Boolean(labels[image.alt]))
+
     const seen = new Set<string>()
-    const entries: Array<{ label: string; x: number; y: number }> = []
+    const entries: Array<{ key: string; label: string; x: number; y: number }> = []
 
     for (const image of images) {
       const rect = image.getBoundingClientRect()
       if (!rect.width || !rect.height || seen.has(image.alt)) continue
       seen.add(image.alt)
       entries.push({
-        label: image.alt,
+        key: image.alt,
+        label: labels[image.alt],
         x: rect.left - stageRect.left + rect.width / 2,
         y: rect.top - stageRect.top + rect.height / 2,
       })
     }
 
-    const signature = entries.map(({ label, x, y }) => `${label}:${x.toFixed(1)}:${y.toFixed(1)}`).join('|')
+    const signature = `${language}|${entries
+      .map(({ key, label, x, y }) => `${key}:${label}:${x.toFixed(1)}:${y.toFixed(1)}`)
+      .join('|')}`
     if (layer.dataset.signature === signature) return
+
     layer.dataset.signature = signature
     layer.replaceChildren(...entries.map(({ label, x, y }) => {
       const span = document.createElement('span')
@@ -114,62 +161,34 @@ if (!isTuneMode) {
       return
     }
 
-    const width = stageRect.width
-    const height = stageRect.height
-    const targetX = lightRect.left - stageRect.left + lightRect.width * 0.52
-    const targetY = lightRect.top - stageRect.top + lightRect.height * 0.60
-    const lightOnRight = targetX > width * 0.64
-    const labelX = lightOnRight
-      ? Math.max(90, targetX - Math.min(150, width * 0.34))
-      : Math.min(width - 90, targetX + Math.min(155, width * 0.25))
-    const labelY = Math.min(height - 60, targetY + Math.min(120, height * 0.14))
-    const startX = lightOnRight ? labelX + 28 : labelX - 28
-    const startY = labelY - 18
-    const control1X = lightOnRight ? startX + 22 : startX - 22
-    const control1Y = startY - 54
-    const control2X = lightOnRight ? targetX - 44 : targetX + 44
-    const control2Y = targetY + 34
-    const signature = [width, height, targetX, targetY, labelX, labelY].map((v) => v.toFixed(1)).join(':')
+    const color = currentBackgroundColor()
+    const x = Math.max(72, lightRect.left - stageRect.left - 14)
+    const y = Math.min(
+      stageRect.height - 34,
+      Math.max(34, lightRect.top - stageRect.top + lightRect.height * 0.53),
+    )
+    const signature = `${x.toFixed(1)}:${y.toFixed(1)}:${color}`
 
     if (intro.dataset.signature === signature && intro.style.display === 'block') return
     intro.dataset.signature = signature
     intro.style.display = 'block'
 
-    const ns = 'http://www.w3.org/2000/svg'
-    const svg = document.createElementNS(ns, 'svg')
-    svg.setAttribute('viewBox', `0 0 ${Math.max(width, 1)} ${Math.max(height, 1)}`)
-
-    const defs = document.createElementNS(ns, 'defs')
-    const marker = document.createElementNS(ns, 'marker')
-    marker.setAttribute('id', 'pawcream-guide-arrowhead')
-    marker.setAttribute('markerWidth', '9')
-    marker.setAttribute('markerHeight', '9')
-    marker.setAttribute('refX', '7')
-    marker.setAttribute('refY', '4.5')
-    marker.setAttribute('orient', 'auto')
-    marker.setAttribute('markerUnits', 'strokeWidth')
-    const triangle = document.createElementNS(ns, 'path')
-    triangle.setAttribute('d', 'M 0 0 L 8 4.5 L 0 9 z')
-    triangle.setAttribute('fill', '#8a4b59')
-    marker.appendChild(triangle)
-    defs.appendChild(marker)
-    svg.appendChild(defs)
-
-    const path = document.createElementNS(ns, 'path')
-    path.setAttribute('d', `M ${startX} ${startY} C ${control1X} ${control1Y}, ${control2X} ${control2Y}, ${targetX} ${targetY}`)
-    path.setAttribute('fill', 'none')
-    path.setAttribute('stroke', '#8a4b59')
-    path.setAttribute('stroke-width', stageRect.width <= 600 ? '2.2' : '2.6')
-    path.setAttribute('stroke-linecap', 'round')
-    path.setAttribute('marker-end', 'url(#pawcream-guide-arrowhead)')
-    svg.appendChild(path)
+    const content = document.createElement('div')
+    content.className = 'pawcream-light-intro-content'
+    content.style.left = `${x}px`
+    content.style.top = `${y}px`
+    content.style.color = color
 
     const label = document.createElement('span')
     label.className = 'pawcream-light-intro-label'
-    label.textContent = 'click here!'
-    label.style.left = `${labelX}px`
-    label.style.top = `${labelY}px`
-    intro.replaceChildren(svg, label)
+    label.textContent = 'click'
+
+    const arrow = document.createElement('span')
+    arrow.className = 'pawcream-light-intro-arrow'
+    arrow.textContent = '→'
+
+    content.append(label, arrow)
+    intro.replaceChildren(content)
   }
 
   function updateGuides() {
