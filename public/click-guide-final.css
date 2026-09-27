@@ -1,6 +1,6 @@
-/* Final Light click-guide adjustment: keep it farther left of the chandelier, larger, and gently floating. */
+/* Final Light click-guide adjustment: keep it clearly left/below the chandelier, larger, and gently floating. */
 .pawcream-light-intro-content {
-  transform: translate(-100%, -50%) translateX(-72px) !important;
+  transform: translate(-100%, -50%) translateX(-108px) translateY(16px) !important;
   animation: pawcream-click-guide-float 1.25s ease-in-out infinite alternate;
   will-change: transform;
 }
@@ -15,16 +15,16 @@
 
 @keyframes pawcream-click-guide-float {
   from {
-    transform: translate(-100%, -50%) translateX(-72px) translateY(-2px);
+    transform: translate(-100%, -50%) translateX(-108px) translateY(13px);
   }
   to {
-    transform: translate(-100%, -50%) translateX(-72px) translateY(4px);
+    transform: translate(-100%, -50%) translateX(-108px) translateY(19px);
   }
 }
 
 @media (max-width: 600px) {
   .pawcream-light-intro-content {
-    transform: translate(-100%, -50%) translateX(-44px) !important;
+    transform: translate(-100%, -50%) translateX(-68px) translateY(12px) !important;
   }
 
   .pawcream-light-intro-label {
@@ -37,10 +37,10 @@
 
   @keyframes pawcream-click-guide-float {
     from {
-      transform: translate(-100%, -50%) translateX(-44px) translateY(-2px);
+      transform: translate(-100%, -50%) translateX(-68px) translateY(9px);
     }
     to {
-      transform: translate(-100%, -50%) translateX(-44px) translateY(3px);
+      transform: translate(-100%, -50%) translateX(-68px) translateY(14px);
     }
   }
 }
