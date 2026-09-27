@@ -1,23 +1,22 @@
 /* Blue frosted overlays with the user's blue-dot pattern on the floating cards. */
 
-/* GitHub Pages serves this repository below /PawCream/. Keep the two uploaded
-   fonts in one logical family and split glyph selection by Unicode range. */
+/* Use two real static font faces instead of a variable-weight unicode-range
+   family. Apple is Latin-first; when it has no Chinese glyph the browser
+   naturally falls through to WanWan. */
 @font-face {
-  font-family: 'PawCream UI';
+  font-family: 'PawCream Apple';
   src: url('/PawCream/assets/font/Apple-Regular.ttf?v=153a63b9') format('truetype');
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 400;
   font-display: swap;
-  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF;
 }
 
 @font-face {
-  font-family: 'PawCream UI';
+  font-family: 'PawCream WanWan';
   src: url('/PawCream/assets/font/AaZiTiGuanJiaWanWanTi%EF%BC%88JianFan%EF%BC%89-2.ttf?v=7058a835') format('truetype');
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 400;
   font-display: swap;
-  unicode-range: U+2E80-2EFF, U+2F00-2FDF, U+3000-303F, U+31C0-31EF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 
 html,
@@ -28,11 +27,11 @@ button,
 input,
 textarea,
 select {
-  font-family: 'PawCream UI', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-family: 'PawCream Apple', 'PawCream WanWan', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 
 :root {
-  --pawcream-blue-overlay: rgba(191, 220, 242, .64);
+  --pawcream-blue-overlay: rgba(211, 228, 242, .48);
   --pawcream-blue-dot: rgba(210, 229, 246, .72);
   --pawcream-blue-card: rgba(252, 254, 255, .96);
   --pawcream-blue-border: rgba(139, 177, 207, .34);
@@ -40,15 +39,14 @@ select {
   --pawcream-blue-shadow: rgba(74, 108, 134, .18);
 }
 
-/* Full-screen frosted layers: deliberately blue enough that a pink atelier
-   background cannot tint the glass back toward pink. */
+/* Restore the lighter blue frosted layer from the previous round. */
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"],
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"],
 div[role="presentation"]:has(> section[role="dialog"][aria-label="Pick an Instax frame"]) {
   background: var(--pawcream-blue-overlay) !important;
   background-image: none !important;
-  backdrop-filter: blur(13px) saturate(108%) !important;
-  -webkit-backdrop-filter: blur(13px) saturate(108%) !important;
+  backdrop-filter: blur(11px) saturate(112%) !important;
+  -webkit-backdrop-filter: blur(11px) saturate(112%) !important;
 }
 
 /* Denser polka pattern on the floating cards. */
@@ -75,7 +73,7 @@ div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > sec
   background: rgba(255, 255, 255, .88) !important;
   color: #6f8ca2 !important;
   box-shadow: 0 5px 18px rgba(78, 112, 138, .08) !important;
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section textarea,
@@ -83,7 +81,7 @@ div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > sec
   border-color: rgba(134, 174, 205, .30) !important;
   background: rgba(255, 255, 255, .84) !important;
   color: #667f92 !important;
-  font-size: 17px !important;
+  font-size: 18px !important;
   line-height: 1.65 !important;
 }
 
@@ -96,17 +94,17 @@ div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > sec
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article p,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article p {
   color: #667f92 !important;
-  font-size: 16px !important;
+  font-size: 17px !important;
 }
 
 div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"] > section article time,
 div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article time {
   color: #90a9bc !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
 }
 
-/* Instax controls. Apple-Regular has a small visual x-height, so use larger
-   nominal sizes than the previous system font. */
+/* Instax controls. Apple-Regular has a small visual x-height, so deliberately
+   use generous nominal sizes. */
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-close,
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-arrow,
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
@@ -119,37 +117,36 @@ section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file 
 
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file {
-  font-size: 18px !important;
-  line-height: 1.2 !important;
+  font-size: 22px !important;
+  line-height: 1.15 !important;
 }
 
 section[role="dialog"][aria-label="Pick an Instax frame"] > div:first-of-type {
-  font-size: 32px !important;
-  line-height: 1.15 !important;
+  font-size: 34px !important;
+  line-height: 1.12 !important;
 }
 
 section[role="dialog"][aria-label="Pick an Instax frame"] p,
 section[role="dialog"][aria-label="Pick an Instax frame"] label,
 section[role="dialog"][aria-label="Pick an Instax frame"] span:not([aria-hidden="true"]) {
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
-/* Upload-step drop zone: remove the remaining pink inline fill and dashed
-   border, keeping it translucent but visibly blue. */
+/* Upload-step drop zone stays blue rather than inheriting the old pink fill. */
 section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] {
-  background: rgba(229, 243, 253, .78) !important;
+  background: rgba(229, 243, 253, .72) !important;
   border-color: rgba(113, 164, 202, .38) !important;
   color: #67879e !important;
 }
 
 section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="dashed"] * {
   color: #67879e !important;
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
 section[role="dialog"][aria-label="Pick an Instax frame"] div[style*="font-variant-numeric"] {
   color: #7896ab !important;
-  font-size: 14px !important;
+  font-size: 16px !important;
 }
 
 section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-close:hover,
@@ -161,19 +158,18 @@ section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file:
   border-color: rgba(105, 155, 192, .42) !important;
 }
 
-/* Atelier hover/click hint chips, including the note prompt shown over the
-   notebook. */
+/* Atelier hover/click hint chips, including the note prompt. */
 section[aria-label^="PawCream Atelier Room"] span[style*="pointer-events: none"] {
-  font-size: 15px !important;
+  font-size: 17px !important;
   line-height: 1.45 !important;
   color: #66869d !important;
   border-color: rgba(119, 165, 201, .26) !important;
   background: rgba(244, 250, 254, .92) !important;
 }
 
-/* The chandelier toolbar should read as one complete blue glass bar. */
+/* Chandelier toolbar. */
 nav[aria-label="PawCream Atelier toolbar"] {
-  background: rgba(210, 229, 246, .86) !important;
+  background: rgba(210, 229, 246, .84) !important;
   border-color: rgba(119, 165, 201, .38) !important;
   box-shadow: 0 14px 38px rgba(74, 108, 134, .18) !important;
   color: #63839a !important;
@@ -182,7 +178,7 @@ nav[aria-label="PawCream Atelier toolbar"] {
 }
 
 nav[aria-label="PawCream Atelier toolbar"] * {
-  font-size: 15px !important;
+  font-size: 17px !important;
   line-height: 1.15 !important;
 }
 
@@ -206,19 +202,19 @@ nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child bu
 
 @media (max-width: 600px) {
   nav[aria-label="PawCream Atelier toolbar"] * {
-    font-size: 12px !important;
+    font-size: 13px !important;
   }
 
   section[role="dialog"][aria-label="Pick an Instax frame"] > div:first-of-type {
-    font-size: 28px !important;
+    font-size: 30px !important;
   }
 
   section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-ok,
   section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file {
-    font-size: 16px !important;
+    font-size: 18px !important;
   }
 
   section[aria-label^="PawCream Atelier Room"] span[style*="pointer-events: none"] {
-    font-size: 13px !important;
+    font-size: 14px !important;
   }
 }
