@@ -70,48 +70,48 @@ html body div[role="dialog"][aria-modal="true"][aria-label="PawCream 留言板"]
   color: #7896ab !important;
 }
 
-/* English message board: Apple face needs a little more visual scale than the old inline sizes. */
+/* English message board: +2px across all text for better legibility. */
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section,
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section * {
   font-family: 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header strong {
-  font-size: 29px !important;
+  font-size: 31px !important;
   line-height: 1.2 !important;
   color: #58778f !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header p {
-  font-size: 17px !important;
+  font-size: 19px !important;
   line-height: 1.65 !important;
   color: #627f94 !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section textarea {
-  font-size: 20px !important;
+  font-size: 22px !important;
   line-height: 1.7 !important;
   color: #5f7c91 !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section button {
-  font-size: 20px !important;
+  font-size: 22px !important;
   color: #5d7f99 !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section span {
-  font-size: 15px !important;
+  font-size: 17px !important;
   color: #607f95 !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article p {
-  font-size: 20px !important;
+  font-size: 22px !important;
   line-height: 1.7 !important;
   color: #5e7c92 !important;
 }
 
 html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article time {
-  font-size: 15px !important;
+  font-size: 17px !important;
   color: #7896ab !important;
 }
 
@@ -157,21 +157,21 @@ html.pawcream-lang-en body nav[aria-label="PawCream Atelier toolbar"] * {
   }
 
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header strong {
-    font-size: 25px !important;
+    font-size: 27px !important;
   }
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section header p {
-    font-size: 15px !important;
+    font-size: 17px !important;
   }
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section textarea,
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article p {
-    font-size: 18px !important;
+    font-size: 20px !important;
   }
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section button {
-    font-size: 18px !important;
+    font-size: 20px !important;
   }
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section span,
   html body div[role="dialog"][aria-modal="true"][aria-label="PawCream Message Board"] > section article time {
-    font-size: 14px !important;
+    font-size: 16px !important;
   }
 
   html body section[role="dialog"][aria-label="Pick an Instax frame"] > div:first-of-type {
