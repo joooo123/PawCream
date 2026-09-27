@@ -6,7 +6,7 @@ FONT_DIR = ROOT / "public" / "assets" / "font"
 
 FONTS = [
     (FONT_DIR / "Apple-Regular.ttf", FONT_DIR / "pawcream-en.woff2"),
-    (FONT_DIR / "AaZiTiGuanJiaWanWanTi（JianFan）-2.ttf", FONT_DIR / "pawcream-cn.woff2"),
+    (FONT_DIR / "AaZiTiGuanJiaWanWanTi-2.ttf", FONT_DIR / "pawcream-cn.woff2"),
 ]
 
 
