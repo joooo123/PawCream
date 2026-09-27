@@ -5,7 +5,6 @@ const atelierAssetNames = [
   'background.png',
   'background2.png',
   'background3.png',
-  'background4.png',
   'window.png',
   'pawcream.png',
   'wall-mounted cabinet.png',
@@ -30,7 +29,10 @@ function atelierTuningDefaults() {
     ['color: L(81.5, 16.5, 30, -89)', 'color: L(80.2, 17.3, 30, -89)'],
     ['music: L(35.5, 36.3, 93.5, 0)', 'music: L(25.4, 32.5, 93.5, 0)'],
     ['color: L(84, 36.5, 83, -89)', 'color: L(82.1, 36.6, 83, -89)'],
-    ['1a26f197a42f8dd21b65760526491d93d77ab753', '2e14da70e34ea701ab97e24ba2693bdfd1e53b28'],
+    [
+      '  `${import.meta.env.BASE_URL}assets/atelier/background4.png?v=1a26f197a42f8dd21b65760526491d93d77ab753`,\n',
+      '',
+    ],
   ] as const
 
   return {
