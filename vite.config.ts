@@ -24,7 +24,20 @@ const atelierAssetNames = [
 const homeAssetNames = [
   'Home_mobile.png',
   'pawcream-ecg.png',
-  ...[1,2,3,4,5,6,7,8,9,10,11,12,14,15].map((number) => `star-${String(number).padStart(2, '0')}.png`),
+  'star-01.png',
+  'star-02.png',
+  'star-03.png',
+  'star-04.png',
+  'star-05.png',
+  'star-06.png',
+  'star-07.png',
+  'star-08.png',
+  'star-09.png',
+  'star-10.png',
+  'star-11.png',
+  'star-12.png',
+  'star-14.png',
+  'star-15.png',
 ]
 
 const webpAssetNames = [...atelierAssetNames, ...homeAssetNames]
