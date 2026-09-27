@@ -1,0 +1,98 @@
+/* Chandelier-driven Atelier guide mode. */
+section[aria-label^="PawCream Atelier Room"] .pawcream-guide-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(12, 16, 21, .52);
+  backdrop-filter: blur(5px) saturate(78%);
+  -webkit-backdrop-filter: blur(5px) saturate(78%);
+  transition: opacity 180ms ease;
+}
+
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active .pawcream-guide-dim {
+  opacity: 1;
+}
+
+section[aria-label^="PawCream Atelier Room"] .pawcream-guide-label-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 53;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active .pawcream-guide-label-layer {
+  opacity: 1;
+}
+
+.pawcream-guide-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  white-space: nowrap;
+  text-align: center;
+  font-family: 'PawCream EN Ready', 'PawCream EN', ui-sans-serif, system-ui, sans-serif;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .64);
+}
+
+/* Hide the legacy Message / Light hint bubbles while the full guide layer is active. */
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  div:has(> img[alt="Message"]) > span[style*="top: -34"],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  div:has(> img[alt="Light"]) > span[style*="top: -34"] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.pawcream-light-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 54;
+  pointer-events: none;
+}
+
+.pawcream-light-intro svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pawcream-light-intro-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #8a4b59;
+  font-family: 'PawCream EN Ready', 'PawCream EN', ui-sans-serif, system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(255,255,255,.9);
+  animation: pawcream-intro-float 1.55s ease-in-out infinite alternate;
+}
+
+@keyframes pawcream-intro-float {
+  from { transform: translate(-50%, -50%) translateY(0); }
+  to { transform: translate(-50%, -50%) translateY(-5px); }
+}
+
+@media (max-width: 600px) {
+  .pawcream-guide-label {
+    font-size: 16px;
+  }
+
+  .pawcream-light-intro-label {
+    font-size: 20px;
+  }
+}
