@@ -4,6 +4,29 @@ html body section[aria-label^="PawCream Atelier Room"]
   color: #8a4b59 !important;
 }
 
+/* Chinese Note prompt: exactly three centered lines. */
+html.pawcream-lang-zh body section[aria-label^="PawCream Atelier Room"]
+  div:has(> img[alt="Note"]) > span[style*="top: 50%"] {
+  color: transparent !important;
+  font-size: 0 !important;
+  width: 68% !important;
+  max-width: none !important;
+  white-space: pre-line !important;
+  line-height: 1.45 !important;
+}
+
+html.pawcream-lang-zh body section[aria-label^="PawCream Atelier Room"]
+  div:has(> img[alt="Note"]) > span[style*="top: 50%"]::after {
+  content: "留下你想对\A PawCream\A 说的话吧";
+  display: block;
+  color: #8a4b59 !important;
+  font-family: 'PawCream CN Ready', 'PawCream EN Ready', ui-sans-serif, system-ui, sans-serif;
+  font-size: 20px !important;
+  line-height: 1.45;
+  text-align: center;
+  white-space: pre-line;
+}
+
 html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
   div:has(> img[alt="Note"]) > span[style*="top: 50%"]::after {
   color: #8a4b59 !important;
@@ -11,6 +34,11 @@ html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
 }
 
 @media (max-width: 600px) {
+  html.pawcream-lang-zh body section[aria-label^="PawCream Atelier Room"]
+    div:has(> img[alt="Note"]) > span[style*="top: 50%"]::after {
+    font-size: 17px !important;
+  }
+
   html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
     div:has(> img[alt="Note"]) > span[style*="top: 50%"]::after {
     font-size: 17px !important;
