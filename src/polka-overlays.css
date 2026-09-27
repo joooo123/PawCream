@@ -1,5 +1,17 @@
 /* Blue frosted overlays with the user's blue-dot pattern on the floating cards. */
 
+@font-face {
+  font-family: 'PawCreamWanWan';
+  src: url('/assets/font/AaZiTiGuanJiaWanWanTi（JianFan）-2.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PawCreamApple';
+  src: url('/assets/font/Apple-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
 :root {
   --pawcream-blue-overlay: rgba(211, 228, 242, .48);
   --pawcream-blue-dot: rgba(210, 229, 246, .72);
@@ -87,4 +99,34 @@ section[role="dialog"][aria-label="Pick an Instax frame"] .pawcream-instax-file:
   background: #e9f3fb !important;
   color: #527792 !important;
   border-color: rgba(105, 155, 192, .42) !important;
+}
+
+/* The chandelier toolbar should read as one complete blue glass bar, not a blue outline around a white center. */
+nav[aria-label="PawCream Atelier toolbar"] {
+  background: rgba(210, 229, 246, .84) !important;
+  border-color: rgba(119, 165, 201, .38) !important;
+  box-shadow: 0 14px 38px rgba(74, 108, 134, .18) !important;
+  color: #63839a !important;
+  font-family: 'PawCreamWanWan', 'PawCreamApple', ui-sans-serif, system-ui, sans-serif !important;
+  backdrop-filter: blur(18px) saturate(118%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(118%) !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] button {
+  border-color: rgba(119, 165, 201, .30) !important;
+  background-color: rgba(242, 248, 253, .84) !important;
+  color: #66869d !important;
+  font-family: 'PawCreamWanWan', 'PawCreamApple', ui-sans-serif, system-ui, sans-serif !important;
+  box-shadow: 0 4px 14px rgba(74, 108, 134, .07) !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child {
+  background: rgba(185, 214, 237, .66) !important;
+}
+
+nav[aria-label="PawCream Atelier toolbar"] > div:last-child > div:first-child button {
+  border-color: transparent !important;
+  background-color: rgba(245, 250, 254, .88) !important;
+  color: #66869d !important;
+  box-shadow: none !important;
 }
