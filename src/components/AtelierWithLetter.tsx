@@ -11,8 +11,12 @@ type Props = {
   mobilePreview: boolean
 }
 
-const LETTER_URL = `${import.meta.env.BASE_URL}assets/atelier/letter.png?v=b11841236724eb09d8b7e7940a4a9b76e0f91ac2`
+const BASE_URL = import.meta.env.BASE_URL
+const ENVELOPE_BACK_URL = `${BASE_URL}assets/envelop/back.png?v=3a546f1b`
+const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=fb2c4889`
+const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
+const PAPER_RISE_MS = 1650
 
 const COPY = {
   zh: {
@@ -37,6 +41,7 @@ function readLanguage(): Language {
 export default function AtelierWithLetter(props: Props) {
   const [open, setOpen] = useState(false)
   const [language, setLanguage] = useState<Language>(readLanguage)
+  const [typedChars, setTypedChars] = useState(0)
 
   const tuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
@@ -45,11 +50,60 @@ export default function AtelierWithLetter(props: Props) {
 
   const mobile = props.deviceProfile === 'mobile'
   const copy = COPY[language]
+  const titleLength = copy.title.length
+  const totalTypingLength = titleLength + copy.body.length
+  const visibleTitle = copy.title.slice(0, Math.min(typedChars, titleLength))
+  const visibleBody = copy.body.slice(0, Math.max(0, typedChars - titleLength))
+  const typingTitle = typedChars < titleLength
+  const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
+  const typingDone = typedChars >= totalTypingLength
 
   const openLetter = () => {
     setLanguage(readLanguage())
+    setTypedChars(0)
     setOpen(true)
   }
+
+  useEffect(() => {
+    if (tuneMode) return
+
+    const timer = window.setTimeout(() => {
+      for (const src of [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL]) {
+        const image = new Image()
+        image.decoding = 'async'
+        image.src = src
+      }
+    }, 220)
+
+    return () => window.clearTimeout(timer)
+  }, [tuneMode])
+
+  useEffect(() => {
+    if (!open) {
+      setTypedChars(0)
+      return
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setTypedChars(totalTypingLength)
+      return
+    }
+
+    let timeoutId = 0
+    let current = 0
+    const delay = language === 'zh' ? 54 : 29
+
+    const step = () => {
+      current += 1
+      setTypedChars(current)
+      if (current < totalTypingLength) {
+        timeoutId = window.setTimeout(step, delay)
+      }
+    }
+
+    timeoutId = window.setTimeout(step, PAPER_RISE_MS - 120)
+    return () => window.clearTimeout(timeoutId)
+  }, [open, language, totalTypingLength])
 
   useEffect(() => {
     if (tuneMode) return
@@ -118,7 +172,7 @@ export default function AtelierWithLetter(props: Props) {
             zIndex: 145,
             display: 'grid',
             placeItems: 'center',
-            padding: mobile ? 12 : 24,
+            padding: mobile ? 10 : 22,
             background: 'rgba(211, 228, 242, .48)',
             backdropFilter: 'blur(11px) saturate(112%)',
             WebkitBackdropFilter: 'blur(11px) saturate(112%)',
@@ -129,10 +183,13 @@ export default function AtelierWithLetter(props: Props) {
             aria-modal="true"
             aria-label={copy.title}
             onClick={(event) => event.stopPropagation()}
+            className={`pawcream-envelope-dialog${mobile ? ' is-mobile' : ''}`}
             style={{
               position: 'relative',
-              width: mobile ? 'min(520px, calc(100vw - 24px))' : 'min(860px, calc(100vw - 48px))',
-              maxHeight: 'calc(100svh - 24px)',
+              width: mobile
+                ? 'min(540px, calc(100vw - 12px))'
+                : 'min(900px, calc(100vw - 38px))',
+              maxHeight: 'calc(100svh - 12px)',
               overflow: 'visible',
               padding: 0,
               border: 0,
@@ -145,6 +202,99 @@ export default function AtelierWithLetter(props: Props) {
             }}
           >
             <style>{`
+              .pawcream-envelope-stage {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 4 / 3;
+                isolation: isolate;
+                filter: drop-shadow(0 22px 34px rgba(74,108,134,.16));
+                animation: pawcream-envelope-enter 360ms ease-out both;
+              }
+              .pawcream-envelope-layer {
+                position: absolute;
+                inset: 0;
+                display: block;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                user-select: none;
+                pointer-events: none;
+              }
+              .pawcream-envelope-back {
+                z-index: 1;
+              }
+              .pawcream-envelope-paper-wrap {
+                position: absolute;
+                inset: 0;
+                z-index: 2;
+                transform-origin: 50% 78%;
+                animation: pawcream-paper-rise ${PAPER_RISE_MS}ms cubic-bezier(.2,.76,.28,1) both;
+                will-change: transform;
+              }
+              .pawcream-envelope-paper {
+                z-index: 1;
+              }
+              .pawcream-envelope-front {
+                z-index: 3;
+              }
+              .pawcream-paper-copy {
+                position: absolute;
+                z-index: 2;
+                left: 22%;
+                top: 12.5%;
+                width: 56%;
+                height: 44%;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                justify-content: flex-start;
+                overflow: hidden;
+                color: #5b798f;
+                pointer-events: none;
+              }
+              .pawcream-paper-title {
+                min-height: 1.35em;
+                margin: 0;
+                color: #527792;
+                font-size: 29px;
+                font-weight: 400;
+                line-height: 1.28;
+                text-align: center;
+              }
+              .pawcream-paper-body {
+                margin: 12px 0 0;
+                color: #648198;
+                font-size: 16px;
+                line-height: 1.72;
+                letter-spacing: .012em;
+                text-align: left;
+              }
+              .pawcream-paper-signature {
+                margin-top: 12px;
+                color: #88a2b5;
+                font-family: 'PawCream EN', sans-serif;
+                font-size: 12px;
+                line-height: 1.35;
+                letter-spacing: .04em;
+                text-align: center;
+                opacity: 0;
+                transform: translateY(3px);
+                transition: opacity 520ms ease, transform 520ms ease;
+              }
+              .pawcream-paper-signature.is-visible {
+                opacity: 1;
+                transform: translateY(0);
+              }
+              .pawcream-type-caret {
+                display: inline-block;
+                width: .08em;
+                height: .95em;
+                margin-left: .12em;
+                vertical-align: -.08em;
+                border-right: 1.5px solid currentColor;
+                animation: pawcream-caret-blink 720ms steps(1,end) infinite;
+              }
               .pawcream-letter-close {
                 transition: background 160ms ease, color 160ms ease, transform 160ms ease, border-color 160ms ease;
               }
@@ -154,85 +304,116 @@ export default function AtelierWithLetter(props: Props) {
                 border-color: rgba(105,155,192,.48) !important;
                 transform: rotate(7deg) scale(1.06);
               }
+              @keyframes pawcream-envelope-enter {
+                from { opacity: 0; transform: translateY(8px) scale(.985); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+              }
+              @keyframes pawcream-paper-rise {
+                0% { transform: translate3d(0, 23%, 0) scale(.94); }
+                18% { transform: translate3d(0, 23%, 0) scale(.94); }
+                100% { transform: translate3d(0, -10%, 0) scale(.94); }
+              }
+              @keyframes pawcream-caret-blink {
+                0%, 46% { opacity: 1; }
+                47%, 100% { opacity: 0; }
+              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-paper-copy {
+                left: 22%;
+                top: 11.5%;
+                width: 56%;
+                height: 45%;
+              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-paper-title {
+                font-size: 20px;
+              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-paper-body {
+                margin-top: 7px;
+                font-size: 11px;
+                line-height: 1.62;
+              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-paper-signature {
+                margin-top: 7px;
+                font-size: 8.5px;
+              }
+              @media (max-height: 690px) and (min-width: 701px) {
+                .pawcream-envelope-dialog {
+                  width: min(760px, calc(100vw - 38px)) !important;
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .pawcream-envelope-stage,
+                .pawcream-envelope-paper-wrap,
+                .pawcream-type-caret {
+                  animation: none !important;
+                }
+                .pawcream-envelope-paper-wrap {
+                  transform: translate3d(0, -10%, 0) scale(.94);
+                }
+                .pawcream-paper-signature {
+                  opacity: 1;
+                  transform: none;
+                }
+              }
             `}</style>
 
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                filter: 'drop-shadow(0 22px 34px rgba(74,108,134,.18))',
-              }}
-            >
+            <div className="pawcream-envelope-stage">
               <img
-                src={LETTER_URL}
-                alt="PawCream letter"
+                src={ENVELOPE_BACK_URL}
+                alt=""
+                aria-hidden="true"
                 draggable={false}
                 decoding="async"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  height: 'auto',
-                  userSelect: 'none',
-                  pointerEvents: 'none',
-                }}
+                className="pawcream-envelope-layer pawcream-envelope-back"
               />
 
-              <div
-                style={{
-                  position: 'absolute',
-                  left: mobile ? '22%' : '20%',
-                  top: mobile ? '20%' : '19%',
-                  width: mobile ? '56%' : '60%',
-                  height: mobile ? '54%' : '57%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  color: '#5b798f',
-                  textAlign: language === 'zh' ? 'left' : 'center',
-                  boxSizing: 'border-box',
-                  padding: mobile ? '0 3%' : '0 4%',
-                }}
-              >
-                <h2
-                  style={{
-                    margin: 0,
-                    color: '#527792',
-                    fontSize: mobile ? 21 : 31,
-                    fontWeight: 400,
-                    lineHeight: 1.25,
-                    textAlign: 'center',
-                  }}
-                >
-                  {copy.title}
-                </h2>
-
-                <p
-                  style={{
-                    margin: mobile ? '8px 0 0' : '12px 0 0',
-                    color: '#648198',
-                    fontSize: mobile ? 12 : 17,
-                    lineHeight: language === 'zh' ? 1.82 : 1.58,
-                    letterSpacing: language === 'zh' ? '.015em' : '.005em',
-                  }}
-                >
-                  {copy.body}
-                </p>
+              <div className="pawcream-envelope-paper-wrap">
+                <img
+                  src={ENVELOPE_PAPER_URL}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  decoding="async"
+                  className="pawcream-envelope-layer pawcream-envelope-paper"
+                />
 
                 <div
+                  className="pawcream-paper-copy"
                   style={{
-                    marginTop: mobile ? 8 : 13,
-                    color: '#88a2b5',
-                    fontSize: mobile ? 9 : 13,
-                    lineHeight: 1.35,
-                    textAlign: 'center',
-                    letterSpacing: '.04em',
-                    fontFamily: "'PawCream EN', sans-serif",
+                    fontFamily: language === 'zh'
+                      ? "'PawCream CN', 'PawCream EN', sans-serif"
+                      : "'PawCream EN', sans-serif",
                   }}
                 >
-                  {copy.signature}
+                  <h2 className="pawcream-paper-title">
+                    {visibleTitle}
+                    {typingTitle && <span className="pawcream-type-caret" aria-hidden="true" />}
+                  </h2>
+
+                  <p
+                    className="pawcream-paper-body"
+                    style={{
+                      lineHeight: language === 'zh' ? 1.76 : 1.58,
+                      letterSpacing: language === 'zh' ? '.015em' : '.005em',
+                    }}
+                  >
+                    {visibleBody}
+                    {typingBody && <span className="pawcream-type-caret" aria-hidden="true" />}
+                  </p>
+
+                  <div className={`pawcream-paper-signature${typingDone ? ' is-visible' : ''}`}>
+                    {copy.signature}
+                  </div>
                 </div>
               </div>
+
+              <img
+                src={ENVELOPE_FRONT_URL}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                decoding="async"
+                className="pawcream-envelope-layer pawcream-envelope-front"
+              />
             </div>
 
             <button
@@ -243,9 +424,9 @@ export default function AtelierWithLetter(props: Props) {
               onClick={() => setOpen(false)}
               style={{
                 position: 'absolute',
-                top: mobile ? -4 : 4,
-                right: mobile ? -2 : 5,
-                zIndex: 5,
+                top: mobile ? -2 : 4,
+                right: mobile ? 2 : 5,
+                zIndex: 8,
                 width: mobile ? 34 : 40,
                 height: mobile ? 34 : 40,
                 display: 'grid',
