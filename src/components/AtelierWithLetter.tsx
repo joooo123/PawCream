@@ -17,6 +17,7 @@ type LetterTune = {
   paperWidth: number
   paperHeight: number
   paperScale: number
+  paperRotate: number
   startY: number
   endY: number
   textLeft: number
@@ -50,6 +51,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperWidth: 72,
     paperHeight: 86,
     paperScale: 0.88,
+    paperRotate: 0,
     startY: 36,
     endY: -15,
     textLeft: 13,
@@ -71,6 +73,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperWidth: 70,
     paperHeight: 84,
     paperScale: 0.88,
+    paperRotate: 0,
     startY: 38,
     endY: -13,
     textLeft: 12,
@@ -607,7 +610,7 @@ export default function AtelierWithLetter(props: Props) {
                   top: `${tune.paperTop}%`,
                   width: `${tune.paperWidth}%`,
                   height: `${tune.paperHeight}%`,
-                  transform: `translate3d(0, ${paperRaised ? tune.endY : tune.startY}%, 0) scale(${tune.paperScale})`,
+                  transform: `translate3d(0, ${paperRaised ? tune.endY : tune.startY}%, 0) rotate(${tune.paperRotate}deg) scale(${tune.paperScale})`,
                   transition: `transform ${tune.riseMs}ms cubic-bezier(.2,.76,.28,1)`,
                 }}
               >
@@ -710,6 +713,7 @@ export default function AtelierWithLetter(props: Props) {
                 <TuneControl label="Width" value={tune.paperWidth} min={35} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('paperWidth', v)} />
                 <TuneControl label="Height" value={tune.paperHeight} min={40} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperHeight', v)} />
                 <TuneControl label="Scale" value={tune.paperScale} min={0.45} max={1.25} step={0.01} suffix="×" onChange={(v) => updateTune('paperScale', v)} />
+                <TuneControl label="Rotate" value={tune.paperRotate} min={-180} max={180} step={1} suffix="deg" onChange={(v) => updateTune('paperRotate', v)} />
                 <TuneControl label="Start Y" value={tune.startY} min={-40} max={100} step={1} suffix="%" onChange={(v) => updateTune('startY', v)} />
                 <TuneControl label="End Y" value={tune.endY} min={-70} max={60} step={1} suffix="%" onChange={(v) => updateTune('endY', v)} />
               </fieldset>
