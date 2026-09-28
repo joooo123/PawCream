@@ -11,14 +11,82 @@ type Props = {
   mobilePreview: boolean
 }
 
+type LetterTune = {
+  paperLeft: number
+  paperTop: number
+  paperWidth: number
+  paperHeight: number
+  paperScale: number
+  startY: number
+  endY: number
+  textLeft: number
+  textTop: number
+  textWidth: number
+  textHeight: number
+  titleSize: number
+  bodySize: number
+  bodyLineHeight: number
+  signatureSize: number
+  riseMs: number
+  typeGapMs: number
+  typeDelayZh: number
+  typeDelayEn: number
+}
+
+type LetterTuneProfiles = Record<DeviceProfile, LetterTune>
+
 const BASE_URL = import.meta.env.BASE_URL
 const ENVELOPE_BACK_URL = `${BASE_URL}assets/envelop/back.png?v=3a546f1b`
 const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=fb2c4889`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const PAPER_RISE_MS = 1550
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v1'
 const PAPER_START_DELAY_MS = 120
-const TYPE_START_GAP_MS = 180
+
+const DEFAULT_TUNE: LetterTuneProfiles = {
+  desktop: {
+    paperLeft: 14,
+    paperTop: 6,
+    paperWidth: 72,
+    paperHeight: 86,
+    paperScale: 0.88,
+    startY: 36,
+    endY: -15,
+    textLeft: 13,
+    textTop: 11,
+    textWidth: 74,
+    textHeight: 54,
+    titleSize: 28,
+    bodySize: 15,
+    bodyLineHeight: 1.76,
+    signatureSize: 11,
+    riseMs: 1550,
+    typeGapMs: 180,
+    typeDelayZh: 58,
+    typeDelayEn: 32,
+  },
+  mobile: {
+    paperLeft: 15,
+    paperTop: 7,
+    paperWidth: 70,
+    paperHeight: 84,
+    paperScale: 0.88,
+    startY: 38,
+    endY: -13,
+    textLeft: 12,
+    textTop: 10.5,
+    textWidth: 76,
+    textHeight: 56,
+    titleSize: 19,
+    bodySize: 10.5,
+    bodyLineHeight: 1.62,
+    signatureSize: 8,
+    riseMs: 1550,
+    typeGapMs: 180,
+    typeDelayZh: 58,
+    typeDelayEn: 32,
+  },
+}
 
 const COPY = {
   zh: {
@@ -40,18 +108,73 @@ function readLanguage(): Language {
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
 }
 
+function readTuneProfiles(): LetterTuneProfiles {
+  if (typeof window === 'undefined') return DEFAULT_TUNE
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    return {
+      desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(saved.mobile || {}) },
+    }
+  } catch {
+    return DEFAULT_TUNE
+  }
+}
+
+type TuneControlProps = {
+  label: string
+  value: number
+  min: number
+  max: number
+  step?: number
+  suffix?: string
+  onChange: (value: number) => void
+}
+
+function TuneControl({ label, value, min, max, step = 1, suffix = '', onChange }: TuneControlProps) {
+  return (
+    <label className="pawcream-letter-tune-row">
+      <span>{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <em>{suffix}</em>
+    </label>
+  )
+}
+
 export default function AtelierWithLetter(props: Props) {
   const [open, setOpen] = useState(false)
   const [language, setLanguage] = useState<Language>(readLanguage)
   const [typedChars, setTypedChars] = useState(0)
   const [paperRaised, setPaperRaised] = useState(false)
+  const [playKey, setPlayKey] = useState(0)
+  const [tuneProfiles, setTuneProfiles] = useState<LetterTuneProfiles>(readTuneProfiles)
+  const [copyStatus, setCopyStatus] = useState('')
 
-  const tuneMode = useMemo(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
+  const query = useMemo(
+    () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
     [],
   )
+  const tuneMode = query.get('tune') === '1'
+  const letterTuneMode = query.get('letterTune') === '1'
 
   const mobile = props.deviceProfile === 'mobile'
+  const activeProfile: DeviceProfile = mobile ? 'mobile' : 'desktop'
+  const tune = tuneProfiles[activeProfile]
   const copy = COPY[language]
   const titleLength = copy.title.length
   const totalTypingLength = titleLength + copy.body.length
@@ -61,15 +184,43 @@ export default function AtelierWithLetter(props: Props) {
   const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
   const typingDone = typedChars >= totalTypingLength
 
-  const openLetter = () => {
+  const updateTune = (key: keyof LetterTune, value: number) => {
+    if (!Number.isFinite(value)) return
+    setTuneProfiles((current) => ({
+      ...current,
+      [activeProfile]: { ...current[activeProfile], [key]: value },
+    }))
+  }
+
+  const replay = () => {
+    setLanguage(readLanguage())
+    setTypedChars(0)
+    setPaperRaised(false)
+    setPlayKey((value) => value + 1)
+    setOpen(true)
+  }
+
+  const openLetter = () => replay()
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LETTER_TUNE_STORAGE_KEY, JSON.stringify(tuneProfiles))
+    } catch {
+      // Ignore storage failures; live tuning still works.
+    }
+  }, [tuneProfiles])
+
+  useEffect(() => {
+    if (!letterTuneMode) return
     setLanguage(readLanguage())
     setTypedChars(0)
     setPaperRaised(false)
     setOpen(true)
-  }
+    setPlayKey((value) => value + 1)
+  }, [letterTuneMode])
 
   useEffect(() => {
-    if (tuneMode) return
+    if (tuneMode && !letterTuneMode) return
 
     const timer = window.setTimeout(() => {
       for (const src of [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL]) {
@@ -80,7 +231,7 @@ export default function AtelierWithLetter(props: Props) {
     }, 220)
 
     return () => window.clearTimeout(timer)
-  }, [tuneMode])
+  }, [tuneMode, letterTuneMode])
 
   useEffect(() => {
     if (!open) {
@@ -91,7 +242,7 @@ export default function AtelierWithLetter(props: Props) {
     setPaperRaised(false)
     const timer = window.setTimeout(() => setPaperRaised(true), PAPER_START_DELAY_MS)
     return () => window.clearTimeout(timer)
-  }, [open])
+  }, [open, playKey])
 
   useEffect(() => {
     if (!open) {
@@ -102,26 +253,24 @@ export default function AtelierWithLetter(props: Props) {
     setTypedChars(0)
     let timeoutId = 0
     let current = 0
-    const delay = language === 'zh' ? 58 : 32
+    const delay = language === 'zh' ? tune.typeDelayZh : tune.typeDelayEn
 
     const step = () => {
       current += 1
       setTypedChars(current)
-      if (current < totalTypingLength) {
-        timeoutId = window.setTimeout(step, delay)
-      }
+      if (current < totalTypingLength) timeoutId = window.setTimeout(step, delay)
     }
 
     timeoutId = window.setTimeout(
       step,
-      PAPER_START_DELAY_MS + PAPER_RISE_MS + TYPE_START_GAP_MS,
+      PAPER_START_DELAY_MS + tune.riseMs + tune.typeGapMs,
     )
 
     return () => window.clearTimeout(timeoutId)
-  }, [open, language, totalTypingLength])
+  }, [open, playKey, language, totalTypingLength, tune.riseMs, tune.typeGapMs, tune.typeDelayZh, tune.typeDelayEn])
 
   useEffect(() => {
-    if (tuneMode) return
+    if (tuneMode && !letterTuneMode) return
 
     const image = document.querySelector<HTMLImageElement>(
       'section[aria-label^="PawCream Atelier Room"] img[alt="Window"], section[aria-label^="PawCream Atelier Room"] img[alt="PawCream"]',
@@ -171,13 +320,30 @@ export default function AtelierWithLetter(props: Props) {
       else control.setAttribute('aria-label', oldLabel)
       control.style.cursor = oldCursor
     }
-  }, [props.deviceProfile, tuneMode, open])
+  }, [props.deviceProfile, tuneMode, letterTuneMode, open])
+
+  const copyTune = async () => {
+    const text = JSON.stringify({ profile: activeProfile, ...tune }, null, 2)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('已复制')
+    } catch {
+      setCopyStatus('复制失败')
+    }
+    window.setTimeout(() => setCopyStatus(''), 1400)
+  }
+
+  const resetTune = () => {
+    setTuneProfiles((current) => ({ ...current, [activeProfile]: { ...DEFAULT_TUNE[activeProfile] } }))
+    setCopyStatus('已重置')
+    window.setTimeout(() => setCopyStatus(''), 1400)
+  }
 
   return (
     <>
       <AtelierWithInstax {...props} />
 
-      {open && !tuneMode && (
+      {open && (!tuneMode || letterTuneMode) && (
         <div
           role="presentation"
           className="pawcream-letter-overlay"
@@ -240,19 +406,8 @@ export default function AtelierWithLetter(props: Props) {
               .pawcream-envelope-paper-wrap {
                 position: absolute;
                 z-index: 2;
-                left: 14%;
-                top: 6%;
-                width: 72%;
-                height: 86%;
                 transform-origin: 50% 84%;
-                transition: transform ${PAPER_RISE_MS}ms cubic-bezier(.2,.76,.28,1);
                 will-change: transform;
-              }
-              .pawcream-envelope-paper-wrap.is-hidden {
-                transform: translate3d(0, 36%, 0) scale(.88);
-              }
-              .pawcream-envelope-paper-wrap.is-raised {
-                transform: translate3d(0, -15%, 0) scale(.88);
               }
               .pawcream-envelope-paper {
                 position: absolute;
@@ -267,10 +422,6 @@ export default function AtelierWithLetter(props: Props) {
               .pawcream-paper-copy {
                 position: absolute;
                 z-index: 2;
-                left: 13%;
-                top: 11%;
-                width: 74%;
-                height: 54%;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
@@ -284,7 +435,6 @@ export default function AtelierWithLetter(props: Props) {
                 min-height: 1.35em;
                 margin: 0;
                 color: #527792;
-                font-size: 28px;
                 font-weight: 400;
                 line-height: 1.28;
                 text-align: center;
@@ -292,8 +442,6 @@ export default function AtelierWithLetter(props: Props) {
               .pawcream-paper-body {
                 margin: 11px 0 0;
                 color: #648198;
-                font-size: 15px;
-                line-height: 1.72;
                 letter-spacing: .012em;
                 text-align: left;
               }
@@ -301,7 +449,6 @@ export default function AtelierWithLetter(props: Props) {
                 margin-top: 10px;
                 color: #88a2b5;
                 font-family: 'PawCream EN', sans-serif;
-                font-size: 11px;
                 line-height: 1.35;
                 letter-spacing: .04em;
                 text-align: center;
@@ -331,6 +478,90 @@ export default function AtelierWithLetter(props: Props) {
                 border-color: rgba(105,155,192,.48) !important;
                 transform: rotate(7deg) scale(1.06);
               }
+              .pawcream-letter-tune-panel {
+                position: fixed;
+                top: 14px;
+                right: 14px;
+                z-index: 180;
+                width: min(390px, calc(100vw - 28px));
+                max-height: calc(100svh - 28px);
+                overflow: auto;
+                box-sizing: border-box;
+                padding: 14px;
+                border: 1px solid rgba(116,157,188,.34);
+                border-radius: 18px;
+                background: rgba(245,250,254,.95);
+                box-shadow: 0 14px 42px rgba(45,75,100,.2);
+                backdrop-filter: blur(12px);
+                color: #496d87;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+              }
+              .pawcream-letter-tune-panel * {
+                font-family: inherit !important;
+              }
+              .pawcream-letter-tune-panel h3 {
+                margin: 0 0 4px;
+                font-size: 15px;
+              }
+              .pawcream-letter-tune-panel p {
+                margin: 0 0 10px;
+                font-size: 11px;
+                opacity: .72;
+              }
+              .pawcream-letter-tune-panel fieldset {
+                margin: 10px 0;
+                padding: 8px;
+                border: 1px solid rgba(125,164,194,.22);
+                border-radius: 12px;
+              }
+              .pawcream-letter-tune-panel legend {
+                padding: 0 5px;
+                font-size: 11px;
+                font-weight: 700;
+              }
+              .pawcream-letter-tune-row {
+                display: grid;
+                grid-template-columns: 92px minmax(80px, 1fr) 62px 24px;
+                gap: 6px;
+                align-items: center;
+                margin: 5px 0;
+                font-size: 10px;
+              }
+              .pawcream-letter-tune-row input[type='range'] { width: 100%; }
+              .pawcream-letter-tune-row input[type='number'] {
+                width: 62px;
+                box-sizing: border-box;
+                padding: 3px 4px;
+                border: 1px solid rgba(111,151,181,.32);
+                border-radius: 6px;
+                background: white;
+                color: #496d87;
+                font-size: 10px;
+              }
+              .pawcream-letter-tune-row em {
+                font-size: 9px;
+                font-style: normal;
+                opacity: .62;
+              }
+              .pawcream-letter-tune-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                position: sticky;
+                bottom: -14px;
+                margin: 10px -14px -14px;
+                padding: 10px 14px 14px;
+                background: rgba(245,250,254,.97);
+              }
+              .pawcream-letter-tune-actions button {
+                padding: 6px 9px;
+                border: 1px solid rgba(102,149,184,.28);
+                border-radius: 9px;
+                background: white;
+                color: #496d87;
+                cursor: pointer;
+                font-size: 10px;
+              }
               @keyframes pawcream-envelope-enter {
                 from { opacity: 0; transform: translateY(8px) scale(.985); }
                 to { opacity: 1; transform: translateY(0) scale(1); }
@@ -339,37 +570,22 @@ export default function AtelierWithLetter(props: Props) {
                 0%, 46% { opacity: 1; }
                 47%, 100% { opacity: 0; }
               }
-              .pawcream-envelope-dialog.is-mobile .pawcream-envelope-paper-wrap {
-                left: 15%;
-                top: 7%;
-                width: 70%;
-                height: 84%;
-              }
-              .pawcream-envelope-dialog.is-mobile .pawcream-envelope-paper-wrap.is-hidden {
-                transform: translate3d(0, 38%, 0) scale(.88);
-              }
-              .pawcream-envelope-dialog.is-mobile .pawcream-envelope-paper-wrap.is-raised {
-                transform: translate3d(0, -13%, 0) scale(.88);
-              }
-              .pawcream-envelope-dialog.is-mobile .pawcream-paper-copy {
-                left: 12%;
-                top: 10.5%;
-                width: 76%;
-                height: 56%;
-              }
-              .pawcream-envelope-dialog.is-mobile .pawcream-paper-title { font-size: 19px; }
-              .pawcream-envelope-dialog.is-mobile .pawcream-paper-body {
-                margin-top: 7px;
-                font-size: 10.5px;
-                line-height: 1.62;
-              }
-              .pawcream-envelope-dialog.is-mobile .pawcream-paper-signature {
-                margin-top: 6px;
-                font-size: 8px;
-              }
               @media (max-height: 690px) and (min-width: 701px) {
                 .pawcream-envelope-dialog {
                   width: min(720px, calc(100vw - 44px)) !important;
+                }
+              }
+              @media (max-width: 700px) {
+                .pawcream-letter-tune-panel {
+                  top: auto;
+                  right: 8px;
+                  bottom: 8px;
+                  left: 8px;
+                  width: auto;
+                  max-height: 48svh;
+                }
+                .pawcream-letter-tune-row {
+                  grid-template-columns: 84px minmax(70px, 1fr) 58px 22px;
                 }
               }
             `}</style>
@@ -384,7 +600,17 @@ export default function AtelierWithLetter(props: Props) {
                 className="pawcream-envelope-layer pawcream-envelope-back"
               />
 
-              <div className={`pawcream-envelope-paper-wrap ${paperRaised ? 'is-raised' : 'is-hidden'}`}>
+              <div
+                className="pawcream-envelope-paper-wrap"
+                style={{
+                  left: `${tune.paperLeft}%`,
+                  top: `${tune.paperTop}%`,
+                  width: `${tune.paperWidth}%`,
+                  height: `${tune.paperHeight}%`,
+                  transform: `translate3d(0, ${paperRaised ? tune.endY : tune.startY}%, 0) scale(${tune.paperScale})`,
+                  transition: `transform ${tune.riseMs}ms cubic-bezier(.2,.76,.28,1)`,
+                }}
+              >
                 <img
                   src={ENVELOPE_PAPER_URL}
                   alt=""
@@ -397,12 +623,16 @@ export default function AtelierWithLetter(props: Props) {
                 <div
                   className="pawcream-paper-copy"
                   style={{
+                    left: `${tune.textLeft}%`,
+                    top: `${tune.textTop}%`,
+                    width: `${tune.textWidth}%`,
+                    height: `${tune.textHeight}%`,
                     fontFamily: language === 'zh'
                       ? "'PawCream CN', 'PawCream EN', sans-serif"
                       : "'PawCream EN', sans-serif",
                   }}
                 >
-                  <h2 className="pawcream-paper-title">
+                  <h2 className="pawcream-paper-title" style={{ fontSize: tune.titleSize }}>
                     {visibleTitle}
                     {typingTitle && <span className="pawcream-type-caret" aria-hidden="true" />}
                   </h2>
@@ -410,7 +640,8 @@ export default function AtelierWithLetter(props: Props) {
                   <p
                     className="pawcream-paper-body"
                     style={{
-                      lineHeight: language === 'zh' ? 1.76 : 1.58,
+                      fontSize: tune.bodySize,
+                      lineHeight: tune.bodyLineHeight,
                       letterSpacing: language === 'zh' ? '.015em' : '.005em',
                     }}
                   >
@@ -418,7 +649,10 @@ export default function AtelierWithLetter(props: Props) {
                     {typingBody && <span className="pawcream-type-caret" aria-hidden="true" />}
                   </p>
 
-                  <div className={`pawcream-paper-signature${typingDone ? ' is-visible' : ''}`}>
+                  <div
+                    className={`pawcream-paper-signature${typingDone ? ' is-visible' : ''}`}
+                    style={{ fontSize: tune.signatureSize }}
+                  >
                     {copy.signature}
                   </div>
                 </div>
@@ -463,6 +697,53 @@ export default function AtelierWithLetter(props: Props) {
               ×
             </button>
           </section>
+
+          {letterTuneMode && (
+            <aside className="pawcream-letter-tune-panel" onClick={(event) => event.stopPropagation()}>
+              <h3>Letter Tune · {activeProfile}</h3>
+              <p>所有参数实时保存到本浏览器。切换 desktop/mobile 后分别调各自参数。</p>
+
+              <fieldset>
+                <legend>Paper · 纸张</legend>
+                <TuneControl label="Left" value={tune.paperLeft} min={0} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperLeft', v)} />
+                <TuneControl label="Top" value={tune.paperTop} min={-20} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperTop', v)} />
+                <TuneControl label="Width" value={tune.paperWidth} min={35} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('paperWidth', v)} />
+                <TuneControl label="Height" value={tune.paperHeight} min={40} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperHeight', v)} />
+                <TuneControl label="Scale" value={tune.paperScale} min={0.45} max={1.25} step={0.01} suffix="×" onChange={(v) => updateTune('paperScale', v)} />
+                <TuneControl label="Start Y" value={tune.startY} min={-40} max={100} step={1} suffix="%" onChange={(v) => updateTune('startY', v)} />
+                <TuneControl label="End Y" value={tune.endY} min={-70} max={60} step={1} suffix="%" onChange={(v) => updateTune('endY', v)} />
+              </fieldset>
+
+              <fieldset>
+                <legend>Text · 文字框</legend>
+                <TuneControl label="Text Left" value={tune.textLeft} min={0} max={50} step={0.5} suffix="%" onChange={(v) => updateTune('textLeft', v)} />
+                <TuneControl label="Text Top" value={tune.textTop} min={0} max={60} step={0.5} suffix="%" onChange={(v) => updateTune('textTop', v)} />
+                <TuneControl label="Text Width" value={tune.textWidth} min={30} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textWidth', v)} />
+                <TuneControl label="Text Height" value={tune.textHeight} min={20} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('textHeight', v)} />
+                <TuneControl label="Title Size" value={tune.titleSize} min={8} max={48} step={0.5} suffix="px" onChange={(v) => updateTune('titleSize', v)} />
+                <TuneControl label="Body Size" value={tune.bodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('bodySize', v)} />
+                <TuneControl label="Line Height" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('bodyLineHeight', v)} />
+                <TuneControl label="Sign Size" value={tune.signatureSize} min={5} max={24} step={0.5} suffix="px" onChange={(v) => updateTune('signatureSize', v)} />
+              </fieldset>
+
+              <fieldset>
+                <legend>Animation · 动画</legend>
+                <TuneControl label="Rise Time" value={tune.riseMs} min={200} max={4000} step={50} suffix="ms" onChange={(v) => updateTune('riseMs', v)} />
+                <TuneControl label="Type Gap" value={tune.typeGapMs} min={0} max={1800} step={20} suffix="ms" onChange={(v) => updateTune('typeGapMs', v)} />
+                <TuneControl label="中文/字" value={tune.typeDelayZh} min={10} max={180} step={2} suffix="ms" onChange={(v) => updateTune('typeDelayZh', v)} />
+                <TuneControl label="EN/char" value={tune.typeDelayEn} min={8} max={120} step={2} suffix="ms" onChange={(v) => updateTune('typeDelayEn', v)} />
+              </fieldset>
+
+              <div className="pawcream-letter-tune-actions">
+                <button type="button" onClick={() => { setPaperRaised(false); setTypedChars(0) }}>起始</button>
+                <button type="button" onClick={() => { setPaperRaised(true); setTypedChars(totalTypingLength) }}>结束</button>
+                <button type="button" onClick={replay}>重播</button>
+                <button type="button" onClick={copyTune}>复制参数</button>
+                <button type="button" onClick={resetTune}>重置当前端</button>
+                {copyStatus && <span style={{ alignSelf: 'center', fontSize: 10 }}>{copyStatus}</span>}
+              </div>
+            </aside>
+          )}
         </div>
       )}
     </>
