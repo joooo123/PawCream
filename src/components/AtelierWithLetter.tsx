@@ -16,7 +16,9 @@ const ENVELOPE_BACK_URL = `${BASE_URL}assets/envelop/back.png?v=3a546f1b`
 const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=fb2c4889`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const PAPER_RISE_MS = 1650
+const PAPER_RISE_MS = 1550
+const PAPER_START_DELAY_MS = 120
+const TYPE_START_GAP_MS = 180
 
 const COPY = {
   zh: {
@@ -42,6 +44,7 @@ export default function AtelierWithLetter(props: Props) {
   const [open, setOpen] = useState(false)
   const [language, setLanguage] = useState<Language>(readLanguage)
   const [typedChars, setTypedChars] = useState(0)
+  const [paperRaised, setPaperRaised] = useState(false)
 
   const tuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
@@ -54,13 +57,14 @@ export default function AtelierWithLetter(props: Props) {
   const totalTypingLength = titleLength + copy.body.length
   const visibleTitle = copy.title.slice(0, Math.min(typedChars, titleLength))
   const visibleBody = copy.body.slice(0, Math.max(0, typedChars - titleLength))
-  const typingTitle = typedChars < titleLength
+  const typingTitle = typedChars > 0 && typedChars < titleLength
   const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
   const typingDone = typedChars >= totalTypingLength
 
   const openLetter = () => {
     setLanguage(readLanguage())
     setTypedChars(0)
+    setPaperRaised(false)
     setOpen(true)
   }
 
@@ -80,18 +84,25 @@ export default function AtelierWithLetter(props: Props) {
 
   useEffect(() => {
     if (!open) {
+      setPaperRaised(false)
+      return
+    }
+
+    setPaperRaised(false)
+    const timer = window.setTimeout(() => setPaperRaised(true), PAPER_START_DELAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) {
       setTypedChars(0)
       return
     }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setTypedChars(totalTypingLength)
-      return
-    }
-
+    setTypedChars(0)
     let timeoutId = 0
     let current = 0
-    const delay = language === 'zh' ? 54 : 29
+    const delay = language === 'zh' ? 58 : 32
 
     const step = () => {
       current += 1
@@ -101,7 +112,11 @@ export default function AtelierWithLetter(props: Props) {
       }
     }
 
-    timeoutId = window.setTimeout(step, PAPER_RISE_MS - 120)
+    timeoutId = window.setTimeout(
+      step,
+      PAPER_START_DELAY_MS + PAPER_RISE_MS + TYPE_START_GAP_MS,
+    )
+
     return () => window.clearTimeout(timeoutId)
   }, [open, language, totalTypingLength])
 
@@ -187,9 +202,9 @@ export default function AtelierWithLetter(props: Props) {
             style={{
               position: 'relative',
               width: mobile
-                ? 'min(540px, calc(100vw - 12px))'
-                : 'min(900px, calc(100vw - 38px))',
-              maxHeight: 'calc(100svh - 12px)',
+                ? 'min(520px, calc(100vw - 18px))'
+                : 'min(820px, calc(100vw - 44px))',
+              maxHeight: 'calc(100svh - 18px)',
               overflow: 'visible',
               padding: 0,
               border: 0,
@@ -220,30 +235,42 @@ export default function AtelierWithLetter(props: Props) {
                 user-select: none;
                 pointer-events: none;
               }
-              .pawcream-envelope-back {
-                z-index: 1;
-              }
+              .pawcream-envelope-back { z-index: 1; }
+              .pawcream-envelope-front { z-index: 4; }
               .pawcream-envelope-paper-wrap {
                 position: absolute;
-                inset: 0;
                 z-index: 2;
-                transform-origin: 50% 78%;
-                animation: pawcream-paper-rise ${PAPER_RISE_MS}ms cubic-bezier(.2,.76,.28,1) both;
+                left: 14%;
+                top: 6%;
+                width: 72%;
+                height: 86%;
+                transform-origin: 50% 84%;
+                transition: transform ${PAPER_RISE_MS}ms cubic-bezier(.2,.76,.28,1);
                 will-change: transform;
               }
-              .pawcream-envelope-paper {
-                z-index: 1;
+              .pawcream-envelope-paper-wrap.is-hidden {
+                transform: translate3d(0, 36%, 0) scale(.88);
               }
-              .pawcream-envelope-front {
-                z-index: 3;
+              .pawcream-envelope-paper-wrap.is-raised {
+                transform: translate3d(0, -15%, 0) scale(.88);
+              }
+              .pawcream-envelope-paper {
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                user-select: none;
+                pointer-events: none;
               }
               .pawcream-paper-copy {
                 position: absolute;
                 z-index: 2;
-                left: 22%;
-                top: 12.5%;
-                width: 56%;
-                height: 44%;
+                left: 13%;
+                top: 11%;
+                width: 74%;
+                height: 54%;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
@@ -257,24 +284,24 @@ export default function AtelierWithLetter(props: Props) {
                 min-height: 1.35em;
                 margin: 0;
                 color: #527792;
-                font-size: 29px;
+                font-size: 28px;
                 font-weight: 400;
                 line-height: 1.28;
                 text-align: center;
               }
               .pawcream-paper-body {
-                margin: 12px 0 0;
+                margin: 11px 0 0;
                 color: #648198;
-                font-size: 16px;
+                font-size: 15px;
                 line-height: 1.72;
                 letter-spacing: .012em;
                 text-align: left;
               }
               .pawcream-paper-signature {
-                margin-top: 12px;
+                margin-top: 10px;
                 color: #88a2b5;
                 font-family: 'PawCream EN', sans-serif;
-                font-size: 12px;
+                font-size: 11px;
                 line-height: 1.35;
                 letter-spacing: .04em;
                 text-align: center;
@@ -308,50 +335,41 @@ export default function AtelierWithLetter(props: Props) {
                 from { opacity: 0; transform: translateY(8px) scale(.985); }
                 to { opacity: 1; transform: translateY(0) scale(1); }
               }
-              @keyframes pawcream-paper-rise {
-                0% { transform: translate3d(0, 23%, 0) scale(.94); }
-                18% { transform: translate3d(0, 23%, 0) scale(.94); }
-                100% { transform: translate3d(0, -10%, 0) scale(.94); }
-              }
               @keyframes pawcream-caret-blink {
                 0%, 46% { opacity: 1; }
                 47%, 100% { opacity: 0; }
               }
+              .pawcream-envelope-dialog.is-mobile .pawcream-envelope-paper-wrap {
+                left: 15%;
+                top: 7%;
+                width: 70%;
+                height: 84%;
+              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-envelope-paper-wrap.is-hidden {
+                transform: translate3d(0, 38%, 0) scale(.88);
+              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-envelope-paper-wrap.is-raised {
+                transform: translate3d(0, -13%, 0) scale(.88);
+              }
               .pawcream-envelope-dialog.is-mobile .pawcream-paper-copy {
-                left: 22%;
-                top: 11.5%;
-                width: 56%;
-                height: 45%;
+                left: 12%;
+                top: 10.5%;
+                width: 76%;
+                height: 56%;
               }
-              .pawcream-envelope-dialog.is-mobile .pawcream-paper-title {
-                font-size: 20px;
-              }
+              .pawcream-envelope-dialog.is-mobile .pawcream-paper-title { font-size: 19px; }
               .pawcream-envelope-dialog.is-mobile .pawcream-paper-body {
                 margin-top: 7px;
-                font-size: 11px;
+                font-size: 10.5px;
                 line-height: 1.62;
               }
               .pawcream-envelope-dialog.is-mobile .pawcream-paper-signature {
-                margin-top: 7px;
-                font-size: 8.5px;
+                margin-top: 6px;
+                font-size: 8px;
               }
               @media (max-height: 690px) and (min-width: 701px) {
                 .pawcream-envelope-dialog {
-                  width: min(760px, calc(100vw - 38px)) !important;
-                }
-              }
-              @media (prefers-reduced-motion: reduce) {
-                .pawcream-envelope-stage,
-                .pawcream-envelope-paper-wrap,
-                .pawcream-type-caret {
-                  animation: none !important;
-                }
-                .pawcream-envelope-paper-wrap {
-                  transform: translate3d(0, -10%, 0) scale(.94);
-                }
-                .pawcream-paper-signature {
-                  opacity: 1;
-                  transform: none;
+                  width: min(720px, calc(100vw - 44px)) !important;
                 }
               }
             `}</style>
@@ -366,14 +384,14 @@ export default function AtelierWithLetter(props: Props) {
                 className="pawcream-envelope-layer pawcream-envelope-back"
               />
 
-              <div className="pawcream-envelope-paper-wrap">
+              <div className={`pawcream-envelope-paper-wrap ${paperRaised ? 'is-raised' : 'is-hidden'}`}>
                 <img
                   src={ENVELOPE_PAPER_URL}
                   alt=""
                   aria-hidden="true"
                   draggable={false}
                   decoding="async"
-                  className="pawcream-envelope-layer pawcream-envelope-paper"
+                  className="pawcream-envelope-paper"
                 />
 
                 <div
@@ -425,7 +443,7 @@ export default function AtelierWithLetter(props: Props) {
               style={{
                 position: 'absolute',
                 top: mobile ? -2 : 4,
-                right: mobile ? 2 : 5,
+                right: mobile ? -1 : 4,
                 zIndex: 8,
                 width: mobile ? 34 : 40,
                 height: mobile ? 34 : 40,
