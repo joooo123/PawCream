@@ -43,7 +43,7 @@ function applyRotate(value: number) {
 
 function makeRotateRow(panel: HTMLElement) {
   const profile = getProfile(panel)
-  const current = readRotate(profile)
+  const current = Math.max(-180, Math.min(180, readRotate(profile)))
 
   const row = document.createElement('label')
   row.className = 'pawcream-letter-tune-row pawcream-letter-rotate-row'
@@ -54,16 +54,16 @@ function makeRotateRow(panel: HTMLElement) {
 
   const range = document.createElement('input')
   range.type = 'range'
-  range.min = '-30'
-  range.max = '30'
-  range.step = '0.5'
+  range.min = '-180'
+  range.max = '180'
+  range.step = '1'
   range.value = String(current)
 
   const number = document.createElement('input')
   number.type = 'number'
-  number.min = '-30'
-  number.max = '30'
-  number.step = '0.5'
+  number.min = '-180'
+  number.max = '180'
+  number.step = '1'
   number.value = String(current)
 
   const suffix = document.createElement('em')
@@ -72,7 +72,7 @@ function makeRotateRow(panel: HTMLElement) {
   const setValue = (raw: string) => {
     const value = Number(raw)
     if (!Number.isFinite(value)) return
-    const clamped = Math.max(-30, Math.min(30, value))
+    const clamped = Math.max(-180, Math.min(180, value))
     range.value = String(clamped)
     number.value = String(clamped)
     saveRotate(profile, clamped)
@@ -91,7 +91,19 @@ function ensureRotateControl(panel: HTMLElement) {
   const profile = getProfile(panel)
   const existing = panel.querySelector<HTMLElement>('.pawcream-letter-rotate-row')
   if (existing?.dataset.profile === profile) {
-    applyRotate(readRotate(profile))
+    const range = existing.querySelector<HTMLInputElement>('input[type="range"]')
+    const number = existing.querySelector<HTMLInputElement>('input[type="number"]')
+    if (range) {
+      range.min = '-180'
+      range.max = '180'
+      range.step = '1'
+    }
+    if (number) {
+      number.min = '-180'
+      number.max = '180'
+      number.step = '1'
+    }
+    applyRotate(Math.max(-180, Math.min(180, readRotate(profile))))
     return
   }
   existing?.remove()
@@ -106,82 +118,88 @@ function ensureRotateControl(panel: HTMLElement) {
 }
 
 function installStyle() {
-  if (document.getElementById('pawcream-letter-tune-large-style')) return
-  const style = document.createElement('style')
-  style.id = 'pawcream-letter-tune-large-style'
+  let style = document.getElementById('pawcream-letter-tune-large-style') as HTMLStyleElement | null
+  if (!style) {
+    style = document.createElement('style')
+    style.id = 'pawcream-letter-tune-large-style'
+    document.head.appendChild(style)
+  }
+
   style.textContent = `
     .pawcream-letter-tune-panel {
-      width: min(470px, calc(100vw - 28px)) !important;
-      padding: 18px !important;
-      font-size: 15px !important;
+      width: min(560px, calc(100vw - 28px)) !important;
+      padding: 20px !important;
+      font-size: 20px !important;
     }
     .pawcream-letter-tune-panel h3 {
-      font-size: 19px !important;
+      font-size: 24px !important;
       line-height: 1.3 !important;
-      margin-bottom: 7px !important;
+      margin-bottom: 9px !important;
     }
     .pawcream-letter-tune-panel p {
-      font-size: 14px !important;
+      font-size: 19px !important;
       line-height: 1.5 !important;
-      margin-bottom: 13px !important;
+      margin-bottom: 15px !important;
     }
     .pawcream-letter-tune-panel fieldset {
-      padding: 11px !important;
-      margin: 12px 0 !important;
+      padding: 13px !important;
+      margin: 14px 0 !important;
     }
     .pawcream-letter-tune-panel legend {
-      font-size: 14px !important;
+      font-size: 19px !important;
     }
     .pawcream-letter-tune-row {
-      grid-template-columns: 112px minmax(100px, 1fr) 74px 34px !important;
-      gap: 8px !important;
-      margin: 8px 0 !important;
-      font-size: 14px !important;
+      grid-template-columns: 142px minmax(120px, 1fr) 92px 46px !important;
+      gap: 9px !important;
+      margin: 9px 0 !important;
+      font-size: 19px !important;
       line-height: 1.25 !important;
     }
     .pawcream-letter-tune-row input[type='number'] {
-      width: 74px !important;
-      min-height: 32px !important;
-      padding: 5px 6px !important;
-      font-size: 14px !important;
+      width: 92px !important;
+      min-height: 40px !important;
+      padding: 6px 7px !important;
+      font-size: 19px !important;
     }
     .pawcream-letter-tune-row em {
-      font-size: 12px !important;
+      font-size: 17px !important;
     }
     .pawcream-letter-tune-actions {
-      gap: 8px !important;
-      padding-top: 12px !important;
+      gap: 9px !important;
+      padding-top: 14px !important;
     }
     .pawcream-letter-tune-actions button {
-      min-height: 36px !important;
-      padding: 8px 12px !important;
-      font-size: 14px !important;
+      min-height: 42px !important;
+      padding: 9px 14px !important;
+      font-size: 19px !important;
     }
     .pawcream-letter-tune-actions span {
-      font-size: 13px !important;
+      font-size: 18px !important;
     }
     @media (max-width: 700px) {
       .pawcream-letter-tune-panel {
-        max-height: 55svh !important;
-        padding: 15px !important;
-        font-size: 14px !important;
+        max-height: 58svh !important;
+        padding: 17px !important;
+        font-size: 19px !important;
       }
-      .pawcream-letter-tune-panel h3 { font-size: 18px !important; }
+      .pawcream-letter-tune-panel h3 { font-size: 23px !important; }
       .pawcream-letter-tune-panel p,
-      .pawcream-letter-tune-panel legend { font-size: 13px !important; }
+      .pawcream-letter-tune-panel legend { font-size: 18px !important; }
       .pawcream-letter-tune-row {
-        grid-template-columns: 96px minmax(76px, 1fr) 68px 30px !important;
-        gap: 6px !important;
-        font-size: 13px !important;
+        grid-template-columns: 116px minmax(70px, 1fr) 84px 38px !important;
+        gap: 7px !important;
+        font-size: 18px !important;
       }
       .pawcream-letter-tune-row input[type='number'] {
-        width: 68px !important;
-        font-size: 13px !important;
+        width: 84px !important;
+        min-height: 38px !important;
+        font-size: 18px !important;
       }
-      .pawcream-letter-tune-actions button { font-size: 13px !important; }
+      .pawcream-letter-tune-row em { font-size: 17px !important; }
+      .pawcream-letter-tune-actions button { font-size: 18px !important; }
+      .pawcream-letter-tune-actions span { font-size: 18px !important; }
     }
   `
-  document.head.appendChild(style)
 }
 
 function refresh() {
