@@ -41,9 +41,46 @@ const BASE_URL = import.meta.env.BASE_URL
 const ENVELOPE_BACK_URL = `${BASE_URL}assets/envelop/back.png?v=3a546f1b`
 const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
+const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v1'
 const PAPER_START_DELAY_MS = 120
+const FORMAL_TYPE_GAP_MAX_MS = 30
+
+let envelopePreloadPromise: Promise<void> | null = null
+const envelopePreloadImages: HTMLImageElement[] = []
+
+function preloadEnvelopeAssets(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve()
+  if (envelopePreloadPromise) return envelopePreloadPromise
+
+  envelopePreloadPromise = Promise.all(
+    ENVELOPE_ASSET_URLS.map((src) => new Promise<void>((resolve) => {
+      const image = new Image()
+      envelopePreloadImages.push(image)
+      image.decoding = 'async'
+      image.fetchPriority = 'high'
+
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        if (typeof image.decode === 'function') {
+          image.decode().catch(() => undefined).finally(resolve)
+        } else {
+          resolve()
+        }
+      }
+
+      image.onload = finish
+      image.onerror = finish
+      image.src = src
+      if (image.complete && image.naturalWidth > 0) finish()
+    })),
+  ).then(() => undefined)
+
+  return envelopePreloadPromise
+}
 
 const DEFAULT_TUNE: LetterTuneProfiles = {
   desktop: {
@@ -64,7 +101,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     bodyLineHeight: 1.76,
     signatureSize: 21.5,
     riseMs: 4000,
-    typeGapMs: 180,
+    typeGapMs: 30,
     typeDelayZh: 58,
     typeDelayEn: 32,
   },
@@ -86,7 +123,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     bodyLineHeight: 1.62,
     signatureSize: 8,
     riseMs: 1550,
-    typeGapMs: 180,
+    typeGapMs: 30,
     typeDelayZh: 58,
     typeDelayEn: 32,
   },
@@ -189,6 +226,9 @@ export default function AtelierWithLetter(props: Props) {
   const typingTitle = typedChars > 0 && typedChars < titleLength
   const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
   const typingDone = typedChars >= totalTypingLength
+  const effectiveTypeGapMs = letterTuneMode
+    ? tune.typeGapMs
+    : Math.min(tune.typeGapMs, FORMAL_TYPE_GAP_MAX_MS)
 
   const previewY = previewMode === 'start'
     ? tune.startY
@@ -238,7 +278,10 @@ export default function AtelierWithLetter(props: Props) {
     setOpen(true)
   }
 
-  const openLetter = () => replay()
+  const openLetter = () => {
+    void preloadEnvelopeAssets()
+    replay()
+  }
 
   const switchTuneProfile = (profile: DeviceProfile) => {
     props.onDeviceChange(profile)
@@ -281,16 +324,7 @@ export default function AtelierWithLetter(props: Props) {
 
   useEffect(() => {
     if (tuneMode && !letterTuneMode) return
-
-    const timer = window.setTimeout(() => {
-      for (const src of [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL]) {
-        const image = new Image()
-        image.decoding = 'async'
-        image.src = src
-      }
-    }, 220)
-
-    return () => window.clearTimeout(timer)
+    void preloadEnvelopeAssets()
   }, [tuneMode, letterTuneMode])
 
   useEffect(() => {
@@ -316,11 +350,11 @@ export default function AtelierWithLetter(props: Props) {
 
     timeoutId = window.setTimeout(
       step,
-      PAPER_START_DELAY_MS + tune.riseMs + tune.typeGapMs,
+      PAPER_START_DELAY_MS + tune.riseMs + effectiveTypeGapMs,
     )
 
     return () => window.clearTimeout(timeoutId)
-  }, [open, playKey, previewMode, language, totalTypingLength, tune.riseMs, tune.typeGapMs, tune.typeDelayZh, tune.typeDelayEn])
+  }, [open, playKey, previewMode, language, totalTypingLength, tune.riseMs, effectiveTypeGapMs, tune.typeDelayZh, tune.typeDelayEn])
 
   useEffect(() => {
     if (tuneMode && !letterTuneMode) return
