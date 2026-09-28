@@ -39,7 +39,7 @@ type LetterTuneProfiles = Record<DeviceProfile, LetterTune>
 
 const BASE_URL = import.meta.env.BASE_URL
 const ENVELOPE_BACK_URL = `${BASE_URL}assets/envelop/back.png?v=3a546f1b`
-const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=7b9edf0e`
+const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v1'
