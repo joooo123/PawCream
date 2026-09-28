@@ -3,6 +3,7 @@ import AtelierWithInstax from './AtelierWithInstax'
 
 type DeviceProfile = 'desktop' | 'mobile'
 type Language = 'zh' | 'en'
+type PreviewMode = 'play' | 'start' | 'end'
 
 type Props = {
   onBack: () => void
@@ -38,7 +39,7 @@ type LetterTuneProfiles = Record<DeviceProfile, LetterTune>
 
 const BASE_URL = import.meta.env.BASE_URL
 const ENVELOPE_BACK_URL = `${BASE_URL}assets/envelop/back.png?v=3a546f1b`
-const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=fb2c4889`
+const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=7b9edf0e`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v1'
@@ -164,9 +165,11 @@ export default function AtelierWithLetter(props: Props) {
   const [language, setLanguage] = useState<Language>(readLanguage)
   const [typedChars, setTypedChars] = useState(0)
   const [paperRaised, setPaperRaised] = useState(false)
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('play')
   const [playKey, setPlayKey] = useState(0)
   const [tuneProfiles, setTuneProfiles] = useState<LetterTuneProfiles>(readTuneProfiles)
   const [copyStatus, setCopyStatus] = useState('')
+  const [dirty, setDirty] = useState(false)
 
   const query = useMemo(
     () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
@@ -187,16 +190,48 @@ export default function AtelierWithLetter(props: Props) {
   const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
   const typingDone = typedChars >= totalTypingLength
 
+  const previewY = previewMode === 'start'
+    ? tune.startY
+    : previewMode === 'end'
+      ? tune.endY
+      : paperRaised
+        ? tune.endY
+        : tune.startY
+
   const updateTune = (key: keyof LetterTune, value: number) => {
     if (!Number.isFinite(value)) return
     setTuneProfiles((current) => ({
       ...current,
       [activeProfile]: { ...current[activeProfile], [key]: value },
     }))
+    setDirty(true)
+
+    if (key === 'startY') {
+      setPreviewMode('start')
+      setPaperRaised(false)
+      setTypedChars(0)
+    } else if (key === 'endY') {
+      setPreviewMode('end')
+      setPaperRaised(true)
+      setTypedChars(totalTypingLength)
+    }
+  }
+
+  const previewStart = () => {
+    setPreviewMode('start')
+    setPaperRaised(false)
+    setTypedChars(0)
+  }
+
+  const previewEnd = () => {
+    setPreviewMode('end')
+    setPaperRaised(true)
+    setTypedChars(totalTypingLength)
   }
 
   const replay = () => {
     setLanguage(readLanguage())
+    setPreviewMode('play')
     setTypedChars(0)
     setPaperRaised(false)
     setPlayKey((value) => value + 1)
@@ -205,22 +240,44 @@ export default function AtelierWithLetter(props: Props) {
 
   const openLetter = () => replay()
 
-  useEffect(() => {
+  const switchTuneProfile = (profile: DeviceProfile) => {
+    props.onDeviceChange(profile)
+    setPreviewMode('end')
+    setPaperRaised(true)
+    setTypedChars(totalTypingLength)
+    setCopyStatus(profile === 'mobile' ? '已切到手机端参数' : '已切到电脑端参数')
+    window.setTimeout(() => setCopyStatus(''), 1200)
+  }
+
+  const saveTune = () => {
     try {
       window.localStorage.setItem(LETTER_TUNE_STORAGE_KEY, JSON.stringify(tuneProfiles))
+      setDirty(false)
+      setCopyStatus('已保存')
     } catch {
-      // Ignore storage failures; live tuning still works.
+      setCopyStatus('保存失败')
     }
-  }, [tuneProfiles])
+    window.setTimeout(() => setCopyStatus(''), 1600)
+  }
+
+  const restoreSavedTune = () => {
+    setTuneProfiles(readTuneProfiles())
+    setDirty(false)
+    setPreviewMode('end')
+    setPaperRaised(true)
+    setTypedChars(totalTypingLength)
+    setCopyStatus('已恢复上次保存')
+    window.setTimeout(() => setCopyStatus(''), 1600)
+  }
 
   useEffect(() => {
     if (!letterTuneMode) return
     setLanguage(readLanguage())
-    setTypedChars(0)
-    setPaperRaised(false)
+    setPreviewMode('end')
+    setTypedChars(totalTypingLength)
+    setPaperRaised(true)
     setOpen(true)
-    setPlayKey((value) => value + 1)
-  }, [letterTuneMode])
+  }, [letterTuneMode, totalTypingLength])
 
   useEffect(() => {
     if (tuneMode && !letterTuneMode) return
@@ -237,21 +294,14 @@ export default function AtelierWithLetter(props: Props) {
   }, [tuneMode, letterTuneMode])
 
   useEffect(() => {
-    if (!open) {
-      setPaperRaised(false)
-      return
-    }
-
+    if (!open || previewMode !== 'play') return
     setPaperRaised(false)
     const timer = window.setTimeout(() => setPaperRaised(true), PAPER_START_DELAY_MS)
     return () => window.clearTimeout(timer)
-  }, [open, playKey])
+  }, [open, playKey, previewMode])
 
   useEffect(() => {
-    if (!open) {
-      setTypedChars(0)
-      return
-    }
+    if (!open || previewMode !== 'play') return
 
     setTypedChars(0)
     let timeoutId = 0
@@ -270,7 +320,7 @@ export default function AtelierWithLetter(props: Props) {
     )
 
     return () => window.clearTimeout(timeoutId)
-  }, [open, playKey, language, totalTypingLength, tune.riseMs, tune.typeGapMs, tune.typeDelayZh, tune.typeDelayEn])
+  }, [open, playKey, previewMode, language, totalTypingLength, tune.riseMs, tune.typeGapMs, tune.typeDelayZh, tune.typeDelayEn])
 
   useEffect(() => {
     if (tuneMode && !letterTuneMode) return
@@ -338,8 +388,12 @@ export default function AtelierWithLetter(props: Props) {
 
   const resetTune = () => {
     setTuneProfiles((current) => ({ ...current, [activeProfile]: { ...DEFAULT_TUNE[activeProfile] } }))
-    setCopyStatus('已重置')
-    window.setTimeout(() => setCopyStatus(''), 1400)
+    setPreviewMode('end')
+    setPaperRaised(true)
+    setTypedChars(totalTypingLength)
+    setDirty(true)
+    setCopyStatus('已重置，记得保存')
+    window.setTimeout(() => setCopyStatus(''), 1600)
   }
 
   return (
@@ -499,28 +553,38 @@ export default function AtelierWithLetter(props: Props) {
                 color: #496d87;
                 font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
               }
-              .pawcream-letter-tune-panel * {
-                font-family: inherit !important;
-              }
-              .pawcream-letter-tune-panel h3 {
-                margin: 0 0 4px;
-                font-size: 15px;
-              }
-              .pawcream-letter-tune-panel p {
-                margin: 0 0 10px;
-                font-size: 11px;
-                opacity: .72;
-              }
+              .pawcream-letter-tune-panel * { font-family: inherit !important; }
+              .pawcream-letter-tune-panel h3 { margin: 0 0 4px; font-size: 15px; }
+              .pawcream-letter-tune-panel p { margin: 0 0 10px; font-size: 11px; opacity: .72; }
               .pawcream-letter-tune-panel fieldset {
                 margin: 10px 0;
                 padding: 8px;
                 border: 1px solid rgba(125,164,194,.22);
                 border-radius: 12px;
               }
-              .pawcream-letter-tune-panel legend {
-                padding: 0 5px;
-                font-size: 11px;
-                font-weight: 700;
+              .pawcream-letter-tune-panel legend { padding: 0 5px; font-size: 11px; font-weight: 700; }
+              .pawcream-letter-tune-profile {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin: 10px 0 12px;
+              }
+              .pawcream-letter-tune-profile button,
+              .pawcream-letter-tune-actions button {
+                border: 1px solid rgba(102,149,184,.28);
+                border-radius: 9px;
+                background: white;
+                color: #496d87;
+                cursor: pointer;
+              }
+              .pawcream-letter-tune-profile button {
+                min-height: 38px;
+                font-size: 13px;
+              }
+              .pawcream-letter-tune-profile button.is-active {
+                background: #dfeef9;
+                border-color: rgba(83,137,178,.52);
+                box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
               }
               .pawcream-letter-tune-row {
                 display: grid;
@@ -541,11 +605,7 @@ export default function AtelierWithLetter(props: Props) {
                 color: #496d87;
                 font-size: 10px;
               }
-              .pawcream-letter-tune-row em {
-                font-size: 9px;
-                font-style: normal;
-                opacity: .62;
-              }
+              .pawcream-letter-tune-row em { font-size: 9px; font-style: normal; opacity: .62; }
               .pawcream-letter-tune-actions {
                 display: flex;
                 flex-wrap: wrap;
@@ -556,14 +616,17 @@ export default function AtelierWithLetter(props: Props) {
                 padding: 10px 14px 14px;
                 background: rgba(245,250,254,.97);
               }
-              .pawcream-letter-tune-actions button {
-                padding: 6px 9px;
-                border: 1px solid rgba(102,149,184,.28);
-                border-radius: 9px;
-                background: white;
-                color: #496d87;
-                cursor: pointer;
-                font-size: 10px;
+              .pawcream-letter-tune-actions button { padding: 6px 9px; font-size: 10px; }
+              .pawcream-letter-tune-actions button.is-active {
+                background: #dfeef9;
+                border-color: rgba(83,137,178,.52);
+              }
+              .pawcream-letter-save-state {
+                width: 100%;
+                margin-top: 4px;
+                font-size: 11px;
+                font-weight: 700;
+                color: ${dirty ? '#a96d54' : '#5d8a72'};
               }
               @keyframes pawcream-envelope-enter {
                 from { opacity: 0; transform: translateY(8px) scale(.985); }
@@ -574,9 +637,7 @@ export default function AtelierWithLetter(props: Props) {
                 47%, 100% { opacity: 0; }
               }
               @media (max-height: 690px) and (min-width: 701px) {
-                .pawcream-envelope-dialog {
-                  width: min(720px, calc(100vw - 44px)) !important;
-                }
+                .pawcream-envelope-dialog { width: min(720px, calc(100vw - 44px)) !important; }
               }
               @media (max-width: 700px) {
                 .pawcream-letter-tune-panel {
@@ -585,7 +646,7 @@ export default function AtelierWithLetter(props: Props) {
                   bottom: 8px;
                   left: 8px;
                   width: auto;
-                  max-height: 48svh;
+                  max-height: 58svh;
                 }
                 .pawcream-letter-tune-row {
                   grid-template-columns: 84px minmax(70px, 1fr) 58px 22px;
@@ -610,8 +671,10 @@ export default function AtelierWithLetter(props: Props) {
                   top: `${tune.paperTop}%`,
                   width: `${tune.paperWidth}%`,
                   height: `${tune.paperHeight}%`,
-                  transform: `translate3d(0, ${paperRaised ? tune.endY : tune.startY}%, 0) rotate(${tune.paperRotate}deg) scale(${tune.paperScale})`,
-                  transition: `transform ${tune.riseMs}ms cubic-bezier(.2,.76,.28,1)`,
+                  transform: `translate3d(0, ${previewY}%, 0) rotate(${tune.paperRotate}deg) scale(${tune.paperScale})`,
+                  transition: previewMode === 'play'
+                    ? `transform ${tune.riseMs}ms cubic-bezier(.2,.76,.28,1)`
+                    : 'none',
                 }}
               >
                 <img
@@ -704,7 +767,24 @@ export default function AtelierWithLetter(props: Props) {
           {letterTuneMode && (
             <aside className="pawcream-letter-tune-panel" onClick={(event) => event.stopPropagation()}>
               <h3>Letter Tune · {activeProfile}</h3>
-              <p>所有参数实时保存到本浏览器。切换 desktop/mobile 后分别调各自参数。</p>
+              <p>Start / End 现在完全独立。修改后点击“保存参数”，Desktop / Mobile 各自保存一套。</p>
+
+              <div className="pawcream-letter-tune-profile">
+                <button
+                  type="button"
+                  className={activeProfile === 'desktop' ? 'is-active' : ''}
+                  onClick={() => switchTuneProfile('desktop')}
+                >
+                  Desktop
+                </button>
+                <button
+                  type="button"
+                  className={activeProfile === 'mobile' ? 'is-active' : ''}
+                  onClick={() => switchTuneProfile('mobile')}
+                >
+                  Mobile
+                </button>
+              </div>
 
               <fieldset>
                 <legend>Paper · 纸张</legend>
@@ -714,8 +794,8 @@ export default function AtelierWithLetter(props: Props) {
                 <TuneControl label="Height" value={tune.paperHeight} min={40} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperHeight', v)} />
                 <TuneControl label="Scale" value={tune.paperScale} min={0.45} max={1.25} step={0.01} suffix="×" onChange={(v) => updateTune('paperScale', v)} />
                 <TuneControl label="Rotate" value={tune.paperRotate} min={-180} max={180} step={1} suffix="deg" onChange={(v) => updateTune('paperRotate', v)} />
-                <TuneControl label="Start Y" value={tune.startY} min={-40} max={100} step={1} suffix="%" onChange={(v) => updateTune('startY', v)} />
-                <TuneControl label="End Y" value={tune.endY} min={-70} max={60} step={1} suffix="%" onChange={(v) => updateTune('endY', v)} />
+                <TuneControl label="Start Y" value={tune.startY} min={-100} max={140} step={1} suffix="%" onChange={(v) => updateTune('startY', v)} />
+                <TuneControl label="End Y" value={tune.endY} min={-120} max={100} step={1} suffix="%" onChange={(v) => updateTune('endY', v)} />
               </fieldset>
 
               <fieldset>
@@ -739,12 +819,17 @@ export default function AtelierWithLetter(props: Props) {
               </fieldset>
 
               <div className="pawcream-letter-tune-actions">
-                <button type="button" onClick={() => { setPaperRaised(false); setTypedChars(0) }}>起始</button>
-                <button type="button" onClick={() => { setPaperRaised(true); setTypedChars(totalTypingLength) }}>结束</button>
-                <button type="button" onClick={replay}>重播</button>
-                <button type="button" onClick={copyTune}>复制参数</button>
+                <button type="button" className={previewMode === 'start' ? 'is-active' : ''} onClick={previewStart}>预览起始</button>
+                <button type="button" className={previewMode === 'end' ? 'is-active' : ''} onClick={previewEnd}>预览结束</button>
+                <button type="button" className={previewMode === 'play' ? 'is-active' : ''} onClick={replay}>重播动画</button>
+                <button type="button" onClick={saveTune}>保存参数</button>
+                <button type="button" onClick={restoreSavedTune}>恢复已保存</button>
+                <button type="button" onClick={copyTune}>复制当前端</button>
                 <button type="button" onClick={resetTune}>重置当前端</button>
-                {copyStatus && <span style={{ alignSelf: 'center', fontSize: 10 }}>{copyStatus}</span>}
+                <div className="pawcream-letter-save-state">
+                  {dirty ? '● 有未保存修改' : '✓ 当前参数已保存'}
+                  {copyStatus ? ` · ${copyStatus}` : ''}
+                </div>
               </div>
             </aside>
           )}
