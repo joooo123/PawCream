@@ -85,15 +85,15 @@ html.pawcream-lang-en body div[role="dialog"][aria-label="Sign in"] button {
 
 /* English Letter brand introduction. */
 html body section[role="dialog"][aria-label="About PawCream"] h2 {
-  font-size: 33px !important;
+  font-size: 35px !important;
 }
 
 html body section[role="dialog"][aria-label="About PawCream"] p {
-  font-size: 19px !important;
+  font-size: 21px !important;
 }
 
 html body section[role="dialog"][aria-label="About PawCream"] > div > div > div {
-  font-size: 15px !important;
+  font-size: 17px !important;
 }
 
 /* The English tagline is also present in the Chinese Letter. */
@@ -197,16 +197,16 @@ html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
   }
 
   html body section[role="dialog"][aria-label="About PawCream"] h2 {
-    font-size: 23px !important;
+    font-size: 25px !important;
   }
 
   html body section[role="dialog"][aria-label="About PawCream"] p {
-    font-size: 14px !important;
+    font-size: 16px !important;
   }
 
   html body section[role="dialog"][aria-label="About PawCream"] > div > div > div,
   html body section[role="dialog"][aria-label="关于 PawCream"] > div > div > div {
-    font-size: 11px !important;
+    font-size: 13px !important;
   }
 
   html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
