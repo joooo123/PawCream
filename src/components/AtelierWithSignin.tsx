@@ -13,7 +13,7 @@ type Props = {
 }
 
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}`
+const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
 
 function readLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
@@ -134,29 +134,49 @@ export default function AtelierWithSignin(props: Props) {
 
   const inputStyle = {
     width: '100%',
-    height: mobile ? 28 : 34,
+    height: mobile ? 27 : 32,
     boxSizing: 'border-box' as const,
-    border: '1px solid rgba(152, 181, 201, .42)',
-    borderRadius: 2,
-    background: 'rgba(255,255,255,.94)',
-    color: '#587184',
+    border: '1px solid rgba(176, 204, 222, .74)',
+    borderRadius: mobile ? 9 : 10,
+    background: 'rgba(252,254,255,.95)',
+    color: '#5f7d92',
     outline: 'none',
-    padding: mobile ? '4px 7px' : '5px 9px',
-    fontFamily: "'Courier New', ui-monospace, monospace",
-    fontSize: mobile ? 10 : 12,
-    boxShadow: 'inset 0 1px 2px rgba(96, 125, 145, .05)',
+    padding: mobile ? '4px 8px' : '5px 10px',
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: mobile ? 9 : 11,
+    boxShadow: '0 4px 14px rgba(117, 157, 184, .10), inset 0 1px 0 rgba(255,255,255,.96)',
+    transition: 'border-color 160ms ease, box-shadow 160ms ease, background 160ms ease',
   }
 
   const actionStyle = {
-    minWidth: mobile ? 58 : 72,
-    height: mobile ? 27 : 31,
-    border: '1px solid rgba(121, 158, 184, .34)',
-    borderRadius: 2,
-    background: 'rgba(245,250,253,.94)',
+    minWidth: mobile ? 62 : 78,
+    height: mobile ? 28 : 32,
+    border: '1px solid rgba(166, 198, 219, .64)',
+    borderRadius: mobile ? 10 : 11,
+    background: 'rgba(251,253,255,.95)',
     color: '#66859c',
     cursor: 'pointer',
-    fontFamily: "'Courier New', ui-monospace, monospace",
-    fontSize: mobile ? 10 : 11,
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: mobile ? 9 : 10,
+    boxShadow: '0 4px 12px rgba(117, 157, 184, .10)',
+    transition: 'transform 160ms ease, background 160ms ease, box-shadow 160ms ease',
+  }
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: mobile ? 7 : 9,
+    color: '#6f8da2',
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: mobile ? 8 : 10,
+    fontWeight: 600,
+    letterSpacing: '.02em',
+  }
+
+  const primaryActionStyle = {
+    ...actionStyle,
+    background: 'rgba(224, 238, 247, .97)',
+    color: '#58778d',
+    boxShadow: '0 5px 14px rgba(117, 157, 184, .14)',
   }
 
   return (
@@ -179,7 +199,7 @@ export default function AtelierWithSignin(props: Props) {
               : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
             aspectRatio: '1199 / 1312',
             transform: 'translateX(-50%)',
-            filter: 'drop-shadow(0 24px 32px rgba(7, 18, 25, .26))',
+            filter: 'drop-shadow(0 24px 32px rgba(7, 18, 25, .24))',
           }}
         >
           <style>{`
@@ -187,10 +207,22 @@ export default function AtelierWithSignin(props: Props) {
               from { opacity: 0; transform: translate(-50%, 28px) scale(.965); }
               to { opacity: 1; transform: translate(-50%, 0) scale(1); }
             }
-            .pawcream-signin-drop { animation: pawcream-signin-drop 320ms cubic-bezier(.2,.82,.24,1) both; }
-            .pawcream-signin-input:focus { border-color: rgba(108,151,181,.74) !important; box-shadow: 0 0 0 2px rgba(179,207,226,.18) !important; }
-            .pawcream-signin-action:hover { background: rgba(226,239,247,.98) !important; transform: translateY(-1px); }
-            .pawcream-signin-close:hover { background: rgba(226,239,247,.92) !important; }
+            .pawcream-signin-drop {
+              animation: pawcream-signin-drop 320ms cubic-bezier(.2,.82,.24,1) both;
+            }
+            .pawcream-signin-input:focus {
+              border-color: rgba(126, 171, 201, .78) !important;
+              background: rgba(255,255,255,.99) !important;
+              box-shadow: 0 0 0 3px rgba(188, 215, 232, .22), 0 6px 16px rgba(117, 157, 184, .12) !important;
+            }
+            .pawcream-signin-action:hover {
+              background: rgba(230,241,248,.99) !important;
+              box-shadow: 0 6px 16px rgba(117, 157, 184, .14) !important;
+              transform: translateY(-1px);
+            }
+            .pawcream-signin-close:hover {
+              background: rgba(232,243,250,.96) !important;
+            }
           `}</style>
 
           <img
@@ -199,17 +231,25 @@ export default function AtelierWithSignin(props: Props) {
             aria-hidden="true"
             draggable={false}
             decoding="async"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
           />
 
           <div
             style={{
               position: 'absolute',
-              left: '25.5%',
-              top: mobile ? '8.5%' : '9.2%',
-              width: '49%',
-              color: '#5c7486',
-              fontFamily: "'Courier New', ui-monospace, monospace",
+              left: '25.8%',
+              top: mobile ? '10.1%' : '10.5%',
+              width: '48.4%',
+              color: '#66859a',
+              fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             }}
           >
             <button
@@ -219,14 +259,15 @@ export default function AtelierWithSignin(props: Props) {
               onClick={() => setOpen(false)}
               style={{
                 position: 'absolute',
-                right: -4,
-                top: -3,
+                right: 0,
+                top: -2,
                 width: mobile ? 24 : 28,
                 height: mobile ? 24 : 28,
-                border: '1px solid rgba(129,164,188,.28)',
+                border: '1px solid rgba(166, 198, 219, .58)',
                 borderRadius: '50%',
-                background: 'rgba(255,255,255,.82)',
-                color: '#7793a6',
+                background: 'rgba(255,255,255,.90)',
+                color: '#7996aa',
+                boxShadow: '0 4px 12px rgba(117, 157, 184, .10)',
                 cursor: 'pointer',
                 padding: 0,
                 fontSize: mobile ? 15 : 17,
@@ -236,14 +277,16 @@ export default function AtelierWithSignin(props: Props) {
               ×
             </button>
 
-            <div style={{ paddingRight: mobile ? 28 : 34, marginBottom: mobile ? 9 : 13 }}>
-              <div style={{ fontSize: mobile ? 12 : 15, letterSpacing: '.04em' }}>{copy.title}</div>
-              <div style={{ marginTop: 4, borderTop: '1px solid rgba(92,116,134,.48)' }} />
-            </div>
+            <header style={{ paddingRight: mobile ? 30 : 36, marginBottom: mobile ? 9 : 11 }}>
+              <div style={{ fontSize: mobile ? 11 : 14, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
+                {copy.title}
+              </div>
+              <div style={{ marginTop: 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
+            </header>
 
             <form onSubmit={submit}>
-              <label style={{ display: 'block', marginBottom: mobile ? 7 : 10, fontSize: mobile ? 9 : 11, fontWeight: 700 }}>
-                <span style={{ display: 'block', marginBottom: 4 }}>{copy.email}</span>
+              <label style={labelStyle}>
+                <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.email}</span>
                 <input
                   className="pawcream-signin-input"
                   type="email"
@@ -254,8 +297,8 @@ export default function AtelierWithSignin(props: Props) {
                 />
               </label>
 
-              <label style={{ display: 'block', marginBottom: mobile ? 7 : 10, fontSize: mobile ? 9 : 11, fontWeight: 700 }}>
-                <span style={{ display: 'block', marginBottom: 4 }}>{copy.password}</span>
+              <label style={labelStyle}>
+                <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.password}</span>
                 <input
                   className="pawcream-signin-input"
                   type="password"
@@ -267,8 +310,8 @@ export default function AtelierWithSignin(props: Props) {
               </label>
 
               {mode === 'register' && (
-                <label style={{ display: 'block', marginBottom: mobile ? 7 : 10, fontSize: mobile ? 9 : 11, fontWeight: 700 }}>
-                  <span style={{ display: 'block', marginBottom: 4 }}>{copy.invite}</span>
+                <label style={labelStyle}>
+                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.invite}</span>
                   <input
                     className="pawcream-signin-input"
                     type="text"
@@ -280,16 +323,16 @@ export default function AtelierWithSignin(props: Props) {
                 </label>
               )}
 
-              <div style={{ display: 'flex', gap: mobile ? 6 : 8, marginTop: mobile ? 8 : 12 }}>
+              <div style={{ display: 'flex', gap: mobile ? 7 : 9, marginTop: mobile ? 8 : 10 }}>
                 {mode === 'login' ? (
                   <>
-                    <button type="submit" className="pawcream-signin-action" style={{ ...actionStyle, background: '#dcebf5', color: '#536f83' }}>{copy.login}</button>
+                    <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.login}</button>
                     <button type="button" className="pawcream-signin-action" onClick={() => switchMode('register')} style={actionStyle}>{copy.register}</button>
                   </>
                 ) : (
                   <>
                     <button type="button" className="pawcream-signin-action" onClick={() => switchMode('login')} style={actionStyle}>{copy.login}</button>
-                    <button type="submit" className="pawcream-signin-action" style={{ ...actionStyle, background: '#dcebf5', color: '#536f83' }}>{copy.register}</button>
+                    <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.register}</button>
                   </>
                 )}
               </div>
@@ -297,11 +340,16 @@ export default function AtelierWithSignin(props: Props) {
               <div
                 aria-live="polite"
                 style={{
-                  minHeight: mobile ? 24 : 30,
-                  marginTop: mobile ? 7 : 9,
-                  fontSize: mobile ? 8 : 9,
+                  minHeight: mobile ? 22 : 27,
+                  marginTop: mobile ? 6 : 8,
+                  padding: status ? (mobile ? '5px 7px' : '6px 9px') : 0,
+                  border: status ? '1px solid rgba(190, 214, 230, .55)' : '1px solid transparent',
+                  borderRadius: mobile ? 8 : 9,
+                  background: status ? 'rgba(238, 247, 252, .66)' : 'transparent',
+                  boxShadow: status ? '0 4px 12px rgba(117, 157, 184, .07)' : 'none',
+                  fontSize: mobile ? 7.5 : 9,
                   lineHeight: 1.4,
-                  color: '#7f99aa',
+                  color: '#7894a7',
                 }}
               >
                 {status}
