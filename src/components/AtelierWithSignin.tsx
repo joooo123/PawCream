@@ -4,6 +4,10 @@ import AtelierWithCollection from './AtelierWithCollection'
 type DeviceProfile = 'desktop' | 'mobile'
 type Language = 'zh' | 'en'
 type AuthMode = 'login' | 'register'
+type SigninTune = {
+  printerScale: number
+  fontBoost: number
+}
 
 type Props = {
   onBack: () => void
@@ -13,11 +17,37 @@ type Props = {
 }
 
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
+const SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v1'
 const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
+const DEFAULT_TUNE: SigninTune = { printerScale: 100, fontBoost: 5 }
 
 function readLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function readTune(): SigninTune {
+  if (typeof window === 'undefined') return DEFAULT_TUNE
+  try {
+    const raw = window.localStorage.getItem(SIGNIN_TUNE_STORAGE_KEY)
+    if (!raw) return DEFAULT_TUNE
+    const parsed = JSON.parse(raw) as Partial<SigninTune>
+    return {
+      printerScale: clamp(Number(parsed.printerScale ?? DEFAULT_TUNE.printerScale), 70, 130),
+      fontBoost: clamp(Number(parsed.fontBoost ?? DEFAULT_TUNE.fontBoost), 0, 12),
+    }
+  } catch {
+    return DEFAULT_TUNE
+  }
+}
+
+function readTuneMode() {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).get('signinTune') === '1'
 }
 
 export default function AtelierWithSignin(props: Props) {
@@ -28,8 +58,11 @@ export default function AtelierWithSignin(props: Props) {
   const [password, setPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [status, setStatus] = useState('')
+  const [tune, setTune] = useState<SigninTune>(readTune)
+  const tuneMode = readTuneMode()
 
   const mobile = props.deviceProfile === 'mobile'
+  const printerScale = tune.printerScale / 100
   const copy = language === 'zh'
     ? {
         title: 'PawCream 账号',
@@ -65,6 +98,10 @@ export default function AtelierWithSignin(props: Props) {
     image.decoding = 'async'
     image.src = TYPEWRITER_URL
   }, [])
+
+  useEffect(() => {
+    if (tuneMode) setOpen(true)
+  }, [tuneMode])
 
   useEffect(() => {
     const onClickCapture = (event: MouseEvent) => {
@@ -106,6 +143,19 @@ export default function AtelierWithSignin(props: Props) {
     }
   }, [open])
 
+  const updateTune = (patch: Partial<SigninTune>) => {
+    setTune((current) => {
+      const next = { ...current, ...patch }
+      window.localStorage.setItem(SIGNIN_TUNE_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const resetTune = () => {
+    setTune(DEFAULT_TUNE)
+    window.localStorage.setItem(SIGNIN_TUNE_STORAGE_KEY, JSON.stringify(DEFAULT_TUNE))
+  }
+
   const switchMode = (next: AuthMode) => {
     setMode(next)
     setStatus('')
@@ -143,7 +193,7 @@ export default function AtelierWithSignin(props: Props) {
     outline: 'none',
     padding: mobile ? '4px 8px' : '5px 10px',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: mobile ? 14 : 16,
+    fontSize: (mobile ? 9 : 11) + tune.fontBoost,
     boxShadow: '0 4px 14px rgba(117, 157, 184, .10), inset 0 1px 0 rgba(255,255,255,.96)',
     transition: 'border-color 160ms ease, box-shadow 160ms ease, background 160ms ease',
   }
@@ -157,7 +207,7 @@ export default function AtelierWithSignin(props: Props) {
     color: '#66859c',
     cursor: 'pointer',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: mobile ? 14 : 15,
+    fontSize: (mobile ? 9 : 10) + tune.fontBoost,
     boxShadow: '0 4px 12px rgba(117, 157, 184, .10)',
     transition: 'transform 160ms ease, background 160ms ease, box-shadow 160ms ease',
   }
@@ -167,7 +217,7 @@ export default function AtelierWithSignin(props: Props) {
     marginBottom: mobile ? 7 : 9,
     color: '#6f8da2',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: mobile ? 13 : 15,
+    fontSize: (mobile ? 8 : 10) + tune.fontBoost,
     fontWeight: 600,
     letterSpacing: '.02em',
   }
@@ -198,14 +248,15 @@ export default function AtelierWithSignin(props: Props) {
               ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
               : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
             aspectRatio: '1199 / 1312',
-            transform: 'translateX(-50%)',
+            transform: `translateX(-50%) scale(${printerScale})`,
+            transformOrigin: 'bottom center',
             filter: 'drop-shadow(0 24px 32px rgba(7, 18, 25, .24))',
           }}
         >
           <style>{`
             @keyframes pawcream-signin-drop {
-              from { opacity: 0; transform: translate(-50%, 28px) scale(.965); }
-              to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+              from { opacity: 0; transform: translate(-50%, 24px) scale(${printerScale}); }
+              to { opacity: 1; transform: translate(-50%, 0) scale(${printerScale}); }
             }
             .pawcream-signin-drop {
               animation: pawcream-signin-drop 320ms cubic-bezier(.2,.82,.24,1) both;
@@ -278,7 +329,7 @@ export default function AtelierWithSignin(props: Props) {
             </button>
 
             <header style={{ paddingRight: mobile ? 30 : 36, marginBottom: mobile ? 9 : 11 }}>
-              <div style={{ fontSize: mobile ? 16 : 19, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
+              <div style={{ fontSize: (mobile ? 11 : 14) + tune.fontBoost, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
                 {copy.title}
               </div>
               <div style={{ marginTop: 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
@@ -347,7 +398,7 @@ export default function AtelierWithSignin(props: Props) {
                   borderRadius: mobile ? 8 : 9,
                   background: status ? 'rgba(238, 247, 252, .66)' : 'transparent',
                   boxShadow: status ? '0 4px 12px rgba(117, 157, 184, .07)' : 'none',
-                  fontSize: mobile ? 12.5 : 14,
+                  fontSize: (mobile ? 7.5 : 9) + tune.fontBoost,
                   lineHeight: 1.4,
                   color: '#7894a7',
                 }}
@@ -357,6 +408,77 @@ export default function AtelierWithSignin(props: Props) {
             </form>
           </div>
         </div>
+      )}
+
+      {tuneMode && (
+        <aside
+          style={{
+            position: 'fixed',
+            top: 12,
+            right: 12,
+            zIndex: 120,
+            width: mobile ? 188 : 218,
+            padding: mobile ? '10px 11px' : '12px 13px',
+            border: '1px solid rgba(177, 205, 223, .78)',
+            borderRadius: 14,
+            background: 'rgba(248, 252, 255, .94)',
+            boxShadow: '0 12px 30px rgba(65, 99, 122, .18)',
+            backdropFilter: 'blur(10px)',
+            color: '#5f7d92',
+            fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontSize: 12,
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>登入调试面板</div>
+
+          <label style={{ display: 'block', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+              <span>打印机大小</span>
+              <strong>{tune.printerScale}%</strong>
+            </div>
+            <input
+              type="range"
+              min="70"
+              max="130"
+              step="1"
+              value={tune.printerScale}
+              onChange={(event) => updateTune({ printerScale: Number(event.currentTarget.value) })}
+              style={{ width: '100%' }}
+            />
+          </label>
+
+          <label style={{ display: 'block', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+              <span>字体大小</span>
+              <strong>+{tune.fontBoost}px</strong>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="12"
+              step="0.5"
+              value={tune.fontBoost}
+              onChange={(event) => updateTune({ fontBoost: Number(event.currentTarget.value) })}
+              style={{ width: '100%' }}
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={resetTune}
+            style={{
+              width: '100%',
+              height: 30,
+              border: '1px solid rgba(166, 198, 219, .68)',
+              borderRadius: 9,
+              background: '#eef6fb',
+              color: '#66859c',
+              cursor: 'pointer',
+            }}
+          >
+            重置为 100% / +5px
+          </button>
+        </aside>
       )}
     </>
   )
