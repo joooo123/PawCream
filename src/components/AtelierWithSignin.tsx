@@ -8,6 +8,7 @@ type SigninTune = {
   printerScale: number
   fontBoost: number
 }
+type SigninTuneByDevice = Record<DeviceProfile, SigninTune>
 
 type Props = {
   onBack: () => void
@@ -17,9 +18,14 @@ type Props = {
 }
 
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v1'
+const LEGACY_SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v1'
+const SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v2'
 const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
 const DEFAULT_TUNE: SigninTune = { printerScale: 100, fontBoost: 5 }
+const DEFAULT_TUNE_BY_DEVICE: SigninTuneByDevice = {
+  desktop: { ...DEFAULT_TUNE },
+  mobile: { ...DEFAULT_TUNE },
+}
 
 function readLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
@@ -30,19 +36,39 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function readTune(): SigninTune {
-  if (typeof window === 'undefined') return DEFAULT_TUNE
+function sanitizeTune(tune?: Partial<SigninTune>): SigninTune {
+  return {
+    printerScale: clamp(Number(tune?.printerScale ?? DEFAULT_TUNE.printerScale), 70, 130),
+    fontBoost: clamp(Number(tune?.fontBoost ?? DEFAULT_TUNE.fontBoost), 0, 12),
+  }
+}
+
+function readTuneByDevice(): SigninTuneByDevice {
+  if (typeof window === 'undefined') return DEFAULT_TUNE_BY_DEVICE
+
   try {
     const raw = window.localStorage.getItem(SIGNIN_TUNE_STORAGE_KEY)
-    if (!raw) return DEFAULT_TUNE
-    const parsed = JSON.parse(raw) as Partial<SigninTune>
-    return {
-      printerScale: clamp(Number(parsed.printerScale ?? DEFAULT_TUNE.printerScale), 70, 130),
-      fontBoost: clamp(Number(parsed.fontBoost ?? DEFAULT_TUNE.fontBoost), 0, 12),
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Record<DeviceProfile, Partial<SigninTune>>>
+      return {
+        desktop: sanitizeTune(parsed.desktop),
+        mobile: sanitizeTune(parsed.mobile),
+      }
+    }
+
+    const legacyRaw = window.localStorage.getItem(LEGACY_SIGNIN_TUNE_STORAGE_KEY)
+    if (legacyRaw) {
+      const legacyTune = sanitizeTune(JSON.parse(legacyRaw) as Partial<SigninTune>)
+      return {
+        desktop: { ...legacyTune },
+        mobile: { ...legacyTune },
+      }
     }
   } catch {
-    return DEFAULT_TUNE
+    return DEFAULT_TUNE_BY_DEVICE
   }
+
+  return DEFAULT_TUNE_BY_DEVICE
 }
 
 function readTuneMode() {
@@ -58,10 +84,12 @@ export default function AtelierWithSignin(props: Props) {
   const [password, setPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [status, setStatus] = useState('')
-  const [tune, setTune] = useState<SigninTune>(readTune)
+  const [tuneByDevice, setTuneByDevice] = useState<SigninTuneByDevice>(readTuneByDevice)
+  const [copied, setCopied] = useState(false)
   const tuneMode = readTuneMode()
 
   const mobile = props.deviceProfile === 'mobile'
+  const tune = tuneByDevice[props.deviceProfile]
   const printerScale = tune.printerScale / 100
   const copy = language === 'zh'
     ? {
@@ -144,16 +172,52 @@ export default function AtelierWithSignin(props: Props) {
   }, [open])
 
   const updateTune = (patch: Partial<SigninTune>) => {
-    setTune((current) => {
-      const next = { ...current, ...patch }
+    setTuneByDevice((current) => {
+      const next: SigninTuneByDevice = {
+        ...current,
+        [props.deviceProfile]: {
+          ...current[props.deviceProfile],
+          ...patch,
+        },
+      }
       window.localStorage.setItem(SIGNIN_TUNE_STORAGE_KEY, JSON.stringify(next))
       return next
     })
   }
 
   const resetTune = () => {
-    setTune(DEFAULT_TUNE)
-    window.localStorage.setItem(SIGNIN_TUNE_STORAGE_KEY, JSON.stringify(DEFAULT_TUNE))
+    setTuneByDevice((current) => {
+      const next: SigninTuneByDevice = {
+        ...current,
+        [props.deviceProfile]: { ...DEFAULT_TUNE },
+      }
+      window.localStorage.setItem(SIGNIN_TUNE_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const copyTuneParameters = async () => {
+    const text = [
+      'PawCream Signin Tune',
+      `desktop: printerScale=${tuneByDevice.desktop.printerScale}%, fontBoost=+${tuneByDevice.desktop.fontBoost}px`,
+      `mobile: printerScale=${tuneByDevice.mobile.printerScale}%, fontBoost=+${tuneByDevice.mobile.fontBoost}px`,
+    ].join('\n')
+
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      textarea.remove()
+    }
+
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1400)
   }
 
   const switchMode = (next: AuthMode) => {
@@ -417,7 +481,7 @@ export default function AtelierWithSignin(props: Props) {
             top: 12,
             right: 12,
             zIndex: 120,
-            width: mobile ? 188 : 218,
+            width: mobile ? 196 : 226,
             padding: mobile ? '10px 11px' : '12px 13px',
             border: '1px solid rgba(177, 205, 223, .78)',
             borderRadius: 14,
@@ -429,7 +493,35 @@ export default function AtelierWithSignin(props: Props) {
             fontSize: 12,
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>登入调试面板</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 9 }}>登入调试面板</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
+            {(['desktop', 'mobile'] as const).map((profile) => {
+              const active = props.deviceProfile === profile
+              return (
+                <button
+                  key={profile}
+                  type="button"
+                  onClick={() => props.onDeviceChange(profile)}
+                  style={{
+                    height: 29,
+                    border: '1px solid rgba(166, 198, 219, .68)',
+                    borderRadius: 9,
+                    background: active ? '#dfeef7' : '#f7fbfd',
+                    color: active ? '#526f84' : '#7690a2',
+                    cursor: 'pointer',
+                    fontWeight: active ? 700 : 500,
+                  }}
+                >
+                  {profile === 'desktop' ? '电脑端' : '手机端'}
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ marginBottom: 10, padding: '7px 8px', borderRadius: 9, background: 'rgba(232,243,250,.72)', fontSize: 11 }}>
+            当前：{mobile ? '手机端' : '电脑端'}
+          </div>
 
           <label style={{ display: 'block', marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -465,6 +557,24 @@ export default function AtelierWithSignin(props: Props) {
 
           <button
             type="button"
+            onClick={copyTuneParameters}
+            style={{
+              width: '100%',
+              height: 31,
+              marginBottom: 7,
+              border: '1px solid rgba(139, 181, 209, .78)',
+              borderRadius: 9,
+              background: copied ? '#dceef8' : '#e8f4fb',
+              color: '#58788f',
+              cursor: 'pointer',
+              fontWeight: 700,
+            }}
+          >
+            {copied ? '已复制 ✓' : '复制电脑端 + 手机端参数'}
+          </button>
+
+          <button
+            type="button"
             onClick={resetTune}
             style={{
               width: '100%',
@@ -476,7 +586,7 @@ export default function AtelierWithSignin(props: Props) {
               cursor: 'pointer',
             }}
           >
-            重置为 100% / +5px
+            重置当前端为 100% / +5px
           </button>
         </aside>
       )}
