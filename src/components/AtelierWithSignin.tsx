@@ -21,7 +21,7 @@ const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const LEGACY_SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v1'
 const SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v2'
 const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
-const DEFAULT_TUNE: SigninTune = { printerScale: 100, fontBoost: 5 }
+const DEFAULT_TUNE: SigninTune = { printerScale: 116, fontBoost: 11 }
 const DEFAULT_TUNE_BY_DEVICE: SigninTuneByDevice = {
   desktop: { ...DEFAULT_TUNE },
   mobile: { ...DEFAULT_TUNE },
@@ -586,7 +586,7 @@ export default function AtelierWithSignin(props: Props) {
               cursor: 'pointer',
             }}
           >
-            重置当前端为 100% / +5px
+            重置当前端为 116% / +11px
           </button>
         </aside>
       )}
