@@ -47,21 +47,23 @@ type SlotTune = {
 type TuneProfiles = Record<string, Record<string, SlotTune>>
 
 const BASE_URL = import.meta.env.BASE_URL
-const COLLECTION_ROOT = `${BASE_URL}assets/collection/${encodeURIComponent('青空小蓓')}/`
-const asset = (name: string) => `${COLLECTION_ROOT}${encodeURIComponent(name)}`
+const collectionAsset = (folder: string, name: string) =>
+  `${BASE_URL}assets/collection/${encodeURIComponent(folder)}/${encodeURIComponent(name)}`
+const qingkongAsset = (name: string) => collectionAsset('青空小蓓', name)
+const summerAsset = (name: string) => collectionAsset('夏日海盐波波', name)
 const COLLECTION_TUNE_STORAGE_KEY = 'pawcream-collection-tune-v1'
 
 const LOOKBOOK_ITEMS: LookbookItem[] = [
   {
     id: 'qingkong-xiaobei',
     title: '青空小蓓',
-    base: asset('空白青空小蓓.png'),
+    base: qingkongAsset('空白青空小蓓.png'),
     slots: [
       {
         id: 'headband',
         label: '发箍',
-        front: asset('真丝发箍.png'),
-        back: asset('波点发箍.png'),
+        front: qingkongAsset('真丝发箍.png'),
+        back: qingkongAsset('波点发箍.png'),
         x: 64.8,
         y: 6.1,
         width: 30.1,
@@ -70,8 +72,8 @@ const LOOKBOOK_ITEMS: LookbookItem[] = [
       {
         id: 'dress',
         label: '裙子',
-        front: asset('裙子一面.png'),
-        back: asset('裙子另一面.png'),
+        front: qingkongAsset('裙子一面.png'),
+        back: qingkongAsset('裙子另一面.png'),
         x: 62.9,
         y: 27.6,
         width: 30.3,
@@ -80,7 +82,7 @@ const LOOKBOOK_ITEMS: LookbookItem[] = [
       {
         id: 'bloomer',
         label: '花苞裤',
-        front: asset('花苞裤.png'),
+        front: qingkongAsset('花苞裤.png'),
         x: 63.2,
         y: 49.3,
         width: 29.2,
@@ -89,13 +91,19 @@ const LOOKBOOK_ITEMS: LookbookItem[] = [
       {
         id: 'socks',
         label: '袜子',
-        front: asset('袜子.png'),
+        front: qingkongAsset('袜子.png'),
         x: 64.5,
         y: 70.8,
         width: 27.7,
         height: 21.2,
       },
     ],
+  },
+  {
+    id: 'summer-sea-salt-bobo',
+    title: '夏日海盐波波',
+    base: summerAsset('海盐夏日波波.png'),
+    slots: [],
   },
 ]
 
@@ -282,23 +290,23 @@ export default function AtelierWithCollection(props: Props) {
   const [flipped, setFlipped] = useState<Record<string, boolean>>({})
   const [tuning, setTuning] = useState<TuneProfiles>(loadTuneProfiles)
   const [savedTuning, setSavedTuning] = useState<TuneProfiles>(loadTuneProfiles)
-  const [selectedSlotId, setSelectedSlotId] = useState(LOOKBOOK_ITEMS[0].slots[0].id)
+  const [selectedSlotId, setSelectedSlotId] = useState(LOOKBOOK_ITEMS[0].slots[0]?.id ?? '')
   const [selectedFace, setSelectedFace] = useState<FaceName>('front')
   const [copyStatus, setCopyStatus] = useState('')
 
   const mobile = props.deviceProfile === 'mobile'
   const current = LOOKBOOK_ITEMS[itemIndex]
-  const currentTune = tuning[current.id]
+  const currentTune = tuning[current.id] ?? {}
   const selectedSlot = current.slots.find((slot) => slot.id === selectedSlotId) ?? current.slots[0]
-  const selectedTune = currentTune[selectedSlot.id]
-  const selectedFaceTune = selectedTune[selectedFace]
+  const selectedTune = selectedSlot ? currentTune[selectedSlot.id] : undefined
+  const selectedFaceTune = selectedTune ? selectedTune[selectedFace] : undefined
   const dirty = JSON.stringify(tuning) !== JSON.stringify(savedTuning)
 
   const openLookbook = () => {
     void preloadCollectionAssets()
     setItemIndex(0)
     setFlipped({})
-    setSelectedSlotId(LOOKBOOK_ITEMS[0].slots[0].id)
+    setSelectedSlotId(LOOKBOOK_ITEMS[0].slots[0]?.id ?? '')
     setSelectedFace('front')
     setOpen(true)
   }
@@ -309,10 +317,9 @@ export default function AtelierWithCollection(props: Props) {
   }
 
   const shiftItem = (direction: -1 | 1) => {
-    if (LOOKBOOK_ITEMS.length <= 1) return
     const next = (itemIndex + direction + LOOKBOOK_ITEMS.length) % LOOKBOOK_ITEMS.length
     setItemIndex(next)
-    setSelectedSlotId(LOOKBOOK_ITEMS[next].slots[0].id)
+    setSelectedSlotId(LOOKBOOK_ITEMS[next].slots[0]?.id ?? '')
     setSelectedFace('front')
     setFlipped({})
   }
@@ -324,12 +331,14 @@ export default function AtelierWithCollection(props: Props) {
   }
 
   const previewFace = (face: FaceName) => {
+    if (!selectedSlot) return
     if (face === 'back' && !selectedSlot.back) return
     setSelectedFace(face)
-    setFlipped((currentState) => ({ ...currentState, [selectedSlot.id]: face === 'back' }))
+    setFlipped((state) => ({ ...state, [selectedSlot.id]: face === 'back' }))
   }
 
   const updateSelectedSlot = (patch: Partial<Omit<SlotTune, 'front' | 'back'>>) => {
+    if (!selectedSlot) return
     setTuning((profiles) => ({
       ...profiles,
       [current.id]: {
@@ -343,6 +352,7 @@ export default function AtelierWithCollection(props: Props) {
   }
 
   const updateSelectedFace = (patch: Partial<FaceTune>) => {
+    if (!selectedSlot) return
     setTuning((profiles) => {
       const slotTune = profiles[current.id][selectedSlot.id]
       return {
@@ -375,19 +385,17 @@ export default function AtelierWithCollection(props: Props) {
   }
 
   const resetTune = () => {
-    const defaults = buildDefaultTuneProfiles()
-    setTuning(defaults)
+    setTuning(buildDefaultTuneProfiles())
     setCopyStatus('已恢复默认值，尚未保存')
   }
 
   const copyTune = async () => {
-    const payload = {
-      item: current.title,
-      itemId: current.id,
-      slots: tuning[current.id],
-    }
     try {
-      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+      await navigator.clipboard.writeText(JSON.stringify({
+        item: current.title,
+        itemId: current.id,
+        slots: tuning[current.id],
+      }, null, 2))
       setCopyStatus('✓ 参数已复制')
     } catch {
       setCopyStatus('复制失败')
@@ -534,40 +542,12 @@ export default function AtelierWithCollection(props: Props) {
               background: rgba(104, 186, 197, .06);
               z-index: 10;
             }
-            .pawcream-lookbook-slot.is-flippable::after {
-              content: '↻';
-              position: absolute;
-              right: 4%;
-              bottom: 5%;
-              z-index: 15;
-              display: grid;
-              place-items: center;
-              width: 22px;
-              height: 22px;
-              border-radius: 999px;
-              background: rgba(255,255,255,.72);
-              color: rgba(87, 132, 139, .72);
-              box-shadow: 0 3px 9px rgba(87, 132, 139, .10);
-              font-family: ui-sans-serif, system-ui, sans-serif;
-              font-size: 14px;
-              line-height: 1;
-              opacity: 0;
-              transform: scale(.8);
-              transition: opacity 160ms ease, transform 160ms ease;
-              pointer-events: none;
-            }
-            .pawcream-lookbook-slot:not(.is-tuning).is-flippable:hover::after,
-            .pawcream-lookbook-slot:not(.is-tuning).is-flipped::after {
-              opacity: .82;
-              transform: scale(1);
-            }
             .pawcream-lookbook-flip {
               position: absolute;
               inset: 0;
               transform-style: preserve-3d;
               transition: transform 620ms cubic-bezier(.22,.72,.22,1);
             }
-            .pawcream-lookbook-slot.is-tuning .pawcream-lookbook-flip { transition-duration: 260ms; }
             .pawcream-lookbook-slot.is-flipped .pawcream-lookbook-flip { transform: rotateY(180deg); }
             .pawcream-lookbook-face {
               position: absolute;
@@ -576,7 +556,6 @@ export default function AtelierWithCollection(props: Props) {
               place-items: center;
               backface-visibility: hidden;
               -webkit-backface-visibility: hidden;
-              overflow: visible;
             }
             .pawcream-lookbook-face.is-back { transform: rotateY(180deg); }
             .pawcream-lookbook-face img {
@@ -602,7 +581,7 @@ export default function AtelierWithCollection(props: Props) {
               transition: transform 160ms ease, background 160ms ease;
             }
             .pawcream-lookbook-close:hover,
-            .pawcream-lookbook-arrow:hover { background: #e7f3f3; transform: scale(1.06); }
+            .pawcream-lookbook-arrow:hover { background: #e7f3f3; }
             .pawcream-lookbook-close {
               top: 8px;
               right: -52px;
@@ -610,7 +589,6 @@ export default function AtelierWithCollection(props: Props) {
               height: 40px;
               border-radius: 50%;
               font-size: 25px;
-              line-height: 1;
             }
             .pawcream-lookbook-arrow {
               top: 50%;
@@ -638,12 +616,6 @@ export default function AtelierWithCollection(props: Props) {
             @keyframes pawcream-lookbook-enter {
               from { opacity: 0; transform: translateY(12px) scale(.975); }
               to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @media (hover: none) {
-              .pawcream-lookbook-slot:not(.is-tuning).is-flippable::after {
-                opacity: .48;
-                transform: scale(.92);
-              }
             }
             @media (max-width: 700px) {
               .pawcream-lookbook-close {
@@ -690,10 +662,9 @@ export default function AtelierWithCollection(props: Props) {
 
             {current.slots.map((slot) => {
               const slotTune = currentTune[slot.id]
+              if (!slotTune) return null
               const isFlipped = Boolean(flipped[slot.id])
               const flippable = Boolean(slot.back)
-              const frontTune = slotTune.front
-              const backTune = slotTune.back
 
               return (
                 <button
@@ -702,17 +673,14 @@ export default function AtelierWithCollection(props: Props) {
                   aria-label={slot.label}
                   aria-pressed={flippable ? isFlipped : undefined}
                   disabled={!flippable && !collectionTuneMode}
-                  className={`pawcream-lookbook-slot${flippable ? ' is-flippable' : ''}${isFlipped ? ' is-flipped' : ''}${collectionTuneMode ? ' is-tuning' : ''}${collectionTuneMode && selectedSlot.id === slot.id ? ' is-selected' : ''}`}
+                  className={`pawcream-lookbook-slot${flippable ? ' is-flippable' : ''}${isFlipped ? ' is-flipped' : ''}${collectionTuneMode ? ' is-tuning' : ''}${collectionTuneMode && selectedSlot?.id === slot.id ? ' is-selected' : ''}`}
                   onClick={() => {
                     if (collectionTuneMode) {
                       selectSlot(slot)
                       return
                     }
                     if (!flippable) return
-                    setFlipped((currentState) => ({
-                      ...currentState,
-                      [slot.id]: !currentState[slot.id],
-                    }))
+                    setFlipped((state) => ({ ...state, [slot.id]: !state[slot.id] }))
                   }}
                   style={{
                     left: `${slotTune.x}%`,
@@ -729,7 +697,7 @@ export default function AtelierWithCollection(props: Props) {
                         aria-hidden="true"
                         draggable={false}
                         decoding="async"
-                        style={{ transform: `translate3d(${frontTune.offsetX}%, ${frontTune.offsetY}%, 0) scale(${frontTune.scale})` }}
+                        style={{ transform: `translate3d(${slotTune.front.offsetX}%, ${slotTune.front.offsetY}%, 0) scale(${slotTune.front.scale})` }}
                       />
                     </span>
                     {slot.back && (
@@ -740,7 +708,7 @@ export default function AtelierWithCollection(props: Props) {
                           aria-hidden="true"
                           draggable={false}
                           decoding="async"
-                          style={{ transform: `translate3d(${backTune.offsetX}%, ${backTune.offsetY}%, 0) scale(${backTune.scale})` }}
+                          style={{ transform: `translate3d(${slotTune.back.offsetX}%, ${slotTune.back.offsetY}%, 0) scale(${slotTune.back.scale})` }}
                         />
                       </span>
                     )}
@@ -750,22 +718,11 @@ export default function AtelierWithCollection(props: Props) {
             })}
 
             {!collectionTuneMode && (
-              <button
-                type="button"
-                className="pawcream-lookbook-close"
-                aria-label="关闭作品展示册"
-                onClick={closeLookbook}
-              >
-                ×
-              </button>
+              <button type="button" className="pawcream-lookbook-close" aria-label="关闭作品展示册" onClick={closeLookbook}>×</button>
             )}
 
-            {LOOKBOOK_ITEMS.length > 1 && (
-              <>
-                <button type="button" className="pawcream-lookbook-arrow is-prev" aria-label="上一件作品" onClick={() => shiftItem(-1)}>‹</button>
-                <button type="button" className="pawcream-lookbook-arrow is-next" aria-label="下一件作品" onClick={() => shiftItem(1)}>›</button>
-              </>
-            )}
+            <button type="button" className="pawcream-lookbook-arrow is-prev" aria-label="上一件作品" onClick={() => shiftItem(-1)}>‹</button>
+            <button type="button" className="pawcream-lookbook-arrow is-next" aria-label="下一件作品" onClick={() => shiftItem(1)}>›</button>
 
             {!collectionTuneMode && (
               <div className="pawcream-lookbook-counter" aria-hidden="true">
@@ -794,90 +751,51 @@ export default function AtelierWithCollection(props: Props) {
                 fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
               }}
             >
-              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '.02em' }}>Collection Tune</div>
-              <div style={{ marginTop: 4, marginBottom: 14, fontSize: 14, color: '#839b9f' }}>
-                {current.title} · 点击海报中的卡片也可以直接选中
-              </div>
+              <div style={{ fontSize: 22, fontWeight: 800 }}>Collection Tune</div>
+              <div style={{ marginTop: 4, marginBottom: 14, fontSize: 14, color: '#839b9f' }}>{current.title}</div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7, marginBottom: 14 }}>
-                {current.slots.map((slot) => (
-                  <button
-                    key={slot.id}
-                    type="button"
-                    onClick={() => selectSlot(slot)}
-                    style={{
-                      minHeight: 38,
-                      border: selectedSlot.id === slot.id ? '2px solid #75aeb7' : '1px solid rgba(85,135,143,.22)',
-                      borderRadius: 10,
-                      background: selectedSlot.id === slot.id ? '#e2f2f3' : '#fff',
-                      color: '#55767c',
-                      fontSize: 14,
-                      fontWeight: selectedSlot.id === slot.id ? 750 : 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {slot.label}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ paddingTop: 12, borderTop: '1px solid rgba(80,139,148,.16)' }}>
-                <div style={{ marginBottom: 5, fontSize: 16, fontWeight: 800 }}>卡片位置 / 尺寸</div>
-                <TuneRow label="Left" value={selectedTune.x} min={0} max={90} step={0.1} suffix="%" onChange={(x) => updateSelectedSlot({ x })} />
-                <TuneRow label="Top" value={selectedTune.y} min={0} max={90} step={0.1} suffix="%" onChange={(y) => updateSelectedSlot({ y })} />
-                <TuneRow label="Width" value={selectedTune.width} min={5} max={60} step={0.1} suffix="%" onChange={(width) => updateSelectedSlot({ width })} />
-                <TuneRow label="Height" value={selectedTune.height} min={5} max={50} step={0.1} suffix="%" onChange={(height) => updateSelectedSlot({ height })} />
-              </div>
-
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(80,139,148,.16)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800 }}>素材自身位置 / 大小</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      type="button"
-                      onClick={() => previewFace('front')}
-                      style={{
-                        minHeight: 34,
-                        padding: '0 13px',
-                        border: selectedFace === 'front' ? '2px solid #75aeb7' : '1px solid rgba(85,135,143,.22)',
-                        borderRadius: 9,
-                        background: selectedFace === 'front' ? '#e2f2f3' : '#fff',
-                        color: '#55767c',
-                        fontSize: 14,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      正面
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!selectedSlot.back}
-                      onClick={() => previewFace('back')}
-                      style={{
-                        minHeight: 34,
-                        padding: '0 13px',
-                        border: selectedFace === 'back' ? '2px solid #75aeb7' : '1px solid rgba(85,135,143,.22)',
-                        borderRadius: 9,
-                        background: selectedFace === 'back' ? '#e2f2f3' : '#fff',
-                        color: selectedSlot.back ? '#55767c' : '#b8c4c6',
-                        fontSize: 14,
-                        cursor: selectedSlot.back ? 'pointer' : 'not-allowed',
-                      }}
-                    >
-                      反面
-                    </button>
+              {selectedSlot && selectedTune && selectedFaceTune ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7, marginBottom: 14 }}>
+                    {current.slots.map((slot) => (
+                      <button
+                        key={slot.id}
+                        type="button"
+                        onClick={() => selectSlot(slot)}
+                        style={{
+                          minHeight: 38,
+                          border: selectedSlot.id === slot.id ? '2px solid #75aeb7' : '1px solid rgba(85,135,143,.22)',
+                          borderRadius: 10,
+                          background: selectedSlot.id === slot.id ? '#e2f2f3' : '#fff',
+                          color: '#55767c',
+                          cursor: 'pointer',
+                        }}
+                      >{slot.label}</button>
+                    ))}
                   </div>
-                </div>
-                <TuneRow label="Scale" value={selectedFaceTune.scale} min={0.2} max={3} step={0.01} suffix="×" onChange={(scale) => updateSelectedFace({ scale })} />
-                <TuneRow label="Offset X" value={selectedFaceTune.offsetX} min={-100} max={100} step={0.5} suffix="%" onChange={(offsetX) => updateSelectedFace({ offsetX })} />
-                <TuneRow label="Offset Y" value={selectedFaceTune.offsetY} min={-100} max={100} step={0.5} suffix="%" onChange={(offsetY) => updateSelectedFace({ offsetY })} />
-              </div>
+
+                  <TuneRow label="Left" value={selectedTune.x} min={0} max={90} step={0.1} suffix="%" onChange={(x) => updateSelectedSlot({ x })} />
+                  <TuneRow label="Top" value={selectedTune.y} min={0} max={90} step={0.1} suffix="%" onChange={(y) => updateSelectedSlot({ y })} />
+                  <TuneRow label="Width" value={selectedTune.width} min={5} max={60} step={0.1} suffix="%" onChange={(width) => updateSelectedSlot({ width })} />
+                  <TuneRow label="Height" value={selectedTune.height} min={5} max={50} step={0.1} suffix="%" onChange={(height) => updateSelectedSlot({ height })} />
+
+                  <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+                    <button type="button" onClick={() => previewFace('front')}>正面</button>
+                    <button type="button" disabled={!selectedSlot.back} onClick={() => previewFace('back')}>反面</button>
+                  </div>
+                  <TuneRow label="Scale" value={selectedFaceTune.scale} min={0.2} max={3} step={0.01} suffix="×" onChange={(scale) => updateSelectedFace({ scale })} />
+                  <TuneRow label="Offset X" value={selectedFaceTune.offsetX} min={-100} max={100} step={0.5} suffix="%" onChange={(offsetX) => updateSelectedFace({ offsetX })} />
+                  <TuneRow label="Offset Y" value={selectedFaceTune.offsetY} min={-100} max={100} step={0.5} suffix="%" onChange={(offsetY) => updateSelectedFace({ offsetY })} />
+                </>
+              ) : (
+                <div style={{ padding: '18px 0', color: '#839b9f' }}>这张海报没有独立素材需要调参。</div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginTop: 16 }}>
-                <button type="button" onClick={saveTune} style={{ minHeight: 40, border: 0, borderRadius: 10, background: '#78aeb6', color: '#fff', fontSize: 15, fontWeight: 750, cursor: 'pointer' }}>保存参数</button>
-                <button type="button" onClick={restoreTune} style={{ minHeight: 40, border: '1px solid rgba(85,135,143,.24)', borderRadius: 10, background: '#fff', color: '#55767c', fontSize: 15, cursor: 'pointer' }}>恢复已保存</button>
-                <button type="button" onClick={copyTune} style={{ minHeight: 40, border: '1px solid rgba(85,135,143,.24)', borderRadius: 10, background: '#fff', color: '#55767c', fontSize: 15, cursor: 'pointer' }}>复制参数</button>
-                <button type="button" onClick={resetTune} style={{ minHeight: 40, border: '1px solid rgba(85,135,143,.24)', borderRadius: 10, background: '#fff', color: '#8c7077', fontSize: 15, cursor: 'pointer' }}>重置默认</button>
+                <button type="button" onClick={saveTune}>保存参数</button>
+                <button type="button" onClick={restoreTune}>恢复已保存</button>
+                <button type="button" onClick={copyTune}>复制参数</button>
+                <button type="button" onClick={resetTune}>重置默认</button>
               </div>
 
               <div style={{ marginTop: 10, minHeight: 20, fontSize: 13, color: dirty ? '#b77c70' : '#6f979d' }}>
