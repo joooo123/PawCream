@@ -172,7 +172,7 @@ export default function AtelierWithSignin(props: Props) {
           style={{
             position: 'fixed',
             left: '50%',
-            top: mobile ? 54 : 68,
+            bottom: mobile ? 62 : 82,
             zIndex: 78,
             width: mobile
               ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
@@ -184,10 +184,10 @@ export default function AtelierWithSignin(props: Props) {
         >
           <style>{`
             @keyframes pawcream-signin-drop {
-              from { opacity: 0; transform: translate(-50%, -34px) scale(.965); }
+              from { opacity: 0; transform: translate(-50%, 28px) scale(.965); }
               to { opacity: 1; transform: translate(-50%, 0) scale(1); }
             }
-            .pawcream-signin-drop { animation: pawcream-signin-drop 380ms cubic-bezier(.2,.82,.24,1) both; }
+            .pawcream-signin-drop { animation: pawcream-signin-drop 320ms cubic-bezier(.2,.82,.24,1) both; }
             .pawcream-signin-input:focus { border-color: rgba(108,151,181,.74) !important; box-shadow: 0 0 0 2px rgba(179,207,226,.18) !important; }
             .pawcream-signin-action:hover { background: rgba(226,239,247,.98) !important; transform: translateY(-1px); }
             .pawcream-signin-close:hover { background: rgba(226,239,247,.92) !important; }
