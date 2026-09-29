@@ -143,7 +143,7 @@ export default function AtelierWithSignin(props: Props) {
     outline: 'none',
     padding: mobile ? '4px 8px' : '5px 10px',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: mobile ? 12 : 14,
+    fontSize: mobile ? 14 : 16,
     boxShadow: '0 4px 14px rgba(117, 157, 184, .10), inset 0 1px 0 rgba(255,255,255,.96)',
     transition: 'border-color 160ms ease, box-shadow 160ms ease, background 160ms ease',
   }
@@ -157,7 +157,7 @@ export default function AtelierWithSignin(props: Props) {
     color: '#66859c',
     cursor: 'pointer',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: mobile ? 12 : 13,
+    fontSize: mobile ? 14 : 15,
     boxShadow: '0 4px 12px rgba(117, 157, 184, .10)',
     transition: 'transform 160ms ease, background 160ms ease, box-shadow 160ms ease',
   }
@@ -167,7 +167,7 @@ export default function AtelierWithSignin(props: Props) {
     marginBottom: mobile ? 7 : 9,
     color: '#6f8da2',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: mobile ? 11 : 13,
+    fontSize: mobile ? 13 : 15,
     fontWeight: 600,
     letterSpacing: '.02em',
   }
@@ -278,7 +278,7 @@ export default function AtelierWithSignin(props: Props) {
             </button>
 
             <header style={{ paddingRight: mobile ? 30 : 36, marginBottom: mobile ? 9 : 11 }}>
-              <div style={{ fontSize: mobile ? 14 : 17, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
+              <div style={{ fontSize: mobile ? 16 : 19, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
                 {copy.title}
               </div>
               <div style={{ marginTop: 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
@@ -347,7 +347,7 @@ export default function AtelierWithSignin(props: Props) {
                   borderRadius: mobile ? 8 : 9,
                   background: status ? 'rgba(238, 247, 252, .66)' : 'transparent',
                   boxShadow: status ? '0 4px 12px rgba(117, 157, 184, .07)' : 'none',
-                  fontSize: mobile ? 10.5 : 12,
+                  fontSize: mobile ? 12.5 : 14,
                   lineHeight: 1.4,
                   color: '#7894a7',
                 }}
