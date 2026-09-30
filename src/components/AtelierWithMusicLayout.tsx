@@ -36,7 +36,7 @@ type SpoonRangeProps = {
 const MUSIC_TUNE_STORAGE_KEY = 'pawcream-music-tune-v1'
 const MUSIC_LAYOUT_SEED_KEY = 'pawcream-music-layout-seed-20260930-v2'
 const SPOON_TUNE_STORAGE_KEY = 'pawcream-music-spoon-tune-v1'
-const SPOON_TUNE_SEED_KEY = 'pawcream-music-spoon-seed-20260930-v2'
+const SPOON_TUNE_SEED_KEY = 'pawcream-music-spoon-seed-20260930-v3'
 const SPOON_URL = `${import.meta.env.BASE_URL}assets/music%20player/${encodeURIComponent('勺子播放.png')}?v=1eab2447`
 
 const FINAL_MUSIC_TUNE = {
@@ -71,12 +71,12 @@ const DEFAULT_SPOON_TUNE: SpoonTuneProfiles = {
     scale: 29,
   },
   mobile: {
-    startX: 25,
-    startY: 20,
-    startRotation: -28,
-    endX: 43,
-    endY: 34,
-    endRotation: 18,
+    startX: 30,
+    startY: 40,
+    startRotation: 59,
+    endX: 34,
+    endY: 36.5,
+    endRotation: 14,
     scale: 26,
   },
 }
