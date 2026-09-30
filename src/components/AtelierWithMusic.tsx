@@ -38,6 +38,7 @@ type MusicTune = {
   coneY: number
   coneWidth: number
   discScale: number
+  discX: number
   discY: number
   fontBoost: number
 }
@@ -74,6 +75,7 @@ const DEFAULT_TUNE: MusicTuneProfiles = {
     coneY: 52,
     coneWidth: 61,
     discScale: 58,
+    discX: 50,
     discY: 17,
     fontBoost: 0,
   },
@@ -82,6 +84,7 @@ const DEFAULT_TUNE: MusicTuneProfiles = {
     coneY: 50,
     coneWidth: 72,
     discScale: 58,
+    discX: 50,
     discY: 17,
     fontBoost: 0,
   },
@@ -100,8 +103,9 @@ function sanitizeTune(source: Partial<MusicTune> | undefined, fallback: MusicTun
   return {
     coneX: clamp(Number(source?.coneX ?? fallback.coneX), 15, 85),
     coneY: clamp(Number(source?.coneY ?? fallback.coneY), 18, 82),
-    coneWidth: clamp(Number(source?.coneWidth ?? fallback.coneWidth), 35, 95),
+    coneWidth: clamp(Number(source?.coneWidth ?? fallback.coneWidth), 35, 200),
     discScale: clamp(Number(source?.discScale ?? fallback.discScale), 25, 95),
+    discX: clamp(Number(source?.discX ?? fallback.discX), -20, 120),
     discY: clamp(Number(source?.discY ?? fallback.discY), -10, 55),
     fontBoost: clamp(Number(source?.fontBoost ?? fallback.fontBoost), -4, 16),
   }
@@ -421,7 +425,7 @@ export default function AtelierWithMusic(props: Props) {
   const copyTuneParameters = async () => {
     const format = (profile: DeviceProfile) => {
       const value = tuneProfiles[profile]
-      return `${profile}: coneX=${value.coneX}%, coneY=${value.coneY}%, coneWidth=${value.coneWidth}%, discScale=${value.discScale}%, discY=${value.discY}%, fontBoost=${value.fontBoost >= 0 ? '+' : ''}${value.fontBoost}px`
+      return `${profile}: coneX=${value.coneX}%, coneY=${value.coneY}%, coneWidth=${value.coneWidth}%, discScale=${value.discScale}%, discX=${value.discX}%, discY=${value.discY}%, fontBoost=${value.fontBoost >= 0 ? '+' : ''}${value.fontBoost}px`
     }
     const text = ['PawCream Music Tune', format('desktop'), format('mobile')].join('\n')
 
@@ -603,7 +607,6 @@ export default function AtelierWithMusic(props: Props) {
                     left: `${tune.coneX}%`,
                     top: `${tune.coneY}%`,
                     width: `${tune.coneWidth}%`,
-                    maxWidth: mobile ? 300 : 470,
                     aspectRatio: '2 / 3',
                     transform: 'translate(-50%, -50%)',
                     filter: 'drop-shadow(0 20px 24px rgba(103, 132, 147, .13))',
@@ -631,7 +634,7 @@ export default function AtelierWithMusic(props: Props) {
                     ref={playerDiscRef}
                     style={{
                       position: 'absolute',
-                      left: '50%',
+                      left: `${tune.discX}%`,
                       top: `${tune.discY}%`,
                       width: `${tune.discScale}%`,
                       aspectRatio: '1',
@@ -873,8 +876,9 @@ export default function AtelierWithMusic(props: Props) {
 
               <RangeControl label="冰淇淋 X" value={tune.coneX} min={15} max={85} step={0.5} suffix="%" onChange={(value) => updateTune({ coneX: value })} />
               <RangeControl label="冰淇淋 Y" value={tune.coneY} min={18} max={82} step={0.5} suffix="%" onChange={(value) => updateTune({ coneY: value })} />
-              <RangeControl label="冰淇淋大小" value={tune.coneWidth} min={35} max={95} step={0.5} suffix="%" onChange={(value) => updateTune({ coneWidth: value })} />
+              <RangeControl label="冰淇淋大小" value={tune.coneWidth} min={35} max={200} step={0.5} suffix="%" onChange={(value) => updateTune({ coneWidth: value })} />
               <RangeControl label="唱片大小" value={tune.discScale} min={25} max={95} step={0.5} suffix="%" onChange={(value) => updateTune({ discScale: value })} />
+              <RangeControl label="唱片左右" value={tune.discX} min={-20} max={120} step={0.5} suffix="%" onChange={(value) => updateTune({ discX: value })} />
               <RangeControl label="唱片上下" value={tune.discY} min={-10} max={55} step={0.5} suffix="%" onChange={(value) => updateTune({ discY: value })} />
               <RangeControl label="字体大小" value={tune.fontBoost} min={-4} max={16} step={1} suffix="px" onChange={(value) => updateTune({ fontBoost: value })} />
 
