@@ -26,16 +26,38 @@ type RectSnapshot = {
 }
 
 type Flight = {
-  oldIndex: number
+  oldIndex: number | null
   nextIndex: number
   player: RectSnapshot
-  oldSlot: RectSnapshot
+  oldSlot: RectSnapshot | null
   newSlot: RectSnapshot
+}
+
+type MusicTune = {
+  coneX: number
+  coneY: number
+  coneWidth: number
+  discScale: number
+  discY: number
+  fontBoost: number
+}
+
+type MusicTuneProfiles = Record<DeviceProfile, MusicTune>
+
+type RangeControlProps = {
+  label: string
+  value: number
+  min: number
+  max: number
+  step?: number
+  suffix?: string
+  onChange: (value: number) => void
 }
 
 const BASE_URL = import.meta.env.BASE_URL
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const MUSIC_ASSET_VERSION = '20260930-1'
+const MUSIC_TUNE_STORAGE_KEY = 'pawcream-music-tune-v1'
+const MUSIC_ASSET_VERSION = '20260930-2'
 const musicAsset = (name: string) =>
   `${BASE_URL}assets/music%20player/${encodeURIComponent(name)}?v=${MUSIC_ASSET_VERSION}`
 
@@ -46,9 +68,58 @@ const SWAP_DURATION_MS = 560
 
 const uiFont = "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
 
+const DEFAULT_TUNE: MusicTuneProfiles = {
+  desktop: {
+    coneX: 50,
+    coneY: 52,
+    coneWidth: 61,
+    discScale: 58,
+    discY: 17,
+    fontBoost: 0,
+  },
+  mobile: {
+    coneX: 50,
+    coneY: 50,
+    coneWidth: 72,
+    discScale: 58,
+    discY: 17,
+    fontBoost: 0,
+  },
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
 function readLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
+}
+
+function sanitizeTune(source: Partial<MusicTune> | undefined, fallback: MusicTune): MusicTune {
+  return {
+    coneX: clamp(Number(source?.coneX ?? fallback.coneX), 15, 85),
+    coneY: clamp(Number(source?.coneY ?? fallback.coneY), 18, 82),
+    coneWidth: clamp(Number(source?.coneWidth ?? fallback.coneWidth), 35, 95),
+    discScale: clamp(Number(source?.discScale ?? fallback.discScale), 25, 95),
+    discY: clamp(Number(source?.discY ?? fallback.discY), -10, 55),
+    fontBoost: clamp(Number(source?.fontBoost ?? fallback.fontBoost), -4, 16),
+  }
+}
+
+function readTuneProfiles(): MusicTuneProfiles {
+  if (typeof window === 'undefined') return DEFAULT_TUNE
+  try {
+    const raw = window.localStorage.getItem(MUSIC_TUNE_STORAGE_KEY)
+    if (!raw) return DEFAULT_TUNE
+    const parsed = JSON.parse(raw) as Partial<Record<DeviceProfile, Partial<MusicTune>>>
+    return {
+      desktop: sanitizeTune(parsed.desktop, DEFAULT_TUNE.desktop),
+      mobile: sanitizeTune(parsed.mobile, DEFAULT_TUNE.mobile),
+    }
+  } catch {
+    return DEFAULT_TUNE
+  }
 }
 
 function snapshot(rect: DOMRect): RectSnapshot {
@@ -66,12 +137,43 @@ function preload(src: string) {
   image.src = src
 }
 
+function RangeControl({ label, value, min, max, step = 1, suffix = '', onChange }: RangeControlProps) {
+  return (
+    <label
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '86px 1fr 64px',
+        gap: 8,
+        alignItems: 'center',
+        minHeight: 34,
+        fontSize: 11,
+      }}
+    >
+      <span>{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.currentTarget.value))}
+        style={{ width: '100%', accentColor: '#8bb8d3', cursor: 'ew-resize' }}
+      />
+      <output style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#64869c' }}>
+        {Number.isInteger(value) ? value : value.toFixed(1)}{suffix}
+      </output>
+    </label>
+  )
+}
+
 export default function AtelierWithMusic(props: Props) {
   const [open, setOpen] = useState(false)
   const [language, setLanguage] = useState<Language>(readLanguage)
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [flight, setFlight] = useState<Flight | null>(null)
   const [swapping, setSwapping] = useState(false)
+  const [tuneProfiles, setTuneProfiles] = useState<MusicTuneProfiles>(readTuneProfiles)
+  const [copyStatus, setCopyStatus] = useState('复制双端参数')
 
   const playerDiscRef = useRef<HTMLDivElement | null>(null)
   const slotRefs = useRef<Array<HTMLDivElement | null>>([])
@@ -79,20 +181,21 @@ export default function AtelierWithMusic(props: Props) {
   const newFlightRef = useRef<HTMLImageElement | null>(null)
 
   const mobile = props.deviceProfile === 'mobile'
-  const tuneMode = useMemo(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
+  const query = useMemo(
+    () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
     [],
   )
-  const musicPreviewMode = useMemo(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('music') === '1',
-    [],
-  )
+  const tuneMode = query.get('tune') === '1'
+  const musicPreviewMode = query.get('music') === '1'
+  const musicTuneMode = query.get('musicTune') === '1'
+  const tune = tuneProfiles[props.deviceProfile]
 
   const copy = language === 'zh'
     ? {
         title: 'PawCream 音乐冰淇淋',
         subtitle: '挑一个口味 ♡',
         current: '正在播放',
+        ready: '请选择一张光碟',
         close: '关闭音乐播放器',
         choose: '选择光碟',
       }
@@ -100,6 +203,7 @@ export default function AtelierWithMusic(props: Props) {
         title: 'PawCream Music Ice Cream',
         subtitle: 'Pick a flavor ♡',
         current: 'Now playing',
+        ready: 'Choose a disc',
         close: 'Close music player',
         choose: 'Choose disc',
       }
@@ -112,18 +216,17 @@ export default function AtelierWithMusic(props: Props) {
 
   useEffect(() => {
     if (!open) return
-    const timer = window.setTimeout(() => {
-      CD_URLS.slice(1).forEach(preload)
-    }, 80)
+    const timer = window.setTimeout(() => CD_URLS.slice(1).forEach(preload), 80)
     return () => window.clearTimeout(timer)
   }, [open])
 
   useEffect(() => {
-    if (musicPreviewMode && !tuneMode) {
+    if ((musicPreviewMode || musicTuneMode) && !tuneMode) {
       setLanguage(readLanguage())
+      setSelectedIndex(null)
       setOpen(true)
     }
-  }, [musicPreviewMode, tuneMode])
+  }, [musicPreviewMode, musicTuneMode, tuneMode])
 
   useEffect(() => {
     if (tuneMode) return
@@ -146,6 +249,9 @@ export default function AtelierWithMusic(props: Props) {
 
     const openMusic = () => {
       setLanguage(readLanguage())
+      setSelectedIndex(null)
+      setFlight(null)
+      setSwapping(false)
       setOpen(true)
     }
 
@@ -160,6 +266,7 @@ export default function AtelierWithMusic(props: Props) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setOpen(false)
+        setSelectedIndex(null)
         setFlight(null)
         setSwapping(false)
         return
@@ -191,9 +298,8 @@ export default function AtelierWithMusic(props: Props) {
   useLayoutEffect(() => {
     if (!flight) return
 
-    const oldDisc = oldFlightRef.current
     const newDisc = newFlightRef.current
-    if (!oldDisc || !newDisc) return
+    if (!newDisc) return
 
     const timing: KeyframeAnimationOptions = {
       duration: SWAP_DURATION_MS,
@@ -201,27 +307,29 @@ export default function AtelierWithMusic(props: Props) {
       fill: 'forwards',
     }
 
-    oldDisc.animate(
-      [
-        {
-          left: `${flight.player.left}px`,
-          top: `${flight.player.top}px`,
-          width: `${flight.player.width}px`,
-          height: `${flight.player.height}px`,
-          transform: 'rotate(0deg) scale(1)',
-          opacity: 1,
-        },
-        {
-          left: `${flight.oldSlot.left}px`,
-          top: `${flight.oldSlot.top}px`,
-          width: `${flight.oldSlot.width}px`,
-          height: `${flight.oldSlot.height}px`,
-          transform: 'rotate(-28deg) scale(.98)',
-          opacity: 1,
-        },
-      ],
-      timing,
-    )
+    if (flight.oldIndex !== null && flight.oldSlot && oldFlightRef.current) {
+      oldFlightRef.current.animate(
+        [
+          {
+            left: `${flight.player.left}px`,
+            top: `${flight.player.top}px`,
+            width: `${flight.player.width}px`,
+            height: `${flight.player.height}px`,
+            transform: 'rotate(0deg) scale(1)',
+            opacity: 1,
+          },
+          {
+            left: `${flight.oldSlot.left}px`,
+            top: `${flight.oldSlot.top}px`,
+            width: `${flight.oldSlot.width}px`,
+            height: `${flight.oldSlot.height}px`,
+            transform: 'rotate(-28deg) scale(.98)',
+            opacity: 1,
+          },
+        ],
+        timing,
+      )
+    }
 
     newDisc.animate(
       [
@@ -256,6 +364,7 @@ export default function AtelierWithMusic(props: Props) {
 
   const closePlayer = () => {
     setOpen(false)
+    setSelectedIndex(null)
     setFlight(null)
     setSwapping(false)
   }
@@ -265,9 +374,11 @@ export default function AtelierWithMusic(props: Props) {
 
     const playerRect = playerDiscRef.current?.getBoundingClientRect()
     const nextSlotRect = slotRefs.current[index]?.getBoundingClientRect()
-    const oldSlotRect = slotRefs.current[selectedIndex]?.getBoundingClientRect()
+    const oldSlotRect = selectedIndex === null
+      ? null
+      : slotRefs.current[selectedIndex]?.getBoundingClientRect() ?? null
 
-    if (!playerRect || !nextSlotRect || !oldSlotRect) {
+    if (!playerRect || !nextSlotRect) {
       setSelectedIndex(index)
       return
     }
@@ -277,9 +388,58 @@ export default function AtelierWithMusic(props: Props) {
       oldIndex: selectedIndex,
       nextIndex: index,
       player: snapshot(playerRect),
-      oldSlot: snapshot(oldSlotRect),
+      oldSlot: oldSlotRect ? snapshot(oldSlotRect) : null,
       newSlot: snapshot(nextSlotRect),
     })
+  }
+
+  const updateTune = (patch: Partial<MusicTune>) => {
+    setTuneProfiles((current) => {
+      const next: MusicTuneProfiles = {
+        ...current,
+        [props.deviceProfile]: {
+          ...current[props.deviceProfile],
+          ...patch,
+        },
+      }
+      window.localStorage.setItem(MUSIC_TUNE_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const resetCurrentTune = () => {
+    setTuneProfiles((current) => {
+      const next: MusicTuneProfiles = {
+        ...current,
+        [props.deviceProfile]: { ...DEFAULT_TUNE[props.deviceProfile] },
+      }
+      window.localStorage.setItem(MUSIC_TUNE_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const copyTuneParameters = async () => {
+    const format = (profile: DeviceProfile) => {
+      const value = tuneProfiles[profile]
+      return `${profile}: coneX=${value.coneX}%, coneY=${value.coneY}%, coneWidth=${value.coneWidth}%, discScale=${value.discScale}%, discY=${value.discY}%, fontBoost=${value.fontBoost >= 0 ? '+' : ''}${value.fontBoost}px`
+    }
+    const text = ['PawCream Music Tune', format('desktop'), format('mobile')].join('\n')
+
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('已复制')
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      textarea.remove()
+      setCopyStatus('已复制')
+    }
+    window.setTimeout(() => setCopyStatus('复制双端参数'), 1300)
   }
 
   const panelStyle: CSSProperties = {
@@ -289,10 +449,10 @@ export default function AtelierWithMusic(props: Props) {
     maxHeight: 'calc(100svh - 14px)',
     border: '1px solid rgba(172, 205, 226, .72)',
     borderRadius: mobile ? 26 : 30,
-    background: 'radial-gradient(circle at 34px 30px, rgba(210,231,245,.53) 0 15px, transparent 16px) 0 0 / 138px 96px, rgba(251,253,255,.89)',
-    boxShadow: '0 24px 70px rgba(74, 111, 137, .22), inset 0 1px 0 rgba(255,255,255,.92)',
-    backdropFilter: 'blur(24px) saturate(.92)',
-    WebkitBackdropFilter: 'blur(24px) saturate(.92)',
+    background: 'rgba(236, 247, 253, .91)',
+    boxShadow: '0 24px 70px rgba(74, 111, 137, .20), inset 0 1px 0 rgba(255,255,255,.94)',
+    backdropFilter: 'blur(24px) saturate(.9)',
+    WebkitBackdropFilter: 'blur(24px) saturate(.9)',
     overflow: mobile ? 'auto' : 'hidden',
     color: '#6689a3',
     fontFamily: uiFont,
@@ -302,8 +462,8 @@ export default function AtelierWithMusic(props: Props) {
     position: 'relative',
     border: '1px solid rgba(158, 198, 223, .72)',
     borderRadius: mobile ? 20 : 24,
-    background: 'linear-gradient(180deg, rgba(244,251,255,.84), rgba(226,241,250,.68))',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,.96), 0 14px 34px rgba(97, 141, 170, .11)',
+    background: 'rgba(245, 251, 255, .76)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,.96), 0 14px 34px rgba(97, 141, 170, .10)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
   }
@@ -327,9 +487,9 @@ export default function AtelierWithMusic(props: Props) {
             placeItems: 'center',
             padding: mobile ? 7 : 18,
             boxSizing: 'border-box',
-            background: 'rgba(207, 228, 241, .58)',
-            backdropFilter: 'blur(16px) saturate(.9)',
-            WebkitBackdropFilter: 'blur(16px) saturate(.9)',
+            background: 'rgba(207, 231, 246, .62)',
+            backdropFilter: 'blur(16px) saturate(.88)',
+            WebkitBackdropFilter: 'blur(16px) saturate(.88)',
           }}
         >
           <style>{`
@@ -406,11 +566,13 @@ export default function AtelierWithMusic(props: Props) {
                 pointerEvents: 'none',
               }}
             >
-              <div style={{ fontSize: mobile ? 19 : 24, fontWeight: 650, letterSpacing: '.035em' }}>
+              <div style={{ fontSize: (mobile ? 19 : 24) + tune.fontBoost, fontWeight: 650, letterSpacing: '.035em' }}>
                 {copy.title}
               </div>
-              <div style={{ marginTop: 5, fontSize: mobile ? 11 : 13, opacity: .72, letterSpacing: '.08em' }}>
-                {copy.current} · {String(selectedIndex + 1).padStart(2, '0')} / {String(CD_URLS.length).padStart(2, '0')}
+              <div style={{ marginTop: 5, fontSize: (mobile ? 11 : 13) + tune.fontBoost, opacity: .72, letterSpacing: '.08em' }}>
+                {selectedIndex === null
+                  ? copy.ready
+                  : `${copy.current} · ${String(selectedIndex + 1).padStart(2, '0')} / ${String(CD_URLS.length).padStart(2, '0')}`}
               </div>
             </header>
 
@@ -430,18 +592,20 @@ export default function AtelierWithMusic(props: Props) {
                 aria-label="Current music disc"
                 style={{
                   position: 'relative',
-                  width: mobile ? '100%' : '100%',
+                  width: '100%',
                   minHeight: mobile ? 398 : 0,
-                  display: 'grid',
-                  placeItems: 'center',
+                  overflow: 'visible',
                 }}
               >
                 <div
                   style={{
-                    position: 'relative',
-                    width: mobile ? 'min(248px, 67vw)' : 'min(430px, 37vw, 58vh)',
+                    position: 'absolute',
+                    left: `${tune.coneX}%`,
+                    top: `${tune.coneY}%`,
+                    width: `${tune.coneWidth}%`,
+                    maxWidth: mobile ? 300 : 470,
                     aspectRatio: '2 / 3',
-                    marginTop: mobile ? -4 : 0,
+                    transform: 'translate(-50%, -50%)',
                     filter: 'drop-shadow(0 20px 24px rgba(103, 132, 147, .13))',
                   }}
                 >
@@ -468,30 +632,32 @@ export default function AtelierWithMusic(props: Props) {
                     style={{
                       position: 'absolute',
                       left: '50%',
-                      top: mobile ? '-3.5%' : '-4.5%',
-                      width: mobile ? '76%' : '77%',
+                      top: `${tune.discY}%`,
+                      width: `${tune.discScale}%`,
                       aspectRatio: '1',
-                      transform: 'translateX(-50%)',
+                      transform: 'translate(-50%, -50%)',
                       zIndex: 2,
                       opacity: flight ? 0 : 1,
                       pointerEvents: 'none',
                     }}
                   >
-                    <img
-                      className="pawcream-music-current-disc"
-                      src={CD_URLS[selectedIndex]}
-                      alt={`CD ${selectedIndex + 1}`}
-                      draggable={false}
-                      decoding="async"
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        userSelect: 'none',
-                        filter: 'drop-shadow(0 10px 14px rgba(65, 91, 109, .18))',
-                      }}
-                    />
+                    {selectedIndex !== null && (
+                      <img
+                        className="pawcream-music-current-disc"
+                        src={CD_URLS[selectedIndex]}
+                        alt={`CD ${selectedIndex + 1}`}
+                        draggable={false}
+                        decoding="async"
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          userSelect: 'none',
+                          filter: 'drop-shadow(0 10px 14px rgba(65, 91, 109, .18))',
+                        }}
+                      />
+                    )}
                   </div>
 
                   <img
@@ -518,8 +684,8 @@ export default function AtelierWithMusic(props: Props) {
                 aria-label={copy.choose}
                 style={{
                   ...cabinetStyle,
-                  width: mobile ? '100%' : '100%',
-                  alignSelf: mobile ? 'center' : 'center',
+                  width: '100%',
+                  alignSelf: 'center',
                   padding: mobile ? '12px 10px 11px' : '18px 16px 16px',
                   boxSizing: 'border-box',
                   maxWidth: mobile ? 350 : 410,
@@ -528,7 +694,7 @@ export default function AtelierWithMusic(props: Props) {
                 <div
                   style={{
                     textAlign: 'center',
-                    fontSize: mobile ? 14 : 17,
+                    fontSize: (mobile ? 14 : 17) + tune.fontBoost,
                     fontWeight: 600,
                     letterSpacing: '.055em',
                     marginBottom: mobile ? 9 : 14,
@@ -546,7 +712,7 @@ export default function AtelierWithMusic(props: Props) {
                   }}
                 >
                   {CD_URLS.map((src, index) => {
-                    const selected = index === selectedIndex
+                    const selected = selectedIndex !== null && index === selectedIndex
                     const flyingOut = flight?.nextIndex === index
                     return (
                       <button
@@ -618,24 +784,26 @@ export default function AtelierWithMusic(props: Props) {
 
           {flight && (
             <>
-              <img
-                ref={oldFlightRef}
-                src={CD_URLS[flight.oldIndex]}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                style={{
-                  position: 'fixed',
-                  left: flight.player.left,
-                  top: flight.player.top,
-                  width: flight.player.width,
-                  height: flight.player.height,
-                  objectFit: 'contain',
-                  zIndex: 120,
-                  pointerEvents: 'none',
-                  filter: 'drop-shadow(0 10px 14px rgba(66,95,114,.19))',
-                }}
-              />
+              {flight.oldIndex !== null && (
+                <img
+                  ref={oldFlightRef}
+                  src={CD_URLS[flight.oldIndex]}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  style={{
+                    position: 'fixed',
+                    left: flight.player.left,
+                    top: flight.player.top,
+                    width: flight.player.width,
+                    height: flight.player.height,
+                    objectFit: 'contain',
+                    zIndex: 120,
+                    pointerEvents: 'none',
+                    filter: 'drop-shadow(0 10px 14px rgba(66,95,114,.19))',
+                  }}
+                />
+              )}
               <img
                 ref={newFlightRef}
                 src={CD_URLS[flight.nextIndex]}
@@ -655,6 +823,92 @@ export default function AtelierWithMusic(props: Props) {
                 }}
               />
             </>
+          )}
+
+          {musicTuneMode && (
+            <aside
+              aria-label="PawCream Music tune panel"
+              style={{
+                position: 'fixed',
+                right: 12,
+                top: 12,
+                zIndex: 160,
+                width: 'min(340px, calc(100vw - 24px))',
+                maxHeight: 'calc(100svh - 24px)',
+                overflow: 'auto',
+                boxSizing: 'border-box',
+                padding: 14,
+                border: '1px solid rgba(151, 194, 220, .72)',
+                borderRadius: 18,
+                background: 'rgba(242, 250, 255, .94)',
+                boxShadow: '0 18px 48px rgba(78, 118, 145, .18)',
+                backdropFilter: 'blur(18px)',
+                WebkitBackdropFilter: 'blur(18px)',
+                color: '#587d96',
+                fontFamily: uiFont,
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Music 调试面板</div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 12 }}>
+                {(['desktop', 'mobile'] as DeviceProfile[]).map((profile) => (
+                  <button
+                    key={profile}
+                    type="button"
+                    onClick={() => props.onDeviceChange(profile)}
+                    style={{
+                      height: 32,
+                      border: '1px solid rgba(151,194,220,.66)',
+                      borderRadius: 10,
+                      background: props.deviceProfile === profile ? 'rgba(204,229,244,.92)' : 'rgba(255,255,255,.72)',
+                      color: '#5d8199',
+                      cursor: 'pointer',
+                      fontFamily: uiFont,
+                    }}
+                  >
+                    {profile === 'desktop' ? '电脑端' : '手机端'}
+                  </button>
+                ))}
+              </div>
+
+              <RangeControl label="冰淇淋 X" value={tune.coneX} min={15} max={85} step={0.5} suffix="%" onChange={(value) => updateTune({ coneX: value })} />
+              <RangeControl label="冰淇淋 Y" value={tune.coneY} min={18} max={82} step={0.5} suffix="%" onChange={(value) => updateTune({ coneY: value })} />
+              <RangeControl label="冰淇淋大小" value={tune.coneWidth} min={35} max={95} step={0.5} suffix="%" onChange={(value) => updateTune({ coneWidth: value })} />
+              <RangeControl label="唱片大小" value={tune.discScale} min={25} max={95} step={0.5} suffix="%" onChange={(value) => updateTune({ discScale: value })} />
+              <RangeControl label="唱片上下" value={tune.discY} min={-10} max={55} step={0.5} suffix="%" onChange={(value) => updateTune({ discY: value })} />
+              <RangeControl label="字体大小" value={tune.fontBoost} min={-4} max={16} step={1} suffix="px" onChange={(value) => updateTune({ fontBoost: value })} />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={resetCurrentTune}
+                  style={{
+                    minHeight: 34,
+                    border: '1px solid rgba(151,194,220,.66)',
+                    borderRadius: 10,
+                    background: 'rgba(255,255,255,.76)',
+                    color: '#5d8199',
+                    cursor: 'pointer',
+                  }}
+                >
+                  重置当前端
+                </button>
+                <button
+                  type="button"
+                  onClick={copyTuneParameters}
+                  style={{
+                    minHeight: 34,
+                    border: '1px solid rgba(151,194,220,.66)',
+                    borderRadius: 10,
+                    background: 'rgba(214,234,246,.88)',
+                    color: '#52758d',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {copyStatus}
+                </button>
+              </div>
+            </aside>
           )}
         </div>
       )}
