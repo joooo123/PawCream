@@ -196,7 +196,7 @@ export default function AtelierWithMusic(props: Props) {
 
   const copy = language === 'zh'
     ? {
-        title: 'PawCream 音乐冰淇淋',
+        title: "PawCream's Music Ice cream Shop",
         subtitle: '挑一个口味 ♡',
         current: '正在播放',
         ready: '请选择一张光碟',
@@ -204,7 +204,7 @@ export default function AtelierWithMusic(props: Props) {
         choose: '选择光碟',
       }
     : {
-        title: 'PawCream Music Ice Cream',
+        title: "PawCream's Music Ice cream Shop",
         subtitle: 'Pick a flavor ♡',
         current: 'Now playing',
         ready: 'Choose a disc',
