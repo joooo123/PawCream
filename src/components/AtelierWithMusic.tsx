@@ -70,13 +70,30 @@ const MOBILE_STAGE_WIDTH = 390
 const MOBILE_STAGE_HEIGHT = 820
 const MOBILE_STAGE_GUTTER = 14
 
-function readMobileStageScale() {
-  if (typeof window === 'undefined') return 1
+type MobileViewportFrame = {
+  width: number
+  height: number
+  offsetLeft: number
+  offsetTop: number
+}
+
+function readMobileViewportFrame(): MobileViewportFrame {
+  if (typeof window === 'undefined') {
+    return { width: MOBILE_STAGE_WIDTH, height: MOBILE_STAGE_HEIGHT, offsetLeft: 0, offsetTop: 0 }
+  }
+
   const viewport = window.visualViewport
-  const visibleWidth = viewport?.width ?? window.innerWidth
-  const visibleHeight = viewport?.height ?? window.innerHeight
-  const widthScale = (visibleWidth - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_WIDTH
-  const heightScale = (visibleHeight - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_HEIGHT
+  return {
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
+    offsetLeft: viewport?.offsetLeft ?? 0,
+    offsetTop: viewport?.offsetTop ?? 0,
+  }
+}
+
+function getMobileStageScale(frame: MobileViewportFrame) {
+  const widthScale = (frame.width - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_WIDTH
+  const heightScale = (frame.height - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_HEIGHT
   return clamp(Math.min(1, widthScale, heightScale), 0.2, 1)
 }
 
@@ -191,7 +208,7 @@ export default function AtelierWithMusic(props: Props) {
   const [swapping, setSwapping] = useState(false)
   const [tuneProfiles, setTuneProfiles] = useState<MusicTuneProfiles>(readTuneProfiles)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
-  const [mobileStageScale, setMobileStageScale] = useState(readMobileStageScale)
+  const [mobileViewport, setMobileViewport] = useState<MobileViewportFrame>(readMobileViewportFrame)
 
   const playerDiscRef = useRef<HTMLDivElement | null>(null)
   const slotRefs = useRef<Array<HTMLDivElement | null>>([])
@@ -207,27 +224,25 @@ export default function AtelierWithMusic(props: Props) {
   const musicPreviewMode = query.get('music') === '1'
   const musicTuneMode = query.get('musicTune') === '1'
   const tune = tuneProfiles[props.deviceProfile]
+  const mobileStageScale = mobile ? getMobileStageScale(mobileViewport) : 1
 
   useEffect(() => {
-    if (!mobile || !open) {
-      setMobileStageScale(1)
-      return
-    }
+    if (!mobile || !open) return
 
-    const updateScale = () => setMobileStageScale(readMobileStageScale())
+    const updateViewport = () => setMobileViewport(readMobileViewportFrame())
     const viewport = window.visualViewport
 
-    updateScale()
-    viewport?.addEventListener('resize', updateScale)
-    viewport?.addEventListener('scroll', updateScale)
-    window.addEventListener('resize', updateScale)
-    window.addEventListener('orientationchange', updateScale)
+    updateViewport()
+    viewport?.addEventListener('resize', updateViewport)
+    viewport?.addEventListener('scroll', updateViewport)
+    window.addEventListener('resize', updateViewport)
+    window.addEventListener('orientationchange', updateViewport)
 
     return () => {
-      viewport?.removeEventListener('resize', updateScale)
-      viewport?.removeEventListener('scroll', updateScale)
-      window.removeEventListener('resize', updateScale)
-      window.removeEventListener('orientationchange', updateScale)
+      viewport?.removeEventListener('resize', updateViewport)
+      viewport?.removeEventListener('scroll', updateViewport)
+      window.removeEventListener('resize', updateViewport)
+      window.removeEventListener('orientationchange', updateViewport)
     }
   }, [mobile, open])
 
@@ -525,12 +540,14 @@ export default function AtelierWithMusic(props: Props) {
           onClick={(event) => event.stopPropagation()}
           style={{
             position: 'fixed',
-            inset: 0,
+            inset: mobile ? undefined : 0,
+            left: mobile ? `${mobileViewport.offsetLeft}px` : undefined,
+            top: mobile ? `${mobileViewport.offsetTop}px` : undefined,
+            width: mobile ? `${mobileViewport.width}px` : undefined,
+            height: mobile ? `${mobileViewport.height}px` : undefined,
             zIndex: 90,
             display: 'grid',
             placeItems: 'center',
-            width: mobile ? '100dvw' : undefined,
-            height: mobile ? '100dvh' : undefined,
             padding: mobile ? 7 : 18,
             boxSizing: 'border-box',
             overflow: 'hidden',
