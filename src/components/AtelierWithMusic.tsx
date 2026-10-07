@@ -66,6 +66,19 @@ const ICECREAM_BACK_URL = musicAsset('icecream back.png')
 const ICECREAM_FRONT_URL = musicAsset('icecream front.png')
 const CD_URLS = Array.from({ length: 9 }, (_, index) => musicAsset(`cd${index + 1}.png`))
 const SWAP_DURATION_MS = 560
+const MOBILE_STAGE_WIDTH = 390
+const MOBILE_STAGE_HEIGHT = 820
+const MOBILE_STAGE_GUTTER = 14
+
+function readMobileStageScale() {
+  if (typeof window === 'undefined') return 1
+  const viewport = window.visualViewport
+  const visibleWidth = viewport?.width ?? window.innerWidth
+  const visibleHeight = viewport?.height ?? window.innerHeight
+  const widthScale = (visibleWidth - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_WIDTH
+  const heightScale = (visibleHeight - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_HEIGHT
+  return clamp(Math.min(1, widthScale, heightScale), 0.2, 1)
+}
 
 const uiFont = "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
 
@@ -178,6 +191,7 @@ export default function AtelierWithMusic(props: Props) {
   const [swapping, setSwapping] = useState(false)
   const [tuneProfiles, setTuneProfiles] = useState<MusicTuneProfiles>(readTuneProfiles)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
+  const [mobileStageScale, setMobileStageScale] = useState(readMobileStageScale)
 
   const playerDiscRef = useRef<HTMLDivElement | null>(null)
   const slotRefs = useRef<Array<HTMLDivElement | null>>([])
@@ -193,6 +207,29 @@ export default function AtelierWithMusic(props: Props) {
   const musicPreviewMode = query.get('music') === '1'
   const musicTuneMode = query.get('musicTune') === '1'
   const tune = tuneProfiles[props.deviceProfile]
+
+  useEffect(() => {
+    if (!mobile || !open) {
+      setMobileStageScale(1)
+      return
+    }
+
+    const updateScale = () => setMobileStageScale(readMobileStageScale())
+    const viewport = window.visualViewport
+
+    updateScale()
+    viewport?.addEventListener('resize', updateScale)
+    viewport?.addEventListener('scroll', updateScale)
+    window.addEventListener('resize', updateScale)
+    window.addEventListener('orientationchange', updateScale)
+
+    return () => {
+      viewport?.removeEventListener('resize', updateScale)
+      viewport?.removeEventListener('scroll', updateScale)
+      window.removeEventListener('resize', updateScale)
+      window.removeEventListener('orientationchange', updateScale)
+    }
+  }, [mobile, open])
 
   const copy = language === 'zh'
     ? {
@@ -448,9 +485,12 @@ export default function AtelierWithMusic(props: Props) {
 
   const panelStyle: CSSProperties = {
     position: 'relative',
-    width: mobile ? 'min(390px, calc(100vw - 14px))' : 'min(1120px, calc(100vw - 34px))',
-    height: mobile ? 'min(820px, calc(100svh - 14px))' : 'min(760px, calc(100svh - 38px))',
-    maxHeight: 'calc(100svh - 14px)',
+    width: mobile ? MOBILE_STAGE_WIDTH : 'min(1120px, calc(100vw - 34px))',
+    height: mobile ? MOBILE_STAGE_HEIGHT : 'min(760px, calc(100svh - 38px))',
+    maxHeight: mobile ? 'none' : 'calc(100svh - 14px)',
+    transform: mobile ? `scale(${mobileStageScale})` : undefined,
+    transformOrigin: '50% 50%',
+    willChange: mobile ? 'transform' : undefined,
     border: '1px solid rgba(172, 205, 226, .72)',
     borderRadius: mobile ? 26 : 30,
     background: 'rgba(236, 247, 253, .91)',
@@ -489,8 +529,11 @@ export default function AtelierWithMusic(props: Props) {
             zIndex: 90,
             display: 'grid',
             placeItems: 'center',
+            width: mobile ? '100dvw' : undefined,
+            height: mobile ? '100dvh' : undefined,
             padding: mobile ? 7 : 18,
             boxSizing: 'border-box',
+            overflow: 'hidden',
             background: 'rgba(207, 231, 246, .62)',
             backdropFilter: 'blur(16px) saturate(.88)',
             WebkitBackdropFilter: 'blur(16px) saturate(.88)',
@@ -505,6 +548,10 @@ export default function AtelierWithMusic(props: Props) {
               from { opacity: 0; transform: translateY(16px) scale(.985); }
               to { opacity: 1; transform: translateY(0) scale(1); }
             }
+            @keyframes pawcream-music-panel-mobile-in {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
             @keyframes pawcream-music-spin {
               to { transform: rotate(360deg); }
             }
@@ -513,6 +560,9 @@ export default function AtelierWithMusic(props: Props) {
             }
             .pawcream-music-panel {
               animation: pawcream-music-panel-in 300ms cubic-bezier(.2,.82,.24,1) both;
+            }
+            .pawcream-music-panel.pawcream-music-panel-mobile-stage {
+              animation: pawcream-music-panel-mobile-in 220ms ease-out both;
             }
             .pawcream-music-current-disc {
               animation: pawcream-music-spin 10s linear infinite;
@@ -534,7 +584,10 @@ export default function AtelierWithMusic(props: Props) {
             }
           `}</style>
 
-          <div className="pawcream-music-panel" style={panelStyle}>
+          <div
+            className={mobile ? 'pawcream-music-panel pawcream-music-panel-mobile-stage' : 'pawcream-music-panel'}
+            style={panelStyle}
+          >
             <button
               type="button"
               aria-label={copy.close}
