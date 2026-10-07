@@ -528,8 +528,7 @@ export default function AtelierWithMusic(props: Props) {
             }
             @media (prefers-reduced-motion: reduce) {
               .pawcream-music-overlay,
-              .pawcream-music-panel,
-              .pawcream-music-current-disc {
+              .pawcream-music-panel {
                 animation: none !important;
               }
             }
