@@ -278,7 +278,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginTop: 8 }}>
               <span style={{ fontSize: mobile ? 10.5 : 11.5, color: '#b0969f' }}>{draft.length}/280</span>
-              <button type="button" disabled={!draft.trim()} onClick={() => void publish()} style={{ minHeight: 33, border: '1px solid rgba(203,130,158,.28)', borderRadius: 999, padding: '0 15px', background: draft.trim() ? '#f7e6ed' : '#f5f1f2', color: draft.trim() ? '#8f6072' : '#b7a7ad', cursor: draft.trim() ? 'pointer' : 'default', fontSize: uiSize(mobile ? 12 : 13), minHeight: language === 'en' ? 43 : 33 }}>
+              <button type="button" disabled={!draft.trim()} onClick={() => void publish()} style={{ minHeight: language === 'en' ? 43 : 33, border: '1px solid rgba(203,130,158,.28)', borderRadius: 999, padding: '0 15px', background: draft.trim() ? '#f7e6ed' : '#f5f1f2', color: draft.trim() ? '#8f6072' : '#b7a7ad', cursor: draft.trim() ? 'pointer' : 'default', fontSize: uiSize(mobile ? 12 : 13) }}>
                 {copy.publish}
               </button>
             </div>
@@ -330,8 +330,8 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
                       style={{ flex: 1, width: '100%', minHeight: 86, resize: 'none', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 9, padding: 8, background: 'rgba(255,255,255,.68)', color: '#715a63', font: `${mobile ? 13.5 : 14.5}px/1.6 inherit`, outline: 'none' }}
                     />
                     <div style={{ display: 'flex', gap: 5, marginTop: 7 }}>
-                      <button type="button" onClick={() => void saveEdit()} style={{ ...pill(true), minHeight: 27, padding: '0 9px', fontSize: uiSize(11.5), minHeight: language === 'en' ? 38 : 27 }}>{copy.save}</button>
-                      <button type="button" onClick={() => setEditingId(null)} style={{ ...pill(false), minHeight: 27, padding: '0 9px', fontSize: uiSize(11.5), minHeight: language === 'en' ? 38 : 27 }}>{copy.cancel}</button>
+                      <button type="button" onClick={() => void saveEdit()} style={{ ...pill(true), minHeight: language === 'en' ? 38 : 27, padding: '0 9px', fontSize: uiSize(11.5) }}>{copy.save}</button>
+                      <button type="button" onClick={() => setEditingId(null)} style={{ ...pill(false), minHeight: language === 'en' ? 38 : 27, padding: '0 9px', fontSize: uiSize(11.5) }}>{copy.cancel}</button>
                     </div>
                   </>
                 ) : (
