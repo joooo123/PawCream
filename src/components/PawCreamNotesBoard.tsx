@@ -223,7 +223,19 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
+      <style>{`
+        .pawcream-notes-card {
+          transition: opacity 180ms ease, transform 180ms ease, visibility 180ms step-end;
+        }
+        html.pawcream-signin-open .pawcream-notes-card {
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          transform: scale(.985);
+        }
+      `}</style>
       <section
+        className="pawcream-notes-card"
         style={{
           width: mobile ? '100%' : 'min(760px, 100%)',
           maxHeight: mobile ? 'calc(100% - 12px)' : 'min(760px, calc(100% - 30px))',
