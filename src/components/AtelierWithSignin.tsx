@@ -1,4 +1,11 @@
 import { type FormEvent, useEffect, useState } from 'react'
+import {
+  AUTH_CHANGED_EVENT,
+  OPEN_SIGNIN_EVENT,
+  isPawCreamApiEnabled,
+  registerPawCream,
+  signInPawCream,
+} from '../pawcreamApi'
 import AtelierWithCollection from './AtelierWithCollection'
 
 type DeviceProfile = 'desktop' | 'mobile'
@@ -103,8 +110,10 @@ export default function AtelierWithSignin(props: Props) {
         badEmail: '请输入正确的邮箱地址',
         badPassword: '密码至少需要 6 位',
         badInvite: '请输入邀请码',
-        pendingLogin: '账号服务尚未接入，登入界面已准备好',
-        pendingRegister: '账号服务尚未接入，注册界面已准备好',
+        preview: '当前是 GitHub Pages 预览，真实账号将在阿里云 API 接入后启用',
+        working: '正在连接 PawCream 账号…',
+        success: '账号已连接 ♡',
+        failed: '账号操作失败，请稍后再试',
       }
     : {
         title: 'PawCream Account',
@@ -117,8 +126,10 @@ export default function AtelierWithSignin(props: Props) {
         badEmail: 'Please enter a valid email address',
         badPassword: 'Password must be at least 6 characters',
         badInvite: 'Please enter an invite code',
-        pendingLogin: 'Account service is not connected yet. The sign-in UI is ready.',
-        pendingRegister: 'Account service is not connected yet. The registration UI is ready.',
+        preview: 'GitHub Pages preview mode. Real accounts will activate when the Alibaba Cloud API is connected.',
+        working: 'Connecting to PawCream…',
+        success: 'Account connected ♡',
+        failed: 'Account request failed. Please try again.',
       }
 
   useEffect(() => {
@@ -130,6 +141,19 @@ export default function AtelierWithSignin(props: Props) {
   useEffect(() => {
     if (tuneMode) setOpen(true)
   }, [tuneMode])
+
+  useEffect(() => {
+    const onOpenSignin = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: AuthMode }>).detail
+      setMode(detail?.mode === 'register' ? 'register' : 'login')
+      setLanguage(readLanguage())
+      setStatus('')
+      setOpen(true)
+    }
+
+    window.addEventListener(OPEN_SIGNIN_EVENT, onOpenSignin)
+    return () => window.removeEventListener(OPEN_SIGNIN_EVENT, onOpenSignin)
+  }, [])
 
   useEffect(() => {
     const onClickCapture = (event: MouseEvent) => {
@@ -225,7 +249,7 @@ export default function AtelierWithSignin(props: Props) {
     setStatus('')
   }
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const normalizedEmail = email.trim()
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
@@ -242,8 +266,29 @@ export default function AtelierWithSignin(props: Props) {
       setStatus(copy.badInvite)
       return
     }
+    if (!isPawCreamApiEnabled()) {
+      setStatus(copy.preview)
+      return
+    }
 
-    setStatus(mode === 'login' ? copy.pendingLogin : copy.pendingRegister)
+    setStatus(copy.working)
+    try {
+      if (mode === 'login') {
+        await signInPawCream(normalizedEmail, password)
+      } else {
+        await registerPawCream(normalizedEmail, password, inviteCode.trim())
+      }
+
+      setStatus(copy.success)
+      window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
+      window.setTimeout(() => {
+        setOpen(false)
+        setPassword('')
+        setInviteCode('')
+      }, 420)
+    } catch (error) {
+      setStatus(error instanceof Error && error.message ? error.message : copy.failed)
+    }
   }
 
   const inputStyle = {
