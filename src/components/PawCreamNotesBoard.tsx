@@ -7,11 +7,16 @@ import {
   getNotes,
   isPawCreamApiEnabled,
   openPawCreamSignin,
+  resetPawCreamPreviewNotes,
+  setPawCreamPreviewSignedIn,
   toggleNoteLike,
   updateNote,
   type PawCreamNote,
   type PawCreamUser,
 } from '../pawcreamApi'
+import PawCreamMyNotes from './PawCreamMyNotes'
+import PawCreamNoteComposer from './PawCreamNoteComposer'
+import PawCreamNoteWall from './PawCreamNoteWall'
 
 type Language = 'zh' | 'en'
 
@@ -28,11 +33,9 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   const [viewer, setViewer] = useState<PawCreamUser | null>(null)
   const [scope, setScope] = useState<Scope>('all')
   const [notes, setNotes] = useState<PawCreamNote[]>([])
-  const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editingText, setEditingText] = useState('')
+  const [composerOpen, setComposerOpen] = useState(false)
 
   const apiEnabled = isPawCreamApiEnabled()
   const englishBoost = language === 'en' ? 10 : 0
@@ -41,46 +44,40 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     ? {
         title: 'PawCream 公共便签墙',
         subtitle: '大家留下的便签都会在这里相遇。',
-        preview: 'GitHub Pages 预览模式 · 现在展示的是示例公共便签',
+        preview: 'GitHub Pages 预览模式 · 可以切换模拟登录状态，完整测试写便签、我的便签、编辑、删除和点赞。',
+        guestPreview: '游客预览',
+        signedPreview: '已登录预览',
+        resetPreview: '重置预览数据',
+        previewUser: '预览用户',
         all: '全部便签',
         mine: '我的便签',
         write: '写一张便签',
-        placeholder: '想在 PawCream 留下什么？',
-        publish: '贴上便签',
         loginLead: '所有人都可以看便签，登录 PawCream 后可以留言、点赞和管理自己的便签。',
         login: '登入',
         register: '注册',
-        empty: '这里还没有便签。',
         loading: '正在整理便签…',
-        edit: '编辑',
-        remove: '删除',
-        save: '保存',
-        cancel: '取消',
         deleteConfirm: '确定要删除这张便签吗？',
         close: '关闭留言板',
-        heart: '喜欢',
+        previewNeedLogin: '当前是游客预览。请切换到「已登录预览」查看登录后的便签逻辑。',
       }
     : {
         title: 'PawCream Public Notes',
         subtitle: 'Little notes from everyone meet here.',
-        preview: 'GitHub Pages preview · showing sample public notes',
+        preview: 'GitHub Pages preview · switch the mock account state to test writing, My notes, edit, delete, and likes.',
+        guestPreview: 'Guest preview',
+        signedPreview: 'Signed-in preview',
+        resetPreview: 'Reset preview data',
+        previewUser: 'Preview user',
         all: 'All notes',
         mine: 'My notes',
         write: 'Write a note',
-        placeholder: 'What would you like to leave in PawCream?',
-        publish: 'Post note',
         loginLead: 'Everyone can read notes. Sign in to post, like, and manage your own notes.',
         login: 'Sign in',
         register: 'Register',
-        empty: 'No notes here yet.',
         loading: 'Gathering notes…',
-        edit: 'Edit',
-        remove: 'Delete',
-        save: 'Save',
-        cancel: 'Cancel',
         deleteConfirm: 'Delete this note?',
         close: 'Close notes',
-        heart: 'Like',
+        previewNeedLogin: 'You are in guest preview. Switch to Signed-in preview to inspect the signed-in note flow.',
       }
 
   const load = async (nextScope: Scope = scope) => {
@@ -101,7 +98,10 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   }
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setComposerOpen(false)
+      return
+    }
     void load(scope)
   }, [open, scope])
 
@@ -121,36 +121,54 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   }
 
   const selectScope = (nextScope: Scope) => {
+    setComposerOpen(false)
+    setStatus('')
     if (nextScope === 'mine' && !viewer) {
-      askSignin('login')
+      if (apiEnabled) askSignin('login')
+      else setStatus(copy.previewNeedLogin)
       return
     }
-    setEditingId(null)
     setScope(nextScope)
   }
 
-  const publish = async () => {
-    const text = draft.trim()
-    if (!text) return
+  const switchPreviewUser = (signedIn: boolean) => {
+    if (apiEnabled) return
+    setComposerOpen(false)
+    setStatus('')
+    const nextScope: Scope = !signedIn && scope === 'mine' ? 'all' : scope
+    if (nextScope !== scope) setScope(nextScope)
+    setPawCreamPreviewSignedIn(signedIn)
+    void load(nextScope)
+  }
+
+  const resetPreview = () => {
+    if (apiEnabled) return
+    setComposerOpen(false)
+    resetPawCreamPreviewNotes()
+    void load(scope)
+  }
+
+  const startWrite = () => {
+    setStatus('')
     if (!viewer) {
-      askSignin('login')
+      if (apiEnabled) askSignin('login')
+      else setStatus(copy.previewNeedLogin)
       return
     }
+    setComposerOpen(true)
+  }
 
-    setStatus('')
-    try {
-      await createNote(text)
-      setDraft('')
-      setScope('all')
-      await load('all')
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Unable to post note')
-    }
+  const publish = async (text: string) => {
+    await createNote(text)
+    setComposerOpen(false)
+    setScope('all')
+    await load('all')
   }
 
   const like = async (note: PawCreamNote) => {
     if (!viewer) {
-      askSignin('login')
+      if (apiEnabled) askSignin('login')
+      else setStatus(copy.previewNeedLogin)
       return
     }
 
@@ -166,28 +184,21 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     }
   }
 
-  const beginEdit = (note: PawCreamNote) => {
-    setEditingId(note.id)
-    setEditingText(note.text)
-  }
-
-  const saveEdit = async () => {
-    if (!editingId || !editingText.trim()) return
+  const saveMine = async (id: string, text: string) => {
     try {
-      await updateNote(editingId, editingText.trim())
-      setEditingId(null)
-      setEditingText('')
-      await load(scope)
+      await updateNote(id, text)
+      await load('mine')
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Unable to update note')
+      throw error
     }
   }
 
-  const remove = async (note: PawCreamNote) => {
+  const removeMine = async (note: PawCreamNote) => {
     if (!window.confirm(copy.deleteConfirm)) return
     try {
       await deleteNote(note.id)
-      await load(scope)
+      await load('mine')
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Unable to delete note')
     }
@@ -202,6 +213,17 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     color: active ? '#8f6173' : '#9a7b86',
     cursor: 'pointer',
     fontSize: uiSize(13),
+  } as const)
+
+  const previewPill = (active: boolean) => ({
+    minHeight: language === 'en' ? 38 : 29,
+    border: '1px solid rgba(149,181,201,.24)',
+    borderRadius: 999,
+    padding: language === 'en' ? '0 14px' : '0 11px',
+    background: active ? 'rgba(218,235,245,.92)' : 'rgba(255,255,255,.68)',
+    color: active ? '#66879b' : '#8199a7',
+    cursor: 'pointer',
+    fontSize: uiSize(11),
   } as const)
 
   return (
@@ -234,6 +256,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           transform: scale(.985);
         }
       `}</style>
+
       <section
         className="pawcream-notes-card"
         style={{
@@ -265,9 +288,14 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         </header>
 
         {!apiEnabled && (
-          <div style={{ marginTop: 13, padding: '8px 11px', borderRadius: 13, background: 'rgba(233,243,249,.78)', color: '#7891a1', fontSize: uiSize(mobile ? 11.5 : 12.5), lineHeight: 1.5 }}>
-            {copy.preview}
-          </div>
+          <section style={{ marginTop: 13, padding: '10px 11px', borderRadius: 14, background: 'rgba(233,243,249,.78)', color: '#7891a1' }}>
+            <div style={{ fontSize: uiSize(mobile ? 11.5 : 12.5), lineHeight: 1.5 }}>{copy.preview}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 9 }}>
+              <button type="button" onClick={() => switchPreviewUser(false)} style={previewPill(!viewer)}>{copy.guestPreview}</button>
+              <button type="button" onClick={() => switchPreviewUser(true)} style={previewPill(Boolean(viewer))}>{copy.signedPreview}</button>
+              <button type="button" onClick={resetPreview} style={previewPill(false)}>{copy.resetPreview}</button>
+            </div>
+          </section>
         )}
 
         <div style={{ display: 'flex', gap: 7, marginTop: 14 }}>
@@ -276,21 +304,12 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         </div>
 
         {viewer ? (
-          <section style={{ marginTop: 15, padding: mobile ? 12 : 14, borderRadius: 18, background: 'rgba(251,241,245,.64)', border: '1px solid rgba(209,156,176,.14)' }}>
-            <div style={{ marginBottom: 8, fontSize: uiSize(mobile ? 12 : 13.5), fontWeight: 700, color: '#91717d' }}>{copy.write} · {viewer.displayName}</div>
-            <textarea
-              value={draft}
-              maxLength={280}
-              onChange={(event) => setDraft(event.currentTarget.value)}
-              placeholder={copy.placeholder}
-              style={{ width: '100%', minHeight: mobile ? 92 : 108, resize: 'vertical', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 15, padding: '11px 12px', outline: 'none', background: 'rgba(255,253,253,.88)', color: '#715a63', font: `${uiSize(mobile ? 14 : 15)}px/1.65 inherit` }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginTop: 8 }}>
-              <span style={{ fontSize: mobile ? 10.5 : 11.5, color: '#b0969f' }}>{draft.length}/280</span>
-              <button type="button" disabled={!draft.trim()} onClick={() => void publish()} style={{ minHeight: language === 'en' ? 43 : 33, border: '1px solid rgba(203,130,158,.28)', borderRadius: 999, padding: '0 15px', background: draft.trim() ? '#f7e6ed' : '#f5f1f2', color: draft.trim() ? '#8f6072' : '#b7a7ad', cursor: draft.trim() ? 'pointer' : 'default', fontSize: uiSize(mobile ? 12 : 13) }}>
-                {copy.publish}
-              </button>
+          <section style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginTop: 15, padding: '11px 13px', borderRadius: 17, background: 'rgba(251,241,245,.58)', border: '1px solid rgba(209,156,176,.13)' }}>
+            <div style={{ minWidth: 0 }}>
+              <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8e6c79', fontSize: uiSize(mobile ? 11.5 : 12.5) }}>{viewer.displayName}</strong>
+              {!apiEnabled && <span style={{ display: 'block', marginTop: 3, color: '#aa8e99', fontSize: uiSize(mobile ? 9.5 : 10.5) }}>{copy.previewUser}</span>}
             </div>
+            <button type="button" onClick={startWrite} style={pill(true)}>{copy.write}</button>
           </section>
         ) : (
           <section style={{ marginTop: 15, padding: '13px 14px', borderRadius: 18, background: 'rgba(251,241,245,.62)', border: '1px solid rgba(209,156,176,.14)' }}>
@@ -303,73 +322,39 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         )}
 
         {status && (
-          <div role="status" style={{ marginTop: 10, padding: '8px 10px', borderRadius: 12, background: 'rgba(235,244,249,.72)', color: '#768e9d', fontSize: uiSize(mobile ? 11.5 : 12.5) }}>
+          <div role="status" style={{ marginTop: 10, padding: '8px 10px', borderRadius: 12, background: 'rgba(235,244,249,.72)', color: '#768e9d', fontSize: uiSize(mobile ? 11.5 : 12.5), lineHeight: 1.5 }}>
             {status}
           </div>
         )}
 
+        {composerOpen && viewer && (
+          <PawCreamNoteComposer
+            mobile={mobile}
+            language={language}
+            viewerName={viewer.displayName}
+            onPublish={publish}
+            onCancel={() => setComposerOpen(false)}
+          />
+        )}
+
         {loading ? (
           <p style={{ margin: '20px 0 4px', textAlign: 'center', color: '#ae929c', fontSize: uiSize(mobile ? 11.5 : 12.5) }}>{copy.loading}</p>
-        ) : notes.length === 0 ? (
-          <p style={{ margin: '20px 0 4px', padding: '20px 12px', borderRadius: 16, background: 'rgba(249,241,244,.62)', color: '#ad919b', fontSize: uiSize(mobile ? 12.5 : 13.5), textAlign: 'center' }}>{copy.empty}</p>
+        ) : scope === 'all' ? (
+          <PawCreamNoteWall
+            notes={notes}
+            mobile={mobile}
+            language={language}
+            onLike={like}
+          />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))', gap: mobile ? 10 : 13, marginTop: 20, padding: mobile ? '1px 2px 8px' : '3px 4px 10px' }}>
-            {notes.map((note, index) => (
-              <article
-                key={note.id}
-                style={{
-                  minHeight: mobile ? 142 : 158,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: mobile ? '12px 11px 10px' : '14px 13px 11px',
-                  border: '1px solid rgba(207,155,174,.18)',
-                  borderRadius: 4,
-                  background: index % 3 === 1 ? '#fff9e8' : index % 3 === 2 ? '#f5fafc' : '#fff5f8',
-                  boxShadow: '0 9px 20px rgba(100,76,85,.09)',
-                  textRendering: 'geometricPrecision',
-                  WebkitFontSmoothing: 'antialiased',
-                }}
-              >
-                {editingId === note.id ? (
-                  <>
-                    <textarea
-                      value={editingText}
-                      maxLength={280}
-                      onChange={(event) => setEditingText(event.currentTarget.value)}
-                      style={{ flex: 1, width: '100%', minHeight: 86, resize: 'none', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 9, padding: 8, background: 'rgba(255,255,255,.68)', color: '#715a63', font: `${mobile ? 13.5 : 14.5}px/1.6 inherit`, outline: 'none' }}
-                    />
-                    <div style={{ display: 'flex', gap: 5, marginTop: 7 }}>
-                      <button type="button" onClick={() => void saveEdit()} style={{ ...pill(true), minHeight: language === 'en' ? 38 : 27, padding: '0 9px', fontSize: uiSize(11.5) }}>{copy.save}</button>
-                      <button type="button" onClick={() => setEditingId(null)} style={{ ...pill(false), minHeight: language === 'en' ? 38 : 27, padding: '0 9px', fontSize: uiSize(11.5) }}>{copy.cancel}</button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: mobile ? 13.5 : 15, lineHeight: 1.68 }}>{note.text}</p>
-                    <div style={{ marginTop: 10, paddingTop: 7, borderTop: '1px solid rgba(182,137,153,.12)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, alignItems: 'center' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#9a7a86', fontSize: mobile ? 10.5 : 11.5 }}>♡ {note.authorName}</span>
-                        <time dateTime={note.createdAt} style={{ color: '#b098a0', fontSize: mobile ? 9.5 : 10.5 }}>
-                          {new Date(note.createdAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}
-                        </time>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'center', marginTop: 7 }}>
-                        <button type="button" onClick={() => void like(note)} aria-label={copy.heart} style={{ border: 0, padding: 0, background: 'transparent', color: note.likedByMe ? '#c47491' : '#a98c96', cursor: 'pointer', fontSize: mobile ? 11.5 : 12.5 }}>
-                          {note.likedByMe ? '♥' : '♡'} {note.likesCount}
-                        </button>
-                        {note.isMine && (
-                          <span style={{ display: 'flex', gap: 6 }}>
-                            <button type="button" onClick={() => beginEdit(note)} style={{ border: 0, padding: 0, background: 'transparent', color: '#9b7b87', cursor: 'pointer', fontSize: uiSize(mobile ? 10 : 11) }}>{copy.edit}</button>
-                            <button type="button" onClick={() => void remove(note)} style={{ border: 0, padding: 0, background: 'transparent', color: '#b78696', cursor: 'pointer', fontSize: uiSize(mobile ? 10 : 11) }}>{copy.remove}</button>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </article>
-            ))}
-          </div>
+          <PawCreamMyNotes
+            notes={notes}
+            mobile={mobile}
+            language={language}
+            onWrite={startWrite}
+            onSave={saveMine}
+            onDelete={removeMine}
+          />
         )}
       </section>
     </div>
