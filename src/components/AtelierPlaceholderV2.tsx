@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import PawCreamNotesBoard from './PawCreamNotesBoard'
 
 type DeviceProfile = 'desktop' | 'mobile'
 type Language = 'zh' | 'en'
@@ -42,16 +43,9 @@ type AssetLayout = {
 type AtelierTuning = Record<AssetKey, AssetLayout>
 type AtelierProfiles = Record<DeviceProfile, AtelierTuning>
 
-type BoardMessage = {
-  id: string
-  text: string
-  createdAt: number
-}
-
 const STORAGE_KEY = 'pawcream-atelier-tuning-v5'
 const PREVIOUS_STORAGE_KEY = 'pawcream-atelier-tuning-v4'
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const BOARD_STORAGE_KEY = 'pawcream-message-board-v1'
 const BACKGROUND_STORAGE_KEY = 'pawcream-atelier-background-v1'
 
 const BACKGROUND_URLS = [
@@ -196,18 +190,6 @@ function loadLanguage(): Language {
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
 }
 
-function loadBoardMessages(): BoardMessage[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = window.localStorage.getItem(BOARD_STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as BoardMessage[]
-    return Array.isArray(parsed) ? parsed.slice(0, 20) : []
-  } catch {
-    return []
-  }
-}
-
 function loadBackgroundIndex() {
   if (typeof window === 'undefined') return 0
   const value = Number(window.localStorage.getItem(BACKGROUND_STORAGE_KEY))
@@ -262,8 +244,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const [messageMoveMode, setMessageMoveMode] = useState(false)
   const [runtimeMessagePosition, setRuntimeMessagePosition] = useState<{ x: number; y: number } | null>(null)
   const [boardOpen, setBoardOpen] = useState(false)
-  const [boardDraft, setBoardDraft] = useState('')
-  const [boardMessages, setBoardMessages] = useState<BoardMessage[]>(loadBoardMessages)
   const [loginNoticeOpen, setLoginNoticeOpen] = useState(false)
 
   const copy = language === 'zh'
@@ -295,10 +275,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
   }, [language])
-
-  useEffect(() => {
-    window.localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(boardMessages))
-  }, [boardMessages])
 
   useEffect(() => {
     document.documentElement.style.setProperty('--atelier-background-image', `url("${BACKGROUND_URLS[backgroundIndex]}")`)
@@ -511,13 +487,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     setWindowHovered(false)
   }
 
-  const submitBoardMessage = () => {
-    const text = boardDraft.trim()
-    if (!text) return
-    setBoardMessages((current) => [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text: text.slice(0, 280), createdAt: Date.now() }, ...current].slice(0, 20))
-    setBoardDraft('')
-  }
-
   const closeToolbar = () => {
     setTopBarOpen(false)
     setHintMode(false)
@@ -685,33 +654,13 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         </div>
       )}
 
-      {!tuneMode && boardOpen && (
-        <div role="dialog" aria-modal="true" aria-label={copy.boardTitle} onClick={(event) => event.stopPropagation()} style={{ position: 'absolute', inset: 0, zIndex: 80, display: 'grid', placeItems: 'center', padding: mobile ? 14 : 28, background: 'rgba(255,249,251,.62)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', fontFamily: uiFont }}>
-          <section style={{ width: mobile ? '100%' : 'min(620px, 100%)', maxHeight: mobile ? 'calc(100% - 20px)' : 'min(720px, calc(100% - 32px))', overflow: 'auto', padding: mobile ? 18 : 24, border: '1px solid rgba(205,148,168,.22)', borderRadius: mobile ? 22 : 28, background: 'rgba(255,253,253,.96)', boxShadow: '0 24px 70px rgba(101,74,84,.16)', color: '#765d66' }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-              <div>
-                <strong style={{ display: 'block', fontSize: mobile ? 17 : 20 }}>{copy.boardTitle}</strong>
-                <p style={{ margin: '6px 0 0', fontSize: 11, lineHeight: 1.55, color: '#9d818a' }}>{copy.boardSubtitle}</p>
-              </div>
-              <button type="button" onClick={() => setBoardOpen(false)} aria-label={copy.close} style={{ width: 34, height: 34, flex: '0 0 auto', border: '1px solid rgba(198,133,157,.2)', borderRadius: '50%', background: '#fff', color: '#98737f', cursor: 'pointer' }}>×</button>
-            </header>
-            <textarea value={boardDraft} maxLength={280} onChange={(event) => setBoardDraft(event.currentTarget.value)} placeholder={copy.boardPlaceholder} style={{ width: '100%', minHeight: mobile ? 110 : 130, marginTop: 18, resize: 'vertical', border: '1px solid rgba(205,148,168,.24)', borderRadius: 18, padding: '13px 14px', outline: 'none', background: 'rgba(255,249,251,.78)', color: '#715a63', font: `13px/1.65 ${uiFont}`, boxSizing: 'border-box' }} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 9 }}>
-              <span style={{ fontSize: 9, color: '#b0969f' }}>{copy.boardLocal}</span>
-              <button type="button" disabled={!boardDraft.trim()} onClick={submitBoardMessage} style={{ minHeight: 34, border: '1px solid rgba(203,130,158,.28)', borderRadius: 999, padding: '0 15px', background: boardDraft.trim() ? '#f7e6ed' : '#f5f1f2', color: boardDraft.trim() ? '#8f6072' : '#b7a7ad', cursor: boardDraft.trim() ? 'pointer' : 'default', fontSize: 11 }}>{copy.boardSubmit}</button>
-            </div>
-            <div style={{ display: 'grid', gap: 9, marginTop: 20 }}>
-              {boardMessages.length === 0 ? (
-                <p style={{ margin: 0, padding: '18px 12px', borderRadius: 16, background: 'rgba(249,241,244,.62)', color: '#ad919b', fontSize: 11, textAlign: 'center' }}>{copy.boardEmpty}</p>
-              ) : boardMessages.map((item) => (
-                <article key={item.id} style={{ padding: '12px 14px', border: '1px solid rgba(209,156,176,.16)', borderRadius: 16, background: 'rgba(253,247,249,.78)' }}>
-                  <p style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#765d66', fontSize: 12, lineHeight: 1.65 }}>{item.text}</p>
-                  <time dateTime={new Date(item.createdAt).toISOString()} style={{ display: 'block', marginTop: 7, color: '#b097a0', fontSize: 9 }}>{new Date(item.createdAt).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>
-                </article>
-              ))}
-            </div>
-          </section>
-        </div>
+      {!tuneMode && (
+        <PawCreamNotesBoard
+          open={boardOpen}
+          onClose={() => setBoardOpen(false)}
+          mobile={mobile}
+          language={language}
+        />
       )}
     </section>
   )
