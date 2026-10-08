@@ -24,8 +24,6 @@ type Props = {
 
 type Scope = 'all' | 'mine'
 
-const rotations = [-1.2, .7, -0.45, 1.1, -.8, .35]
-
 export default function PawCreamNotesBoard({ open, onClose, mobile, language }: Props) {
   const [viewer, setViewer] = useState<PawCreamUser | null>(null)
   const [scope, setScope] = useState<Scope>('all')
@@ -119,7 +117,6 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   if (!open) return null
 
   const askSignin = (mode: 'login' | 'register') => {
-    onClose()
     window.setTimeout(() => openPawCreamSignin(mode), 0)
   }
 
@@ -317,8 +314,8 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
                   borderRadius: 4,
                   background: index % 3 === 1 ? '#fff9e8' : index % 3 === 2 ? '#f5fafc' : '#fff5f8',
                   boxShadow: '0 9px 20px rgba(100,76,85,.09)',
-                  transform: `rotate(${rotations[index % rotations.length]}deg)`,
-                  transformOrigin: '50% 30%',
+                  textRendering: 'geometricPrecision',
+                  WebkitFontSmoothing: 'antialiased',
                 }}
               >
                 {editingId === note.id ? (
