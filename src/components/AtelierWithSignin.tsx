@@ -143,6 +143,11 @@ export default function AtelierWithSignin(props: Props) {
   }, [tuneMode])
 
   useEffect(() => {
+    document.documentElement.classList.toggle('pawcream-signin-open', open)
+    return () => document.documentElement.classList.remove('pawcream-signin-open')
+  }, [open])
+
+  useEffect(() => {
     const onOpenSignin = (event: Event) => {
       const detail = (event as CustomEvent<{ mode?: AuthMode }>).detail
       setMode(detail?.mode === 'register' ? 'register' : 'login')
