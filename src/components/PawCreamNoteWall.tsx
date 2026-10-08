@@ -53,13 +53,13 @@ export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Pr
             WebkitFontSmoothing: 'antialiased',
           }}
         >
-          <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: mobile ? 13.5 : 15, lineHeight: 1.68 }}>
+          <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: language === 'zh' ? (mobile ? 16 : 17) : (mobile ? 13.5 : 15), lineHeight: 1.68 }}>
             {note.text}
           </p>
 
           <div style={{ marginTop: 10, paddingTop: 7, borderTop: '1px solid rgba(182,137,153,.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, alignItems: 'center' }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#9a7a86', fontSize: mobile ? 10.5 : 11.5 }}>♡ {note.authorName}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#9a7a86', fontSize: language === 'zh' ? (mobile ? 12.5 : 13.5) : (mobile ? 10.5 : 11.5) }}>♡ {note.authorName}</span>
               <time dateTime={note.createdAt} style={{ color: '#b098a0', fontSize: mobile ? 9.5 : 10.5 }}>
                 {new Date(note.createdAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}
               </time>
