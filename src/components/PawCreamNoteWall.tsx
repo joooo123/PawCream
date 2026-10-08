@@ -9,6 +9,8 @@ type Props = {
   onLike: (note: PawCreamNote) => Promise<void>
 }
 
+const rotations = [-0.8, 0.55, -0.35, 0.7, -0.5, 0.3]
+
 export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Props) {
   const copy = language === 'zh'
     ? { empty: '这里还没有便签。', like: '喜欢' }
@@ -30,7 +32,7 @@ export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Pr
         gridTemplateColumns: mobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))',
         gap: mobile ? 10 : 13,
         marginTop: 20,
-        padding: mobile ? '1px 2px 8px' : '3px 4px 10px',
+        padding: mobile ? '3px 3px 8px' : '5px 5px 10px',
       }}
     >
       {notes.map((note, index) => (
@@ -45,6 +47,8 @@ export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Pr
             borderRadius: 4,
             background: index % 3 === 1 ? '#fff9e8' : index % 3 === 2 ? '#f5fafc' : '#fff5f8',
             boxShadow: '0 9px 20px rgba(100,76,85,.09)',
+            transform: `rotate(${rotations[index % rotations.length]}deg)`,
+            transformOrigin: '50% 35%',
             textRendering: 'geometricPrecision',
             WebkitFontSmoothing: 'antialiased',
           }}

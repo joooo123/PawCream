@@ -5,6 +5,7 @@ import {
   deleteNote,
   getCurrentUser,
   getNotes,
+  getPublicNotesBatch,
   isPawCreamApiEnabled,
   openPawCreamSignin,
   resetPawCreamPreviewNotes,
@@ -12,6 +13,7 @@ import {
   toggleNoteLike,
   updateNote,
   type PawCreamNote,
+  type PawCreamPublicNoteOrder,
   type PawCreamUser,
 } from '../pawcreamApi'
 import PawCreamMyNotes from './PawCreamMyNotes'
@@ -29,6 +31,10 @@ type Props = {
 
 type Scope = 'all' | 'mine'
 
+function makeRandomSeed() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
+}
+
 export default function PawCreamNotesBoard({ open, onClose, mobile, language }: Props) {
   const [viewer, setViewer] = useState<PawCreamUser | null>(null)
   const [scope, setScope] = useState<Scope>('all')
@@ -36,8 +42,14 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const [composerOpen, setComposerOpen] = useState(false)
+  const [publicOrder, setPublicOrder] = useState<PawCreamPublicNoteOrder>('recent')
+  const [batchOffset, setBatchOffset] = useState(0)
+  const [randomSeed, setRandomSeed] = useState(makeRandomSeed)
+  const [totalNotes, setTotalNotes] = useState(0)
+  const [refreshTick, setRefreshTick] = useState(0)
 
   const apiEnabled = isPawCreamApiEnabled()
+  const pageSize = mobile ? 6 : 12
   const englishBoost = language === 'en' ? 10 : 0
   const uiSize = (size: number) => size + englishBoost
   const copy = language === 'zh'
@@ -51,6 +63,10 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         previewUser: '预览用户',
         all: '全部便签',
         mine: '我的便签',
+        recent: '最近留下的',
+        random: '随便看看 ♡',
+        next: '下一批',
+        shuffle: '换一批 ♡',
         write: '写一张便签',
         loginLead: '所有人都可以看便签，登录 PawCream 后可以留言、点赞和管理自己的便签。',
         login: '登入',
@@ -70,6 +86,10 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         previewUser: 'Preview user',
         all: 'All notes',
         mine: 'My notes',
+        recent: 'Recently left',
+        random: 'Wander around ♡',
+        next: 'Next batch',
+        shuffle: 'Another batch ♡',
         write: 'Write a note',
         loginLead: 'Everyone can read notes. Sign in to post, like, and manage your own notes.',
         login: 'Sign in',
@@ -80,39 +100,60 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         previewNeedLogin: 'You are in guest preview. Switch to Signed-in preview to inspect the signed-in note flow.',
       }
 
-  const load = async (nextScope: Scope = scope) => {
-    setLoading(true)
-    setStatus('')
-    try {
-      const [nextViewer, nextNotes] = await Promise.all([
-        getCurrentUser(),
-        getNotes(nextScope),
-      ])
-      setViewer(nextViewer)
-      setNotes(nextNotes)
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'PawCream notes unavailable')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     if (!open) {
       setComposerOpen(false)
       return
     }
-    void load(scope)
-  }, [open, scope])
+
+    let cancelled = false
+
+    const load = async () => {
+      setLoading(true)
+      setStatus('')
+      try {
+        const [nextViewer, result] = await Promise.all([
+          getCurrentUser(),
+          scope === 'all'
+            ? getPublicNotesBatch({
+                order: publicOrder,
+                limit: pageSize,
+                offset: batchOffset,
+                seed: randomSeed,
+              })
+            : getNotes('mine').then((mineNotes) => ({ notes: mineNotes, total: mineNotes.length })),
+        ])
+
+        if (cancelled) return
+        setViewer(nextViewer)
+        setNotes(result.notes)
+        setTotalNotes(result.total)
+      } catch (error) {
+        if (cancelled) return
+        setStatus(error instanceof Error ? error.message : 'PawCream notes unavailable')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [open, scope, publicOrder, batchOffset, randomSeed, pageSize, refreshTick])
 
   useEffect(() => {
     const onAuthChanged = () => {
       if (!open) return
-      void load(scope)
+      setRefreshTick((value) => value + 1)
     }
     window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
     return () => window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
-  }, [open, scope])
+  }, [open])
+
+  useEffect(() => {
+    setBatchOffset(0)
+  }, [mobile])
 
   if (!open) return null
 
@@ -128,24 +169,50 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       else setStatus(copy.previewNeedLogin)
       return
     }
+    setBatchOffset(0)
     setScope(nextScope)
+  }
+
+  const selectPublicOrder = (nextOrder: PawCreamPublicNoteOrder) => {
+    setComposerOpen(false)
+    setStatus('')
+    setBatchOffset(0)
+    if (nextOrder === 'random' && publicOrder !== 'random') {
+      setRandomSeed(makeRandomSeed())
+    }
+    setPublicOrder(nextOrder)
+  }
+
+  const nextBatch = () => {
+    if (totalNotes <= pageSize) return
+
+    const reachesEnd = batchOffset + pageSize >= totalNotes
+    if (publicOrder === 'random' && reachesEnd) {
+      setRandomSeed(makeRandomSeed())
+      setBatchOffset(0)
+      return
+    }
+
+    if (!reachesEnd) {
+      setBatchOffset((value) => value + pageSize)
+    }
   }
 
   const switchPreviewUser = (signedIn: boolean) => {
     if (apiEnabled) return
     setComposerOpen(false)
     setStatus('')
-    const nextScope: Scope = !signedIn && scope === 'mine' ? 'all' : scope
-    if (nextScope !== scope) setScope(nextScope)
+    setBatchOffset(0)
+    if (!signedIn && scope === 'mine') setScope('all')
     setPawCreamPreviewSignedIn(signedIn)
-    void load(nextScope)
   }
 
   const resetPreview = () => {
     if (apiEnabled) return
     setComposerOpen(false)
+    setBatchOffset(0)
+    setRandomSeed(makeRandomSeed())
     resetPawCreamPreviewNotes()
-    void load(scope)
   }
 
   const startWrite = () => {
@@ -162,7 +229,9 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     await createNote(text)
     setComposerOpen(false)
     setScope('all')
-    await load('all')
+    setPublicOrder('recent')
+    setBatchOffset(0)
+    setRefreshTick((value) => value + 1)
   }
 
   const like = async (note: PawCreamNote) => {
@@ -187,7 +256,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   const saveMine = async (id: string, text: string) => {
     try {
       await updateNote(id, text)
-      await load('mine')
+      setRefreshTick((value) => value + 1)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Unable to update note')
       throw error
@@ -198,7 +267,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     if (!window.confirm(copy.deleteConfirm)) return
     try {
       await deleteNote(note.id)
-      await load('mine')
+      setRefreshTick((value) => value + 1)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Unable to delete note')
     }
@@ -225,6 +294,11 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     cursor: 'pointer',
     fontSize: uiSize(11),
   } as const)
+
+  const currentStart = totalNotes === 0 ? 0 : batchOffset + 1
+  const currentEnd = Math.min(batchOffset + notes.length, totalNotes)
+  const canAdvanceRecent = publicOrder === 'recent' && batchOffset + pageSize < totalNotes
+  const canShuffle = publicOrder === 'random' && totalNotes > pageSize
 
   return (
     <div
@@ -303,6 +377,20 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           <button type="button" onClick={() => selectScope('mine')} style={pill(scope === 'mine')}>{copy.mine}</button>
         </div>
 
+        {scope === 'all' && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 9, alignItems: 'center', marginTop: 10 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              <button type="button" onClick={() => selectPublicOrder('recent')} style={previewPill(publicOrder === 'recent')}>{copy.recent}</button>
+              <button type="button" onClick={() => selectPublicOrder('random')} style={previewPill(publicOrder === 'random')}>{copy.random}</button>
+            </div>
+            {!loading && totalNotes > 0 && (
+              <span style={{ color: '#b097a0', fontSize: uiSize(mobile ? 9.5 : 10.5) }}>
+                {currentStart}–{currentEnd} / {totalNotes}
+              </span>
+            )}
+          </div>
+        )}
+
         {viewer ? (
           <section style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginTop: 15, padding: '11px 13px', borderRadius: 17, background: 'rgba(251,241,245,.58)', border: '1px solid rgba(209,156,176,.13)' }}>
             <div style={{ minWidth: 0 }}>
@@ -340,12 +428,36 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         {loading ? (
           <p style={{ margin: '20px 0 4px', textAlign: 'center', color: '#ae929c', fontSize: uiSize(mobile ? 11.5 : 12.5) }}>{copy.loading}</p>
         ) : scope === 'all' ? (
-          <PawCreamNoteWall
-            notes={notes}
-            mobile={mobile}
-            language={language}
-            onLike={like}
-          />
+          <>
+            <PawCreamNoteWall
+              notes={notes}
+              mobile={mobile}
+              language={language}
+              onLike={like}
+            />
+
+            {(canAdvanceRecent || canShuffle) && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: mobile ? 12 : 16, paddingBottom: 2 }}>
+                <button
+                  type="button"
+                  onClick={nextBatch}
+                  style={{
+                    minHeight: language === 'en' ? 44 : 35,
+                    border: '1px solid rgba(202,145,166,.24)',
+                    borderRadius: 999,
+                    padding: language === 'en' ? '0 19px' : '0 17px',
+                    background: 'rgba(250,235,241,.88)',
+                    color: '#936a7a',
+                    boxShadow: '0 5px 14px rgba(130,92,106,.07)',
+                    cursor: 'pointer',
+                    fontSize: uiSize(mobile ? 12 : 13),
+                  }}
+                >
+                  {publicOrder === 'random' ? copy.shuffle : copy.next}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <PawCreamMyNotes
             notes={notes}

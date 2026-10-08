@@ -264,31 +264,84 @@ app.get('/api/notes', async (req, res, next) => {
     return
   }
 
-  try {
-    const result = await pool.query(
-      `
-        SELECT
-          n.id,
-          n.user_id,
-          n.content,
-          n.author_name,
-          n.created_at,
-          n.updated_at,
-          COUNT(l.user_id)::int AS likes_count,
-          COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
-          COALESCE(n.user_id = $1::uuid, false) AS is_mine
-        FROM notes n
-        LEFT JOIN note_likes l ON l.note_id = n.id
-        WHERE n.is_hidden = false
-          AND ($2::text = 'all' OR n.user_id = $1::uuid)
-        GROUP BY n.id
-        ORDER BY n.created_at DESC
-        LIMIT 100
-      `,
-      [viewerId, scope],
-    )
+  const order = req.query.order === 'random' ? 'random' : 'recent'
+  const rawLimit = Number.parseInt(String(req.query.limit || '12'), 10)
+  const rawOffset = Number.parseInt(String(req.query.offset || '0'), 10)
+  const limit = Math.min(24, Math.max(1, Number.isFinite(rawLimit) ? rawLimit : 12))
+  const offset = Math.max(0, Number.isFinite(rawOffset) ? rawOffset : 0)
+  const seed = String(req.query.seed || 'pawcream').slice(0, 80)
 
-    res.json({ notes: result.rows.map(rowToNote) })
+  try {
+    if (scope === 'mine') {
+      const [result, countResult] = await Promise.all([
+        pool.query(
+          `
+            SELECT
+              n.id,
+              n.user_id,
+              n.content,
+              n.author_name,
+              n.created_at,
+              n.updated_at,
+              COUNT(l.user_id)::int AS likes_count,
+              COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
+              true AS is_mine
+            FROM notes n
+            LEFT JOIN note_likes l ON l.note_id = n.id
+            WHERE n.is_hidden = false
+              AND n.user_id = $1::uuid
+            GROUP BY n.id
+            ORDER BY n.created_at DESC
+            LIMIT 100
+          `,
+          [viewerId],
+        ),
+        pool.query(
+          'SELECT COUNT(*)::int AS total FROM notes WHERE is_hidden = false AND user_id = $1::uuid',
+          [viewerId],
+        ),
+      ])
+
+      res.json({
+        notes: result.rows.map(rowToNote),
+        total: Number(countResult.rows[0]?.total || 0),
+      })
+      return
+    }
+
+    const [result, countResult] = await Promise.all([
+      pool.query(
+        `
+          SELECT
+            n.id,
+            n.user_id,
+            n.content,
+            n.author_name,
+            n.created_at,
+            n.updated_at,
+            COUNT(l.user_id)::int AS likes_count,
+            COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
+            COALESCE(n.user_id = $1::uuid, false) AS is_mine
+          FROM notes n
+          LEFT JOIN note_likes l ON l.note_id = n.id
+          WHERE n.is_hidden = false
+          GROUP BY n.id
+          ORDER BY
+            CASE WHEN $2::text = 'random' THEN md5(n.id::text || $3::text) END ASC,
+            CASE WHEN $2::text <> 'random' THEN n.created_at END DESC,
+            n.id ASC
+          LIMIT $4
+          OFFSET $5
+        `,
+        [viewerId, order, seed, limit, offset],
+      ),
+      pool.query('SELECT COUNT(*)::int AS total FROM notes WHERE is_hidden = false'),
+    ])
+
+    res.json({
+      notes: result.rows.map(rowToNote),
+      total: Number(countResult.rows[0]?.total || 0),
+    })
   } catch (error) {
     next(error)
   }
