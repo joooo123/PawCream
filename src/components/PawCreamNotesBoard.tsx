@@ -202,7 +202,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     background: active ? 'rgba(246,226,234,.95)' : 'rgba(255,255,255,.72)',
     color: active ? '#8f6173' : '#9a7b86',
     cursor: 'pointer',
-    fontSize: 10,
+    fontSize: 13,
   } as const)
 
   return (
@@ -240,8 +240,8 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       >
         <header style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
           <div>
-            <strong style={{ display: 'block', fontSize: mobile ? 17 : 21, letterSpacing: '.015em' }}>{copy.title}</strong>
-            <p style={{ margin: '6px 0 0', fontSize: 11, lineHeight: 1.55, color: '#9d818a' }}>{copy.subtitle}</p>
+            <strong style={{ display: 'block', fontSize: mobile ? 22 : 28, letterSpacing: '.015em' }}>{copy.title}</strong>
+            <p style={{ margin: '6px 0 0', fontSize: mobile ? 13 : 14, lineHeight: 1.55, color: '#9d818a' }}>{copy.subtitle}</p>
           </div>
           <button
             type="button"
@@ -254,7 +254,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         </header>
 
         {!apiEnabled && (
-          <div style={{ marginTop: 13, padding: '8px 11px', borderRadius: 13, background: 'rgba(233,243,249,.78)', color: '#7891a1', fontSize: 9.5, lineHeight: 1.45 }}>
+          <div style={{ marginTop: 13, padding: '8px 11px', borderRadius: 13, background: 'rgba(233,243,249,.78)', color: '#7891a1', fontSize: mobile ? 11.5 : 12.5, lineHeight: 1.5 }}>
             {copy.preview}
           </div>
         )}
@@ -266,24 +266,24 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
 
         {viewer ? (
           <section style={{ marginTop: 15, padding: mobile ? 12 : 14, borderRadius: 18, background: 'rgba(251,241,245,.64)', border: '1px solid rgba(209,156,176,.14)' }}>
-            <div style={{ marginBottom: 8, fontSize: 10, fontWeight: 700, color: '#91717d' }}>{copy.write} · {viewer.displayName}</div>
+            <div style={{ marginBottom: 8, fontSize: mobile ? 12 : 13.5, fontWeight: 700, color: '#91717d' }}>{copy.write} · {viewer.displayName}</div>
             <textarea
               value={draft}
               maxLength={280}
               onChange={(event) => setDraft(event.currentTarget.value)}
               placeholder={copy.placeholder}
-              style={{ width: '100%', minHeight: mobile ? 92 : 108, resize: 'vertical', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 15, padding: '11px 12px', outline: 'none', background: 'rgba(255,253,253,.88)', color: '#715a63', font: '12px/1.65 inherit' }}
+              style={{ width: '100%', minHeight: mobile ? 92 : 108, resize: 'vertical', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 15, padding: '11px 12px', outline: 'none', background: 'rgba(255,253,253,.88)', color: '#715a63', font: `${mobile ? 14 : 15}px/1.65 inherit` }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginTop: 8 }}>
-              <span style={{ fontSize: 9, color: '#b0969f' }}>{draft.length}/280</span>
-              <button type="button" disabled={!draft.trim()} onClick={() => void publish()} style={{ minHeight: 33, border: '1px solid rgba(203,130,158,.28)', borderRadius: 999, padding: '0 15px', background: draft.trim() ? '#f7e6ed' : '#f5f1f2', color: draft.trim() ? '#8f6072' : '#b7a7ad', cursor: draft.trim() ? 'pointer' : 'default', fontSize: 10 }}>
+              <span style={{ fontSize: mobile ? 10.5 : 11.5, color: '#b0969f' }}>{draft.length}/280</span>
+              <button type="button" disabled={!draft.trim()} onClick={() => void publish()} style={{ minHeight: 33, border: '1px solid rgba(203,130,158,.28)', borderRadius: 999, padding: '0 15px', background: draft.trim() ? '#f7e6ed' : '#f5f1f2', color: draft.trim() ? '#8f6072' : '#b7a7ad', cursor: draft.trim() ? 'pointer' : 'default', fontSize: mobile ? 12 : 13 }}>
                 {copy.publish}
               </button>
             </div>
           </section>
         ) : (
           <section style={{ marginTop: 15, padding: '13px 14px', borderRadius: 18, background: 'rgba(251,241,245,.62)', border: '1px solid rgba(209,156,176,.14)' }}>
-            <p style={{ margin: 0, fontSize: 10.5, lineHeight: 1.6, color: '#967884' }}>{copy.loginLead}</p>
+            <p style={{ margin: 0, fontSize: mobile ? 12.5 : 13.5, lineHeight: 1.65, color: '#967884' }}>{copy.loginLead}</p>
             <div style={{ display: 'flex', gap: 7, marginTop: 10 }}>
               <button type="button" onClick={() => askSignin('login')} style={pill(true)}>{copy.login}</button>
               <button type="button" onClick={() => askSignin('register')} style={pill(false)}>{copy.register}</button>
@@ -292,15 +292,15 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         )}
 
         {status && (
-          <div role="status" style={{ marginTop: 10, padding: '8px 10px', borderRadius: 12, background: 'rgba(235,244,249,.72)', color: '#768e9d', fontSize: 9.5 }}>
+          <div role="status" style={{ marginTop: 10, padding: '8px 10px', borderRadius: 12, background: 'rgba(235,244,249,.72)', color: '#768e9d', fontSize: mobile ? 11.5 : 12.5 }}>
             {status}
           </div>
         )}
 
         {loading ? (
-          <p style={{ margin: '20px 0 4px', textAlign: 'center', color: '#ae929c', fontSize: 10 }}>{copy.loading}</p>
+          <p style={{ margin: '20px 0 4px', textAlign: 'center', color: '#ae929c', fontSize: mobile ? 11.5 : 12.5 }}>{copy.loading}</p>
         ) : notes.length === 0 ? (
-          <p style={{ margin: '20px 0 4px', padding: '20px 12px', borderRadius: 16, background: 'rgba(249,241,244,.62)', color: '#ad919b', fontSize: 11, textAlign: 'center' }}>{copy.empty}</p>
+          <p style={{ margin: '20px 0 4px', padding: '20px 12px', borderRadius: 16, background: 'rgba(249,241,244,.62)', color: '#ad919b', fontSize: mobile ? 12.5 : 13.5, textAlign: 'center' }}>{copy.empty}</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))', gap: mobile ? 10 : 13, marginTop: 20, padding: mobile ? '1px 2px 8px' : '3px 4px 10px' }}>
             {notes.map((note, index) => (
@@ -325,31 +325,31 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
                       value={editingText}
                       maxLength={280}
                       onChange={(event) => setEditingText(event.currentTarget.value)}
-                      style={{ flex: 1, width: '100%', minHeight: 86, resize: 'none', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 9, padding: 8, background: 'rgba(255,255,255,.68)', color: '#715a63', font: '11px/1.55 inherit', outline: 'none' }}
+                      style={{ flex: 1, width: '100%', minHeight: 86, resize: 'none', boxSizing: 'border-box', border: '1px solid rgba(205,148,168,.2)', borderRadius: 9, padding: 8, background: 'rgba(255,255,255,.68)', color: '#715a63', font: `${mobile ? 13.5 : 14.5}px/1.6 inherit`, outline: 'none' }}
                     />
                     <div style={{ display: 'flex', gap: 5, marginTop: 7 }}>
-                      <button type="button" onClick={() => void saveEdit()} style={{ ...pill(true), minHeight: 27, padding: '0 9px', fontSize: 9 }}>{copy.save}</button>
-                      <button type="button" onClick={() => setEditingId(null)} style={{ ...pill(false), minHeight: 27, padding: '0 9px', fontSize: 9 }}>{copy.cancel}</button>
+                      <button type="button" onClick={() => void saveEdit()} style={{ ...pill(true), minHeight: 27, padding: '0 9px', fontSize: 11.5 }}>{copy.save}</button>
+                      <button type="button" onClick={() => setEditingId(null)} style={{ ...pill(false), minHeight: 27, padding: '0 9px', fontSize: 11.5 }}>{copy.cancel}</button>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: mobile ? 10.5 : 11.5, lineHeight: 1.62 }}>{note.text}</p>
+                    <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: mobile ? 13.5 : 15, lineHeight: 1.68 }}>{note.text}</p>
                     <div style={{ marginTop: 10, paddingTop: 7, borderTop: '1px solid rgba(182,137,153,.12)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, alignItems: 'center' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#9a7a86', fontSize: 9 }}>♡ {note.authorName}</span>
-                        <time dateTime={note.createdAt} style={{ color: '#b098a0', fontSize: 8 }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#9a7a86', fontSize: mobile ? 10.5 : 11.5 }}>♡ {note.authorName}</span>
+                        <time dateTime={note.createdAt} style={{ color: '#b098a0', fontSize: mobile ? 9.5 : 10.5 }}>
                           {new Date(note.createdAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}
                         </time>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'center', marginTop: 7 }}>
-                        <button type="button" onClick={() => void like(note)} aria-label={copy.heart} style={{ border: 0, padding: 0, background: 'transparent', color: note.likedByMe ? '#c47491' : '#a98c96', cursor: 'pointer', fontSize: 10 }}>
+                        <button type="button" onClick={() => void like(note)} aria-label={copy.heart} style={{ border: 0, padding: 0, background: 'transparent', color: note.likedByMe ? '#c47491' : '#a98c96', cursor: 'pointer', fontSize: mobile ? 11.5 : 12.5 }}>
                           {note.likedByMe ? '♥' : '♡'} {note.likesCount}
                         </button>
                         {note.isMine && (
                           <span style={{ display: 'flex', gap: 6 }}>
-                            <button type="button" onClick={() => beginEdit(note)} style={{ border: 0, padding: 0, background: 'transparent', color: '#9b7b87', cursor: 'pointer', fontSize: 8.5 }}>{copy.edit}</button>
-                            <button type="button" onClick={() => void remove(note)} style={{ border: 0, padding: 0, background: 'transparent', color: '#b78696', cursor: 'pointer', fontSize: 8.5 }}>{copy.remove}</button>
+                            <button type="button" onClick={() => beginEdit(note)} style={{ border: 0, padding: 0, background: 'transparent', color: '#9b7b87', cursor: 'pointer', fontSize: mobile ? 10 : 11 }}>{copy.edit}</button>
+                            <button type="button" onClick={() => void remove(note)} style={{ border: 0, padding: 0, background: 'transparent', color: '#b78696', cursor: 'pointer', fontSize: mobile ? 10 : 11 }}>{copy.remove}</button>
                           </span>
                         )}
                       </div>
