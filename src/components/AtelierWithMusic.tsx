@@ -498,6 +498,19 @@ export default function AtelierWithMusic(props: Props) {
     window.setTimeout(() => setCopyStatus('复制双端参数'), 1300)
   }
 
+  const overlayViewportStyle: CSSProperties = mobile
+    ? {
+        position: 'fixed',
+        left: `${mobileViewport.offsetLeft}px`,
+        top: `${mobileViewport.offsetTop}px`,
+        width: `${mobileViewport.width}px`,
+        height: `${mobileViewport.height}px`,
+      }
+    : {
+        position: 'fixed',
+        inset: 0,
+      }
+
   const panelStyle: CSSProperties = {
     position: 'relative',
     width: mobile ? MOBILE_STAGE_WIDTH : 'min(1120px, calc(100vw - 34px))',
@@ -539,12 +552,7 @@ export default function AtelierWithMusic(props: Props) {
           className="pawcream-music-overlay"
           onClick={(event) => event.stopPropagation()}
           style={{
-            position: 'fixed',
-            inset: mobile ? undefined : 0,
-            left: mobile ? `${mobileViewport.offsetLeft}px` : undefined,
-            top: mobile ? `${mobileViewport.offsetTop}px` : undefined,
-            width: mobile ? `${mobileViewport.width}px` : undefined,
-            height: mobile ? `${mobileViewport.height}px` : undefined,
+            ...overlayViewportStyle,
             zIndex: 90,
             display: 'grid',
             placeItems: 'center',
