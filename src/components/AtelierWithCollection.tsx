@@ -619,20 +619,21 @@ export default function AtelierWithCollection(props: Props) {
             }
             @media (max-width: 700px) {
               .pawcream-lookbook-close {
-                top: 7px;
-                right: 7px;
-                width: 36px;
-                height: 36px;
-                font-size: 22px;
+                top: 4px;
+                right: -34px;
+                width: 32px;
+                height: 32px;
+                font-size: 20px;
               }
               .pawcream-lookbook-arrow {
-                width: 36px;
-                height: 36px;
-                background: rgba(255,255,255,.82);
+                width: 32px;
+                height: 32px;
+                background: rgba(255,255,255,.9);
+                font-size: 21px;
               }
-              .pawcream-lookbook-arrow.is-prev { left: 7px; }
-              .pawcream-lookbook-arrow.is-next { right: 7px; }
-              .pawcream-lookbook-counter { bottom: 8px; font-size: 11px; }
+              .pawcream-lookbook-arrow.is-prev { left: -34px; }
+              .pawcream-lookbook-arrow.is-next { right: -34px; }
+              .pawcream-lookbook-counter { bottom: -22px; font-size: 11px; }
             }
           `}</style>
 
@@ -647,7 +648,7 @@ export default function AtelierWithCollection(props: Props) {
               width: collectionTuneMode && !mobile
                 ? 'min(520px, calc(100vw - 610px), calc((100svh - 44px) * .666667))'
                 : mobile
-                  ? 'min(460px, calc(100vw - 20px), calc((100svh - 20px) * .666667))'
+                  ? 'min(430px, calc(100vw - 76px), calc((100svh - 56px) * .666667))'
                   : 'min(560px, calc(100vw - 140px), calc((100svh - 44px) * .666667))',
               marginRight: collectionTuneMode && !mobile ? 500 : 0,
             }}
