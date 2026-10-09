@@ -5,7 +5,7 @@ import { ASSETS } from './sceneConfig'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
-type Scene = 'home' | 'transition' | 'atelier'
+type Scene = 'home' | 'covering' | 'revealing' | 'atelier'
 
 function getInitialScene(): Scene {
   if (typeof window === 'undefined') return 'home'
@@ -81,7 +81,7 @@ export default function App() {
   }
 
   const enterAtelier = () => {
-    setScene('transition')
+    setScene('covering')
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     url.searchParams.set('scene', 'atelier')
@@ -89,9 +89,15 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (scene !== 'transition') return
-    const timer = window.setTimeout(() => setScene('atelier'), 2000)
-    return () => window.clearTimeout(timer)
+    if (scene === 'covering') {
+      const timer = window.setTimeout(() => setScene('revealing'), 420)
+      return () => window.clearTimeout(timer)
+    }
+
+    if (scene === 'revealing') {
+      const timer = window.setTimeout(() => setScene('atelier'), 320)
+      return () => window.clearTimeout(timer)
+    }
   }, [scene])
 
   const returnHome = () => {
@@ -108,7 +114,7 @@ export default function App() {
 
   return (
     <div className={`pawcream-app pawcream-app--${scene}`}>
-      {scene === 'home' && (
+      {(scene === 'home' || scene === 'covering') && (
         <div className="pawcream-scene-layer pawcream-scene-layer--home">
           <HomeScene
             key={`home-${deviceProfile}`}
@@ -121,11 +127,14 @@ export default function App() {
         </div>
       )}
 
-      {scene === 'transition' && (
-        <div className="pawcream-pink-transition" aria-hidden="true" />
+      {(scene === 'covering' || scene === 'revealing') && (
+        <div
+          className={`pawcream-pink-transition pawcream-pink-transition--${scene}`}
+          aria-hidden="true"
+        />
       )}
 
-      {scene !== 'home' && (
+      {(scene === 'revealing' || scene === 'atelier') && (
         <div className="pawcream-scene-layer pawcream-scene-layer--atelier">
           <AtelierPlaceholder
             onBack={returnHome}
