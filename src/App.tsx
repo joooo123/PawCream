@@ -90,7 +90,7 @@ export default function App() {
 
   useEffect(() => {
     if (scene !== 'transition') return
-    const timer = window.setTimeout(() => setScene('atelier'), 1260)
+    const timer = window.setTimeout(() => setScene('atelier'), 2000)
     return () => window.clearTimeout(timer)
   }, [scene])
 
@@ -108,7 +108,7 @@ export default function App() {
 
   return (
     <div className={`pawcream-app pawcream-app--${scene}`}>
-      {scene !== 'atelier' && (
+      {scene === 'home' && (
         <div className="pawcream-scene-layer pawcream-scene-layer--home">
           <HomeScene
             key={`home-${deviceProfile}`}
@@ -122,7 +122,7 @@ export default function App() {
       )}
 
       {scene === 'transition' && (
-        <div className="pawcream-entry-light" aria-hidden="true" />
+        <div className="pawcream-pink-transition" aria-hidden="true" />
       )}
 
       {scene !== 'home' && (
