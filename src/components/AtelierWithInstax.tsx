@@ -932,19 +932,31 @@ export default function AtelierWithInstax(props: Props) {
               style={{
                 ...modalButtonStyle,
                 position: 'absolute',
-                top: 12,
-                right: 12,
-                width: 34,
-                height: 34,
+                top: mobile ? 12 : 14,
+                right: mobile ? 12 : 14,
+                width: mobile ? 40 : 42,
+                height: mobile ? 40 : 42,
                 borderRadius: '50%',
-                display: 'grid',
-                placeItems: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 padding: 0,
-                fontSize: 31,
+                lineHeight: 1,
+                fontSize: mobile ? 26 : 28,
+                fontWeight: 300,
                 zIndex: 10,
               }}
             >
-              ×
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'block',
+                  lineHeight: 1,
+                  transform: 'translateY(-1px)',
+                }}
+              >
+                ×
+              </span>
             </button>
 
             {step === 'select' && (
