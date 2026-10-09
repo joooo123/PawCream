@@ -3,6 +3,7 @@ const BASE_URL = import.meta.env.BASE_URL
 const INSTAX_FRAME_NAMES = [
   '灰白正方形.png',
   '粉白正方形.png',
+  '粉白横.png',
   '粉蓝正方形.png',
   '紫咖正方形.png',
   '绿咖正方形.png',
