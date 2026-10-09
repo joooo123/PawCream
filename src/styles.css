@@ -330,7 +330,7 @@ select {
   height: 14vmax;
   border-radius: 50%;
   pointer-events: none;
-  background: #f8e8ee;
+  background: #FFF6F7;
   transform: translate(-50%, -50%) scale(.02);
   transform-origin: 50% 50%;
   will-change: transform, opacity;
