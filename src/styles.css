@@ -323,40 +323,57 @@ select {
 
 .pawcream-pink-transition {
   position: fixed;
-  inset: 0;
+  left: var(--pawcream-transition-x, 50vw);
+  top: var(--pawcream-transition-y, 50vh);
   z-index: 2;
+  width: 14vmax;
+  height: 14vmax;
+  border-radius: 50%;
   pointer-events: none;
   background: #f8e8ee;
-  will-change: clip-path, opacity;
+  transform: translate(-50%, -50%) scale(.02);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
 }
 
 .pawcream-pink-transition--covering {
   opacity: 1;
-  clip-path: circle(0vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
-  animation: pawcream-pink-cover 420ms cubic-bezier(.18,.72,.2,1) both;
+  animation: pawcream-pink-cover 560ms cubic-bezier(.18,.72,.2,1) both;
 }
 
 .pawcream-pink-transition--revealing {
   opacity: 1;
-  clip-path: circle(160vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  transform: translate(-50%, -50%) scale(24);
   animation: pawcream-pink-reveal 320ms ease-out both;
 }
 
 @keyframes pawcream-pink-cover {
   0% {
-    clip-path: circle(0vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+    transform: translate(-50%, -50%) scale(.02);
   }
-  72% {
-    clip-path: circle(160vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  15% {
+    transform: translate(-50%, -50%) scale(.5);
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(5.2);
+  }
+  78% {
+    transform: translate(-50%, -50%) scale(16);
   }
   100% {
-    clip-path: circle(160vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+    transform: translate(-50%, -50%) scale(24);
   }
 }
 
 @keyframes pawcream-pink-reveal {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    transform: translate(-50%, -50%) scale(24);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(24);
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -366,7 +383,7 @@ select {
   }
 
   .pawcream-pink-transition--covering {
-    animation-duration: 160ms;
+    animation-duration: 180ms;
   }
 
   .pawcream-pink-transition--revealing {
