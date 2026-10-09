@@ -655,7 +655,6 @@ export default function AtelierWithInstax(props: Props) {
         style={{
           position: 'relative',
           width: mobile ? 'min(310px, 78vw)' : 'min(360px, 48vw)',
-          maxHeight: mobile ? '54svh' : '56svh',
           aspectRatio: `${frameMeta.width} / ${frameMeta.height}`,
           margin: '0 auto',
           filter: 'drop-shadow(0 16px 28px rgba(96,70,81,.16))',
