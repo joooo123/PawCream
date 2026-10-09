@@ -3,12 +3,13 @@ const BASE_URL = import.meta.env.BASE_URL
 const INSTAX_FRAME_NAMES = [
   '灰白正方形.png',
   '粉白正方形.png',
-  '粉蓝1.png',
+  '粉蓝正方形.png',
   '紫咖正方形.png',
   '绿咖正方形.png',
   '蓝咖正方形.png',
   '蓝白正方形.png',
   '黄咖正方形.png',
+  '黄咖正方形两格.png',
 ] as const
 
 const INSTAX_FRAME_URLS = INSTAX_FRAME_NAMES.flatMap((name) => {
