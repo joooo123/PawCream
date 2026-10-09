@@ -1,15 +1,23 @@
 const BASE_URL = import.meta.env.BASE_URL
 
-const INSTAX_FRAME_URLS = [
-  `${BASE_URL}assets/instax/instax-frame-01.png?v=04c9827dc2811bad94346fc170ea03f9ac745df4`,
-  `${BASE_URL}assets/instax/instax-frame-02.png?v=1438a056912d110eddf2e62423b1f1dd015f5b49`,
-  `${BASE_URL}assets/instax/instax-frame-03.png?v=aa70f581698019f28a25f541aab0b1fc729b84ff`,
-  `${BASE_URL}assets/instax/instax-frame-04.png?v=d9baa7ee96d0dd00662397eb90c70f793ab753f6`,
-  `${BASE_URL}assets/instax/instax-frame-05.png?v=bf8dbd4f5755c12782c35f4eeb1acf74cf061299`,
-  `${BASE_URL}assets/instax/instax-frame-06.png?v=010ea0ec9fbef2d8af3773094df4d66370087871`,
-  `${BASE_URL}assets/instax/instax-frame-07.png?v=5be27d6331c46d0c8f0dfc946f5921b809bdf8fd`,
-  `${BASE_URL}assets/instax/instax-frame-08.png?v=980d169312a17db8b6ba637c63e8ee052ffedaa9`,
+const INSTAX_FRAME_NAMES = [
+  '灰白正方形.png',
+  '粉白正方形.png',
+  '粉蓝1.png',
+  '紫咖正方形.png',
+  '绿咖正方形.png',
+  '蓝咖正方形.png',
+  '蓝白正方形.png',
+  '黄咖正方形.png',
 ] as const
+
+const INSTAX_FRAME_URLS = INSTAX_FRAME_NAMES.flatMap((name) => {
+  const encoded = encodeURIComponent(name)
+  return [
+    `${BASE_URL}assets/instax/${encoded}`,
+    `${BASE_URL}assets/instax-transparent/${encoded}`,
+  ]
+})
 
 let preloadStarted = false
 const retainedImages: HTMLImageElement[] = []
