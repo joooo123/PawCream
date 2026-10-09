@@ -96,7 +96,7 @@ function webpReferences() {
 export default defineConfig(({ command, mode }) => ({
   plugins: [
     atelierTuningDefaults(),
-    command === 'build' && mode.endsWith('webp') ? webpReferences() : null,
+    command === 'build' && (mode === 'webp' || mode === 'server-webp') ? webpReferences() : null,
     react(),
   ],
   // GitHub Pages uses `webp` mode at `/PawCream/`; server builds use root `/`.
