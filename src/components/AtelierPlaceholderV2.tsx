@@ -248,7 +248,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const copy = language === 'zh'
     ? {
         notePrompt: '留下你想对 PawCream 说的话吧',
-        messageHint: '拖动这封信',
         lightHint: '打开工具栏',
         toolbarHome: '返回 Home', toolbarLogin: '登入', toolbarClose: '收起',
         boardTitle: 'PawCream 留言板', boardSubtitle: '写下一句话，留在这间小小的工作室里。',
@@ -258,7 +257,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       }
     : {
         notePrompt: 'Leave a little note for PawCream',
-        messageHint: 'Drag this letter', lightHint: 'Open toolbar',
+        lightHint: 'Open toolbar',
         toolbarHome: 'Home', toolbarLogin: 'Sign in', toolbarClose: 'Hide',
         boardTitle: 'PawCream Message Board', boardSubtitle: 'Leave a small thought in this tiny atelier.',
         boardPlaceholder: 'What would you like to tell PawCream?', boardSubmit: 'Leave note', boardEmpty: 'No notes here yet.',
@@ -510,11 +509,9 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     const movingMessage = !tuneMode && key === 'message' && messageMoveMode
     const hintText = tuneMode
       ? null
-      : key === 'message'
-        ? copy.messageHint
-        : key === 'light'
-          ? copy.lightHint
-          : null
+      : key === 'light'
+        ? copy.lightHint
+        : null
 
     return (
       <div
