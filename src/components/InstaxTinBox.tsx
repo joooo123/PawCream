@@ -32,11 +32,30 @@ function clampIndex(index: number, length: number) {
   return Math.min(length - 1, Math.max(0, index))
 }
 
-function storeRotation(frameName: string) {
-  const keepLandscape = frameName.includes('横')
-    || frameName.includes('两格')
-    || frameName.includes('两张')
-  return keepLandscape ? 0 : 90
+type StorePreset = {
+  rotation: 0 | 90
+  width: string
+  height: string
+  scale: number
+}
+
+function storePreset(frameName: string): StorePreset {
+  if (frameName.includes('横')) {
+    return { rotation: 0, width: '86%', height: '82%', scale: 1.02 }
+  }
+  if (frameName.includes('两格') || frameName.includes('两张')) {
+    return { rotation: 0, width: '88%', height: '84%', scale: 1.02 }
+  }
+  if (frameName.includes('四格')) {
+    return { rotation: 90, width: '74%', height: '94%', scale: 1.06 }
+  }
+  if (frameName.includes('竖2')) {
+    return { rotation: 90, width: '72%', height: '94%', scale: 1.08 }
+  }
+  if (frameName.includes('竖1')) {
+    return { rotation: 90, width: '76%', height: '92%', scale: 1.08 }
+  }
+  return { rotation: 90, width: '80%', height: '90%', scale: 1.08 }
 }
 
 export default function InstaxTinBox({
@@ -258,41 +277,21 @@ export default function InstaxTinBox({
           0% { opacity: 0; transform: translateY(24px) scale(.94); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes pawcream-photo-into-box-flat {
+        @keyframes pawcream-photo-stack-drop {
           0% {
-            opacity: .2;
-            transform: translate(-50%,-120%) rotate(0deg) scale(.96);
+            opacity: .18;
+            transform: translate(-50%,-118%);
           }
-          36% { opacity: 1; }
-          84% {
-            transform: translate(-50%,2%) rotate(0deg) scale(.92);
+          34% { opacity: 1; }
+          82% {
+            transform: translate(-50%,3%);
           }
-          94% {
-            transform: translate(-50%,-2%) rotate(0deg) scale(.96);
+          92% {
+            transform: translate(-50%,-2%);
           }
           100% {
             opacity: 1;
-            transform: translate(-50%,0%) rotate(0deg) scale(.94);
-          }
-        }
-        @keyframes pawcream-photo-into-box-rotated {
-          0% {
-            opacity: .2;
-            transform: translate(-50%,-120%) rotate(0deg) scale(.96);
-          }
-          38% {
-            opacity: 1;
-            transform: translate(-50%,-76%) rotate(90deg) scale(.94);
-          }
-          84% {
-            transform: translate(-50%,2%) rotate(90deg) scale(.92);
-          }
-          94% {
-            transform: translate(-50%,-2%) rotate(90deg) scale(.96);
-          }
-          100% {
-            opacity: 1;
-            transform: translate(-50%,0%) rotate(90deg) scale(.94);
+            transform: translate(-50%,0%);
           }
         }
       `}</style>
@@ -408,36 +407,46 @@ export default function InstaxTinBox({
         >
           {stacked.map((photo, index) => {
             const isNewest = photo.id === newestPhotoId
-            const rotation = storeRotation(photo.frameName)
-            const x = [-7, 6, -3, 4][index % 4]
+            const preset = storePreset(photo.frameName)
+            const x = [-8, 7, -4, 4][index % 4]
             const y = index * 3
 
             return (
-              <img
+              <div
                 key={photo.id}
-                src={photo.url}
-                alt=""
-                draggable={false}
                 style={{
                   position: 'absolute',
                   left: '50%',
-                  top: '18%',
-                  width: rotation === 90 ? '58%' : '62%',
-                  height: rotation === 90 ? '74%' : '70%',
-                  objectFit: 'contain',
-                  transformOrigin: '50% 50%',
-                  transform: isNewest
-                    ? undefined
-                    : `translate(-50%,${y}%) translateX(${x}px) rotate(${rotation}deg) scale(.94)`,
+                  top: '50%',
+                  width: '100%',
+                  height: '100%',
+                  transform: `translate(-50%,${y}%) translateX(${x}px)`,
                   animation: isNewest
-                    ? `${rotation === 90 ? 'pawcream-photo-into-box-rotated' : 'pawcream-photo-into-box-flat'} 980ms cubic-bezier(.16,1,.3,1) 120ms both`
+                    ? 'pawcream-photo-stack-drop 980ms cubic-bezier(.16,1,.3,1) 120ms both'
                     : undefined,
                   zIndex: 8 + index,
-                  filter: 'drop-shadow(0 5px 8px rgba(55,49,49,.16))',
                   pointerEvents: 'none',
-                  userSelect: 'none',
                 }}
-              />
+              >
+                <img
+                  src={photo.url}
+                  alt=""
+                  draggable={false}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: preset.width,
+                    height: preset.height,
+                    objectFit: 'contain',
+                    transform: `translate(-50%,-50%) rotate(${preset.rotation}deg) scale(${preset.scale})`,
+                    transformOrigin: '50% 50%',
+                    filter: 'drop-shadow(0 5px 8px rgba(55,49,49,.16))',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  }}
+                />
+              </div>
             )
           })}
         </div>
