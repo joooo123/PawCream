@@ -232,6 +232,7 @@ export default function HomeScene({
   )
 
   const [sceneState, setSceneState] = useState<SceneState>('idle')
+  const [houseHovered, setHouseHovered] = useState(false)
   const [renderedHomeRect, setRenderedHomeRect] = useState<RenderedHomeRect | null>(null)
   const [mobileClipRect, setMobileClipRect] = useState<DreamClipRect | null>(null)
   const [transitionStartedAt, setTransitionStartedAt] = useState<number | null>(null)
@@ -322,9 +323,13 @@ export default function HomeScene({
 
   const beginEnter = () => {
     if (entering) return
+    setHouseHovered(false)
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
-    window.setTimeout(onEnter, MOTION.enterDurationMs)
+
+    // Start the Atelier crossfade while the Home heartbeat is still finishing.
+    // This keeps the transition continuous instead of Home disappearing first.
+    window.setTimeout(onEnter, Math.round(MOTION.enterDurationMs * 0.56))
   }
 
   const updateTuneHandleFromPointer = (
@@ -444,6 +449,14 @@ export default function HomeScene({
         style={hotspotStyle}
         type="button"
         aria-label="Enter PawCream atelier"
+        onMouseEnter={() => {
+          if (!mobile && !tuneMode && !entering) setHouseHovered(true)
+        }}
+        onMouseLeave={() => setHouseHovered(false)}
+        onFocus={() => {
+          if (!mobile && !tuneMode && !entering) setHouseHovered(true)
+        }}
+        onBlur={() => setHouseHovered(false)}
         onClick={beginEnter}
       >
         <span className="sr-only">Enter PawCream atelier</span>
@@ -452,7 +465,7 @@ export default function HomeScene({
   )
 
   return (
-    <main className={`home-scene home-scene--${sceneState}${mobile ? ' home-scene--mobile' : ''}${mobilePreview ? ' home-scene--mobile-preview' : ''}${tuneMode ? ' home-scene--tuning' : ''}`}>
+    <main className={`home-scene home-scene--${sceneState}${houseHovered ? ' home-scene--house-hovered' : ''}${mobile ? ' home-scene--mobile' : ''}${mobilePreview ? ' home-scene--mobile-preview' : ''}${tuneMode ? ' home-scene--tuning' : ''}`}>
       <P5DreamLayer
         awake={awake}
         entering={entering}
