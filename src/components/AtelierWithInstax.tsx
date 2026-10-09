@@ -76,7 +76,7 @@ const COLOR_OPTIONS: Array<{
   swatch: string
   slogan: string
 }> = [
-  { key: 'gray', label: '灰白', swatch: '#e7e7e7', slogan: '云朵路过这里，顺手落下一小片安静。' },
+  { key: 'gray', label: '灰白', swatch: '#e7e7e7', slogan: '把今天安安静静地，夹进这一页。' },
   { key: 'pink-white', label: '粉白', swatch: '#f5dce4', slogan: '路过这里，偷偷留下一颗草莓糖。' },
   { key: 'pink-blue', label: '粉蓝', swatch: 'linear-gradient(135deg,#f4d6df 0 50%,#dce7f3 50%)', slogan: '把草莓汽水和一小块晴天，藏进这一格。' },
   { key: 'purple-coffee', label: '紫咖', swatch: '#e1dff8', slogan: '夜晚打了个盹，落下一颗葡萄味的梦。' },
