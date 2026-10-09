@@ -1,7 +1,7 @@
 /* Final PawCream typography overrides. Loaded before app CSS but uses higher specificity. */
 @font-face {
   font-family: 'PawCream EN Ready';
-  src: url('/PawCream/assets/font/pawcream-en.woff2') format('woff2');
+  src: url('./assets/font/pawcream-en.woff2') format('woff2');
   font-style: normal;
   font-weight: 400;
   font-display: block;
@@ -9,7 +9,7 @@
 
 @font-face {
   font-family: 'PawCream CN Ready';
-  src: url('/PawCream/assets/font/pawcream-cn.woff2') format('woff2');
+  src: url('./assets/font/pawcream-cn.woff2') format('woff2');
   font-style: normal;
   font-weight: 400;
   font-display: block;
