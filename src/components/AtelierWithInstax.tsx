@@ -90,13 +90,33 @@ const SIZE_OPTIONS: Array<{
   label: string
   hint: string
 }> = [
-  { key: 'square', label: '方形', hint: '1:1' },
+  { key: 'square', label: '方形', hint: '1 pic' },
   { key: 'double', label: '双格', hint: '2 pics' },
-  { key: 'wide', label: '横向', hint: 'wide' },
-  { key: 'portrait-1', label: '竖向 1', hint: 'tall' },
-  { key: 'portrait-2', label: '竖向 2', hint: 'taller' },
+  { key: 'wide', label: '横向', hint: '1 pic' },
+  { key: 'portrait-1', label: '竖向 1', hint: '1 pic' },
+  { key: 'portrait-2', label: '竖向 2', hint: '1 pic' },
   { key: 'four', label: '四格', hint: '4 pics' },
 ]
+
+const SLOT_COUNT: Record<SizeKey, number> = {
+  square: 1,
+  double: 2,
+  wide: 1,
+  'portrait-1': 1,
+  'portrait-2': 1,
+  four: 4,
+}
+
+const FROSTED_TINT: Record<ColorKey, string> = {
+  gray: 'rgba(236,236,236,.54)',
+  'pink-white': 'rgba(248,220,230,.50)',
+  'pink-blue': 'linear-gradient(135deg, rgba(248,218,228,.52), rgba(220,233,247,.52))',
+  'purple-coffee': 'rgba(225,223,248,.54)',
+  'green-coffee': 'rgba(234,245,216,.56)',
+  'blue-coffee': 'rgba(220,231,243,.56)',
+  'blue-white': 'rgba(233,240,246,.56)',
+  'yellow-coffee': 'rgba(247,235,190,.54)',
+}
 
 const FRAME_MAP: Record<ColorKey, Partial<Record<SizeKey, string>>> = {
   gray: {
@@ -187,7 +207,7 @@ function overlapRatio(aLeft: number, aRight: number, bLeft: number, bRight: numb
   return overlap / minWidth
 }
 
-async function detectTransparentSlots(src: string): Promise<FrameMeta> {
+async function detectTransparentSlots(src: string, expectedCount: number): Promise<FrameMeta> {
   const image = await loadImage(src)
   const width = image.naturalWidth
   const height = image.naturalHeight
@@ -263,20 +283,30 @@ async function detectTransparentSlots(src: string): Promise<FrameMeta> {
   }
 
   const minArea = scanWidth * scanHeight * .004
-  const slots = components
+  const candidates = components
     .filter((component) => {
       const area = (component.right - component.left) * (component.bottom - component.top)
       return area >= minArea && component.rows >= Math.max(8, scanHeight * .03)
     })
     .map((component) => ({
+      area: (component.right - component.left) * (component.bottom - component.top),
       left: component.left / scanWidth * 100,
       top: component.top / scanHeight * 100,
       width: (component.right - component.left) / scanWidth * 100,
       height: (component.bottom - component.top) / scanHeight * 100,
     }))
-    .sort((a, b) => Math.abs(a.top - b.top) > 2 ? a.top - b.top : a.left - b.left)
 
-  if (!slots.length) throw new Error('没有识别到相纸照片区域')
+  if (candidates.length < expectedCount) {
+    throw new Error(`相纸需要 ${expectedCount} 个照片区域，但只识别到 ${candidates.length} 个`)
+  }
+
+  // Some decorative PNGs contain additional transparent patches. The layout
+  // decides the real photo count, so keep only the largest expected regions.
+  const slots = candidates
+    .sort((a, b) => b.area - a.area)
+    .slice(0, expectedCount)
+    .sort((a, b) => Math.abs(a.top - b.top) > 2 ? a.top - b.top : a.left - b.left)
+    .map(({ area: _area, ...slot }) => slot)
 
   return { width, height, slots }
 }
@@ -424,7 +454,7 @@ export default function AtelierWithInstax(props: Props) {
     setFrameMeta(null)
     setFrameError('')
 
-    void detectTransparentSlots(transparentFrameSrc)
+    void detectTransparentSlots(transparentFrameSrc, SLOT_COUNT[sizeKey])
       .then((meta) => {
         if (!cancelled) setFrameMeta(meta)
       })
@@ -435,7 +465,7 @@ export default function AtelierWithInstax(props: Props) {
     return () => {
       cancelled = true
     }
-  }, [frameName, transparentFrameSrc])
+  }, [frameName, transparentFrameSrc, sizeKey])
 
   useEffect(() => {
     if (tuneMode) return
@@ -765,9 +795,10 @@ export default function AtelierWithInstax(props: Props) {
             display: 'grid',
             placeItems: 'center',
             padding: mobile ? 10 : 24,
-            background: 'rgba(255,249,251,.58)',
-            backdropFilter: 'blur(9px)',
-            WebkitBackdropFilter: 'blur(9px)',
+            background: FROSTED_TINT[colorKey],
+            backdropFilter: 'blur(12px) saturate(108%)',
+            WebkitBackdropFilter: 'blur(12px) saturate(108%)',
+            transition: 'background 260ms ease',
           }}
         >
           <style>{`
