@@ -1,4 +1,5 @@
 import {
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
   useMemo,
@@ -321,14 +322,20 @@ export default function HomeScene({
       }))
     : []
 
-  const beginEnter = () => {
+  const beginEnter = (event: ReactMouseEvent<HTMLButtonElement>) => {
     if (entering) return
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const originX = event.clientX > 0 ? event.clientX : rect.left + rect.width / 2
+    const originY = event.clientY > 0 ? event.clientY : rect.top + rect.height / 2
+    document.documentElement.style.setProperty('--pawcream-transition-x', `${originX}px`)
+    document.documentElement.style.setProperty('--pawcream-transition-y', `${originY}px`)
+
     setHouseHovered(false)
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
 
-    // Keep Home and the P5 layer mounted long enough for the full heartbeat.
-    // Atelier starts only after the heartbeat transition has completed.
+    // Heartbeat always completes first. The pink wipe starts only afterwards.
     window.setTimeout(onEnter, MOTION.enterDurationMs)
   }
 
