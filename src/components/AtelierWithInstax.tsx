@@ -203,6 +203,7 @@ const FRAME_MAP: Record<ColorKey, Partial<Record<SizeKey, string>>> = {
   'pink-white': {
     square: '粉白正方形.png',
     double: '粉白正方形两张.png',
+    wide: '粉白横.png',
     'portrait-1': '粉白竖1.png',
     'portrait-2': '粉白竖2.png',
     four: '粉白四格.png',
