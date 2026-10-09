@@ -5,7 +5,9 @@ import { ASSETS } from './sceneConfig'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
-function getInitialScene(): 'home' | 'atelier' {
+type Scene = 'home' | 'transition' | 'atelier'
+
+function getInitialScene(): Scene {
   if (typeof window === 'undefined') return 'home'
   return new URLSearchParams(window.location.search).get('scene') === 'atelier'
     ? 'atelier'
@@ -30,7 +32,7 @@ function warmImage(src: string) {
 }
 
 export default function App() {
-  const [scene, setScene] = useState<'home' | 'atelier'>(() => getInitialScene())
+  const [scene, setScene] = useState<Scene>(() => getInitialScene())
   const tuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
     [],
@@ -79,19 +81,18 @@ export default function App() {
   }
 
   const enterAtelier = () => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.add('pawcream-entering-atelier')
-      window.setTimeout(() => {
-        document.documentElement.classList.remove('pawcream-entering-atelier')
-      }, 760)
-    }
-
-    setScene('atelier')
+    setScene('transition')
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     url.searchParams.set('scene', 'atelier')
     window.history.replaceState(null, '', url)
   }
+
+  useEffect(() => {
+    if (scene !== 'transition') return
+    const timer = window.setTimeout(() => setScene('atelier'), 960)
+    return () => window.clearTimeout(timer)
+  }, [scene])
 
   const returnHome = () => {
     setScene('home')
@@ -105,25 +106,31 @@ export default function App() {
   const mobile = deviceProfile === 'mobile'
   const mobilePreview = tuneMode && mobile && detectedDevice === 'desktop'
 
-  if (scene === 'atelier') {
-    return (
-      <AtelierPlaceholder
-        onBack={returnHome}
-        deviceProfile={deviceProfile}
-        onDeviceChange={switchDevice}
-        mobilePreview={mobilePreview}
-      />
-    )
-  }
-
   return (
-    <HomeScene
-      key={`home-${deviceProfile}`}
-      mobile={mobile}
-      mobilePreview={mobilePreview}
-      deviceProfile={deviceProfile}
-      onDeviceChange={switchDevice}
-      onEnter={enterAtelier}
-    />
+    <div className={`pawcream-app pawcream-app--${scene}`}>
+      {scene !== 'atelier' && (
+        <div className="pawcream-scene-layer pawcream-scene-layer--home">
+          <HomeScene
+            key={`home-${deviceProfile}`}
+            mobile={mobile}
+            mobilePreview={mobilePreview}
+            deviceProfile={deviceProfile}
+            onDeviceChange={switchDevice}
+            onEnter={enterAtelier}
+          />
+        </div>
+      )}
+
+      {scene !== 'home' && (
+        <div className="pawcream-scene-layer pawcream-scene-layer--atelier">
+          <AtelierPlaceholder
+            onBack={returnHome}
+            deviceProfile={deviceProfile}
+            onDeviceChange={switchDevice}
+            mobilePreview={mobilePreview}
+          />
+        </div>
+      )}
+    </div>
   )
 }
