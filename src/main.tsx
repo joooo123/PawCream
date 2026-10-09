@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { startPawCreamStartup } from './startupLoader'
 import './styles.css'
 import './atelierBackground.css'
 import './polka-overlays.css'
@@ -306,6 +307,8 @@ const syncAtelierLightline = () => {
   ensureLightlineLayer(section, profile)
   ensureLightlineTunePanel(section, profile)
 }
+
+void startPawCreamStartup()
 
 const root = document.getElementById('root')!
 const noteObserver = new MutationObserver(refreshNoteAsset)
