@@ -93,8 +93,11 @@ restart_web() {
 
   if [[ -n "$COMPOSE_FILE" ]]; then
     log "重新创建 web 容器以重新挂载新 dist：$COMPOSE_FILE"
-    docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate web
-    return
+    if docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate web; then
+      return 0
+    fi
+    printf '[ERROR] web 容器重新创建失败\n' >&2
+    return 1
   fi
 
   mapfile -t web_containers < <(
@@ -108,10 +111,12 @@ restart_web() {
   fi
 
   if (("${#web_containers[@]}" > 1)); then
-    die "发现多个 Compose web 容器，无法安全判断应该重启哪一个"
+    printf '[ERROR] 发现多个 Compose web 容器，无法安全判断应该重启哪一个\n' >&2
+    return 1
   fi
 
-  die "找不到 web 服务。请确认生产 Compose 文件位于 $APP_ROOT"
+  printf '[ERROR] 找不到 web 服务。请确认生产 Compose 文件位于 %s\n' "$APP_ROOT" >&2
+  return 1
 }
 
 health_check() {
@@ -147,7 +152,7 @@ manual_rollback() {
     mv "$APP_ROOT/dist.swap" "$APP_ROOT/dist.prev"
   fi
 
-  restart_web
+  restart_web || die "无法重启 web 容器"
 
   if health_check; then
     log "回滚成功：$HEALTH_URL 可正常访问"
