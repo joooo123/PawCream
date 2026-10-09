@@ -62,7 +62,7 @@ export const MAX_STAR_TRACKS = 6
 
 export const STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 7,
-  spawnY: -18,
+  spawnY: -40,
   sizeMin: 31,
   sizeMax: 40,
   pathDurationMs: 6200,
@@ -86,7 +86,7 @@ export const STAR_TUNING_DEFAULTS: StarTuning = {
 
 export const MOBILE_STAR_TUNING_DEFAULTS: StarTuning = {
   spawnX: 7,
-  spawnY: -18,
+  spawnY: -34,
   sizeMin: 20,
   sizeMax: 25,
   pathDurationMs: 6200,
