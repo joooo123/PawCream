@@ -244,6 +244,13 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .home-scene--house-hovered:not(.home-scene--entering):not(.home-scene--mobile):not(.home-scene--tuning) .home-artboard {
+    transform: translateY(-3px) scale(1.018);
+    filter: brightness(1.018) saturate(1.018);
+  }
+}
+
 .home-scene--awake .home-artboard,
 .home-scene--tuning .home-artboard {
   transform: translateY(-2px) scale(1.008);
@@ -281,66 +288,75 @@ select {
   }
 }
 
-html.pawcream-entering-atelier body::after {
-  content: '';
+.pawcream-app {
+  position: relative;
+  min-height: 100svh;
+  background: #ffffff;
+}
+
+.pawcream-scene-layer {
+  min-height: 100svh;
+}
+
+.pawcream-app--transition {
   position: fixed;
   inset: 0;
-  z-index: 85;
+  z-index: 80;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.pawcream-app--transition .pawcream-scene-layer {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 46%, rgba(255,255,255,.92), rgba(255,250,252,.96));
-  animation: pawcream-atelier-veil 760ms cubic-bezier(.2,.72,.22,1) both;
 }
 
-html.pawcream-entering-atelier section[aria-label^="PawCream Atelier Room"] {
-  animation: pawcream-atelier-arrive 760ms cubic-bezier(.2,.72,.22,1) both;
-  transform-origin: 50% 50%;
-  will-change: transform, opacity;
+.pawcream-app--transition .pawcream-scene-layer--home {
+  z-index: 1;
+  animation: pawcream-home-crossfade-out 960ms cubic-bezier(.28,.1,.32,1) both;
 }
 
-@keyframes pawcream-atelier-veil {
+.pawcream-app--transition .pawcream-scene-layer--atelier {
+  z-index: 2;
+  opacity: 0;
+  animation: pawcream-atelier-crossfade-in 960ms cubic-bezier(.22,.5,.28,1) both;
+  will-change: opacity;
+}
+
+@keyframes pawcream-home-crossfade-out {
   0% { opacity: 1; }
-  28% { opacity: .93; }
+  28% { opacity: .94; }
+  58% { opacity: .62; }
+  82% { opacity: .22; }
   100% { opacity: 0; }
 }
 
-@keyframes pawcream-atelier-arrive {
-  0% {
-    transform: scale(1.018);
-    opacity: .55;
-  }
-  38% {
-    transform: scale(1.01);
-    opacity: .82;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@media (max-width: 700px) {
-  html.pawcream-entering-atelier section[aria-label^="PawCream Atelier Room"] {
-    animation-name: pawcream-atelier-arrive-mobile;
-  }
-
-  @keyframes pawcream-atelier-arrive-mobile {
-    0% {
-      transform: scale(1.012);
-      opacity: .58;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
+@keyframes pawcream-atelier-crossfade-in {
+  0% { opacity: 0; }
+  12% { opacity: .03; }
+  34% { opacity: .18; }
+  60% { opacity: .52; }
+  82% { opacity: .82; }
+  100% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .home-scene--entering .home-artboard,
-  html.pawcream-entering-atelier body::after,
-  html.pawcream-entering-atelier section[aria-label^="PawCream Atelier Room"] {
+  .pawcream-app--transition .pawcream-scene-layer--home,
+  .pawcream-app--transition .pawcream-scene-layer--atelier {
     animation: none !important;
+  }
+
+  .pawcream-app--transition .pawcream-scene-layer--home {
+    opacity: 0;
+  }
+
+  .pawcream-app--transition .pawcream-scene-layer--atelier {
+    opacity: 1;
   }
 }
 
