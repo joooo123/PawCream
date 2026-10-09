@@ -483,6 +483,13 @@ export default function AtelierWithInstax(props: Props) {
   const machineSrc = atelierAssetUrl('instax.png')
   const theme = INSTAX_THEME[colorKey]
   const colorOption = COLOR_OPTIONS.find((option) => option.key === colorKey) ?? COLOR_OPTIONS[0]
+  const themedButtonStyle: CSSProperties = {
+    ...themedButtonStyle,
+    border: `1px solid ${theme.panelBorder}`,
+    background: 'rgba(255,255,255,.78)',
+    color: theme.selectedText,
+    transition: 'transform 160ms ease, background 220ms ease, border-color 220ms ease, color 220ms ease, box-shadow 160ms ease, opacity 160ms ease',
+  }
 
   const cleanupPhotos = () => {
     setPhotos((current) => {
@@ -788,8 +795,8 @@ export default function AtelierWithInstax(props: Props) {
                 height: `${slot.height}%`,
                 overflow: 'hidden',
                 zIndex: 1,
-                background: '#f7f1f3',
-                boxShadow: active ? 'inset 0 0 0 3px rgba(216,139,169,.58)' : undefined,
+                background: theme.panelBg,
+                boxShadow: active ? `inset 0 0 0 3px ${theme.selectedBorder}` : undefined,
                 cursor: photo ? 'grab' : 'pointer',
               }}
             >
@@ -816,9 +823,9 @@ export default function AtelierWithInstax(props: Props) {
                     height: '100%',
                     display: 'grid',
                     placeItems: 'center',
-                    color: '#b99aa5',
+                    color: theme.selectedText,
                     fontSize: 22,
-                    background: 'rgba(252,246,248,.92)',
+                    background: theme.panelBg,
                   }}
                 >
                   {index + 1}
@@ -887,7 +894,6 @@ export default function AtelierWithInstax(props: Props) {
             .pawcream-instax-button:hover,
             .pawcream-instax-size:not(:disabled):hover {
               transform: translateY(-1px);
-              border-color: rgba(194,118,148,.36) !important;
             }
             .pawcream-instax-dot:hover { transform: scale(1.12); }
             @keyframes pawcream-instax-print {
@@ -930,7 +936,7 @@ export default function AtelierWithInstax(props: Props) {
               aria-label="Close"
               onClick={closeInstax}
               style={{
-                ...modalButtonStyle,
+                ...themedButtonStyle,
                 position: 'absolute',
                 top: mobile ? 12 : 14,
                 right: mobile ? 12 : 14,
@@ -1091,14 +1097,14 @@ export default function AtelierWithInstax(props: Props) {
                           }}
                         />
                       ) : (
-                        <div style={{ fontSize: 21, color: '#b08f9b' }}>这个组合暂时没有相纸</div>
+                        <div style={{ fontSize: 21, color: theme.selectedText }}>这个组合暂时没有相纸</div>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {frameError && (
-                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: '#b27688' }}>
+                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: theme.selectedText }}>
                     {frameError}
                   </div>
                 )}
@@ -1110,7 +1116,7 @@ export default function AtelierWithInstax(props: Props) {
                     disabled={!frameMeta || !frameName}
                     onClick={startPhotoPicking}
                     style={{
-                      ...modalButtonStyle,
+                      ...themedButtonStyle,
                       minWidth: 116,
                       minHeight: 42,
                       borderRadius: 999,
@@ -1132,7 +1138,7 @@ export default function AtelierWithInstax(props: Props) {
                   <div style={{ fontSize: mobile ? 28 : 31, fontWeight: 750 }}>
                     adjust your photos
                   </div>
-                  <div style={{ marginTop: 5, fontSize: 20, color: '#b08f9b' }}>
+                  <div style={{ marginTop: 5, fontSize: 20, color: theme.selectedText, opacity: .78 }}>
                     拖动照片调整位置 · 点击格子切换 · 滑杆缩放
                   </div>
                 </div>
@@ -1145,17 +1151,18 @@ export default function AtelierWithInstax(props: Props) {
                     margin: '14px auto 0',
                     padding: '12px 14px',
                     borderRadius: 18,
-                    background: 'rgba(252,246,248,.78)',
-                    border: '1px solid rgba(195,150,168,.15)',
+                    background: theme.panelBg,
+                    border: `1px solid ${theme.panelBorder}`,
+                    transition: 'background 220ms ease, border-color 220ms ease',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ fontSize: 20, color: '#9c7c87' }}>
+                    <div style={{ fontSize: 20, color: theme.selectedText }}>
                       {frameMeta.slots.length > 1
                         ? `第 ${activeSlot + 1} 格 / 共 ${frameMeta.slots.length} 格`
                         : '当前照片'}
                     </div>
-                    <div style={{ fontSize: 19, color: '#b3959f' }}>
+                    <div style={{ fontSize: 19, color: theme.selectedText, opacity: .72 }}>
                       已选择 {photos.length}/{frameMeta.slots.length}
                     </div>
                   </div>
@@ -1181,7 +1188,7 @@ export default function AtelierWithInstax(props: Props) {
                         type="button"
                         className="pawcream-instax-button"
                         onClick={chooseMorePhotos}
-                        style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
+                        style={{ ...themedButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
                       >
                         继续选照片
                       </button>
@@ -1191,7 +1198,7 @@ export default function AtelierWithInstax(props: Props) {
                         type="button"
                         className="pawcream-instax-button"
                         onClick={replaceActivePhoto}
-                        style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
+                        style={{ ...themedButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
                       >
                         替换当前照片
                       </button>
@@ -1204,7 +1211,7 @@ export default function AtelierWithInstax(props: Props) {
                         setStep('select')
                         setStatus('')
                       }}
-                      style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
+                      style={{ ...themedButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
                     >
                       重选相纸
                     </button>
@@ -1212,7 +1219,7 @@ export default function AtelierWithInstax(props: Props) {
                 </div>
 
                 {status && (
-                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: '#a87687' }}>
+                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: theme.selectedText }}>
                     {status}
                   </div>
                 )}
@@ -1224,7 +1231,7 @@ export default function AtelierWithInstax(props: Props) {
                     disabled={busy || photos.length < frameMeta.slots.length}
                     onClick={() => void finishEditing()}
                     style={{
-                      ...modalButtonStyle,
+                      ...themedButtonStyle,
                       minWidth: 128,
                       minHeight: 42,
                       borderRadius: 999,
@@ -1247,7 +1254,7 @@ export default function AtelierWithInstax(props: Props) {
                   <div style={{ fontSize: mobile ? 28 : 31, fontWeight: 750 }}>
                     your instax!
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 20, color: '#b08f9b' }}>
+                  <div style={{ marginTop: 4, fontSize: 20, color: theme.selectedText, opacity: .78 }}>
                     {printingDone ? '接住它 ♡' : '正在从拍立得里慢慢出来…'}
                   </div>
                 </div>
@@ -1305,11 +1312,12 @@ export default function AtelierWithInstax(props: Props) {
                       margin: '-6px auto 0',
                       padding: '14px',
                       borderRadius: 20,
-                      background: 'rgba(252,246,248,.82)',
-                      border: '1px solid rgba(195,150,168,.15)',
+                      background: theme.panelBg,
+                      border: `1px solid ${theme.panelBorder}`,
+                      transition: 'background 220ms ease, border-color 220ms ease',
                     }}
                   >
-                    <div style={{ marginBottom: 11, textAlign: 'center', fontSize: 21, color: '#9c7885' }}>
+                    <div style={{ marginBottom: 11, textAlign: 'center', fontSize: 21, color: theme.selectedText }}>
                       这张照片想放去哪里？
                     </div>
                     <div style={{ display: 'grid', gap: 9 }}>
@@ -1319,7 +1327,7 @@ export default function AtelierWithInstax(props: Props) {
                         disabled={busy}
                         onClick={() => void saveFinishedPhoto('public')}
                         style={{
-                          ...modalButtonStyle,
+                          ...themedButtonStyle,
                           minHeight: 44,
                           borderRadius: 16,
                           background: theme.selectedBg,
@@ -1336,7 +1344,7 @@ export default function AtelierWithInstax(props: Props) {
                         disabled={busy}
                         onClick={() => void saveFinishedPhoto('private')}
                         style={{
-                          ...modalButtonStyle,
+                          ...themedButtonStyle,
                           minHeight: 44,
                           borderRadius: 16,
                           fontSize: 21,
@@ -1348,7 +1356,7 @@ export default function AtelierWithInstax(props: Props) {
                     </div>
 
                     {status && (
-                      <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: '#a87687', lineHeight: 1.6 }}>
+                      <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: theme.selectedText, lineHeight: 1.6 }}>
                         {status}
                       </div>
                     )}
@@ -1359,7 +1367,7 @@ export default function AtelierWithInstax(props: Props) {
                           type="button"
                           className="pawcream-instax-button"
                           onClick={closeInstax}
-                          style={{ ...modalButtonStyle, minHeight: 34, borderRadius: 999, padding: '6px 18px', fontSize: 20 }}
+                          style={{ ...themedButtonStyle, minHeight: 34, borderRadius: 999, padding: '6px 18px', fontSize: 20 }}
                         >
                           完成
                         </button>
