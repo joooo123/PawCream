@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "build:webp": "tsc -b && vite build --mode webp",
     "build:server": "tsc -b && vite build --base=/",
+    "build:server:webp": "tsc -b && vite build --mode server-webp",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -25,4 +26,4 @@
     "typescript": "^5.9.2",
     "vite": "^7.3.6"
   }
-}\n
+}
