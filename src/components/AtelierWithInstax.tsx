@@ -7,8 +7,9 @@ import {
   useRef,
   useState,
 } from 'react'
-import { savePawCreamPhoto, type PawCreamPhotoVisibility } from '../pawcreamPhotoStore'
+import { listPawCreamPhotos, savePawCreamPhoto, type PawCreamStoredPhoto } from '../pawcreamPhotoStore'
 import AtelierPlaceholderV2 from './AtelierPlaceholderV2'
+import InstaxTinBox from './InstaxTinBox'
 
 type DeviceProfile = 'desktop' | 'mobile'
 
@@ -19,7 +20,7 @@ type Props = {
   mobilePreview: boolean
 }
 
-type InstaxStep = 'select' | 'edit' | 'printing'
+type InstaxStep = 'select' | 'edit' | 'boxing'
 
 type ColorKey =
   | 'gray'
@@ -463,9 +464,8 @@ export default function AtelierWithInstax(props: Props) {
   const [photos, setPhotos] = useState<PhotoPlacement[]>([])
   const [activeSlot, setActiveSlot] = useState(0)
   const [replaceTarget, setReplaceTarget] = useState<number | null>(null)
-  const [finalBlob, setFinalBlob] = useState<Blob | null>(null)
-  const [finalUrl, setFinalUrl] = useState<string | null>(null)
-  const [printingDone, setPrintingDone] = useState(false)
+  const [boxPhotos, setBoxPhotos] = useState<PawCreamStoredPhoto[]>([])
+  const [newestPhotoId, setNewestPhotoId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -480,7 +480,6 @@ export default function AtelierWithInstax(props: Props) {
   const frameName = FRAME_MAP[colorKey][sizeKey] ?? ''
   const opaqueFrameSrc = frameName ? assetUrl('instax', frameName) : ''
   const transparentFrameSrc = frameName ? assetUrl('instax-transparent', frameName) : ''
-  const machineSrc = atelierAssetUrl('instax.png')
   const theme = INSTAX_THEME[colorKey]
   const colorOption = COLOR_OPTIONS.find((option) => option.key === colorKey) ?? COLOR_OPTIONS[0]
   const themedButtonStyle: CSSProperties = {
@@ -500,19 +499,11 @@ export default function AtelierWithInstax(props: Props) {
     setReplaceTarget(null)
   }
 
-  const cleanupFinal = () => {
-    setFinalUrl((current) => {
-      if (current) URL.revokeObjectURL(current)
-      return null
-    })
-    setFinalBlob(null)
-  }
-
   const resetSession = () => {
     cleanupPhotos()
-    cleanupFinal()
+    setBoxPhotos([])
+    setNewestPhotoId(null)
     setStep('select')
-    setPrintingDone(false)
     setBusy(false)
     setStatus('')
   }
@@ -600,16 +591,8 @@ export default function AtelierWithInstax(props: Props) {
     }
   }, [props.deviceProfile, tuneMode])
 
-  useEffect(() => {
-    if (step !== 'printing' || !finalUrl) return
-    setPrintingDone(false)
-    const timer = window.setTimeout(() => setPrintingDone(true), 1750)
-    return () => window.clearTimeout(timer)
-  }, [step, finalUrl])
-
   const selectColor = (nextColor: ColorKey) => {
     cleanupPhotos()
-    cleanupFinal()
     setStatus('')
     setColorKey(nextColor)
     if (!FRAME_MAP[nextColor][sizeKey]) {
@@ -621,7 +604,6 @@ export default function AtelierWithInstax(props: Props) {
   const selectSize = (nextSize: SizeKey) => {
     if (!FRAME_MAP[colorKey][nextSize]) return
     cleanupPhotos()
-    cleanupFinal()
     setStatus('')
     setSizeKey(nextSize)
   }
@@ -629,7 +611,6 @@ export default function AtelierWithInstax(props: Props) {
   const startPhotoPicking = () => {
     if (!frameMeta || !frameName) return
     cleanupPhotos()
-    cleanupFinal()
     setStep('edit')
     setStatus('')
     window.setTimeout(() => inputRef.current?.click(), 30)
@@ -718,44 +699,25 @@ export default function AtelierWithInstax(props: Props) {
     dragRef.current = null
   }
 
-  const finishEditing = async () => {
+  const placeInBox = async () => {
     if (!frameMeta || !frameName || photos.length < frameMeta.slots.length || busy) return
     setBusy(true)
-    setStatus('正在显影…')
+    setStatus('正在把它收进小盒子…')
 
     try {
       const blob = await composeFinishedPhoto(transparentFrameSrc, frameMeta, photos)
-      cleanupFinal()
-      const url = URL.createObjectURL(blob)
-      setFinalBlob(blob)
-      setFinalUrl(url)
-      setStatus('')
-      setStep('printing')
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : '拍立得生成失败')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const saveFinishedPhoto = async (visibility: PawCreamPhotoVisibility) => {
-    if (!finalBlob || busy) return
-    setBusy(true)
-    setStatus(visibility === 'public' ? '正在放进铁盒和照片墙…' : '正在放进铁盒…')
-
-    try {
-      await savePawCreamPhoto({
-        imageBlob: finalBlob,
+      const saved = await savePawCreamPhoto({
+        imageBlob: blob,
         frameName,
-        visibility,
+        visibility: 'private',
       })
-      setStatus(
-        visibility === 'public'
-          ? '已经放进我的铁盒，也留给照片墙了 ♡'
-          : '已经只放进我的铁盒了 ♡',
-      )
+      const mine = await listPawCreamPhotos('mine')
+      setBoxPhotos(mine)
+      setNewestPhotoId(saved.id)
+      setStatus('')
+      setStep('boxing')
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : '保存失败')
+      setStatus(error instanceof Error ? error.message : '拍立得保存失败')
     } finally {
       setBusy(false)
     }
@@ -896,18 +858,6 @@ export default function AtelierWithInstax(props: Props) {
               transform: translateY(-1px);
             }
             .pawcream-instax-dot:hover { transform: scale(1.12); }
-            @keyframes pawcream-instax-print {
-              0% { transform: translate(-50%, -58%) scale(.48); opacity: .18; }
-              20% { opacity: 1; }
-              72% { transform: translate(-50%, 24%) scale(.70); }
-              100% { transform: translate(-50%, 58%) scale(.76); opacity: 1; }
-            }
-            @keyframes pawcream-instax-machine {
-              0%, 100% { transform: rotate(0deg); }
-              24% { transform: rotate(-.8deg); }
-              48% { transform: rotate(.7deg); }
-              72% { transform: rotate(-.4deg); }
-            }
           `}</style>
 
           <section
@@ -1229,7 +1179,7 @@ export default function AtelierWithInstax(props: Props) {
                     type="button"
                     className="pawcream-instax-button"
                     disabled={busy || photos.length < frameMeta.slots.length}
-                    onClick={() => void finishEditing()}
+                    onClick={() => void placeInBox()}
                     style={{
                       ...themedButtonStyle,
                       minWidth: 128,
@@ -1242,141 +1192,32 @@ export default function AtelierWithInstax(props: Props) {
                       opacity: busy || photos.length < frameMeta.slots.length ? .42 : 1,
                     }}
                   >
-                    {busy ? '显影中…' : '完成调整 ♡'}
+                    {busy ? '收好中…' : '放入我的小盒子'}
                   </button>
                 </div>
               </>
             )}
 
-            {step === 'printing' && finalUrl && (
-              <>
-                <div style={{ textAlign: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: mobile ? 28 : 31, fontWeight: 750 }}>
-                    your instax!
-                  </div>
-                  <div style={{ marginTop: 4, fontSize: 20, color: theme.selectedText, opacity: .78 }}>
-                    {printingDone ? '接住它 ♡' : '正在从拍立得里慢慢出来…'}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    position: 'relative',
-                    width: mobile ? 290 : 340,
-                    height: mobile ? 360 : 410,
-                    maxWidth: '100%',
-                    margin: '0 auto',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <img
-                    src={finalUrl}
-                    alt="Finished Instax"
-                    draggable={false}
-                    style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: mobile ? 118 : 132,
-                      width: mobile ? '64%' : '66%',
-                      maxHeight: mobile ? 250 : 290,
-                      objectFit: 'contain',
-                      zIndex: 1,
-                      transformOrigin: '50% 0%',
-                      animation: 'pawcream-instax-print 1.7s cubic-bezier(.18,.76,.22,1) both',
-                      filter: 'drop-shadow(0 15px 22px rgba(83,64,71,.17))',
-                    }}
-                  />
-                  <img
-                    src={machineSrc}
-                    alt=""
-                    draggable={false}
-                    style={{
-                      position: 'absolute',
-                      zIndex: 2,
-                      left: '50%',
-                      top: 5,
-                      width: mobile ? 230 : 270,
-                      maxWidth: '84%',
-                      transform: 'translateX(-50%)',
-                      animation: 'pawcream-instax-machine 1.15s ease-in-out 1',
-                      filter: 'drop-shadow(0 15px 24px rgba(83,64,71,.12))',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                </div>
-
-                {printingDone && (
-                  <div
-                    style={{
-                      width: 'min(500px,100%)',
-                      margin: '-6px auto 0',
-                      padding: '14px',
-                      borderRadius: 20,
-                      background: theme.panelBg,
-                      border: `1px solid ${theme.panelBorder}`,
-                      transition: 'background 220ms ease, border-color 220ms ease',
-                    }}
-                  >
-                    <div style={{ marginBottom: 11, textAlign: 'center', fontSize: 21, color: theme.selectedText }}>
-                      这张照片想放去哪里？
-                    </div>
-                    <div style={{ display: 'grid', gap: 9 }}>
-                      <button
-                        type="button"
-                        className="pawcream-instax-button"
-                        disabled={busy}
-                        onClick={() => void saveFinishedPhoto('public')}
-                        style={{
-                          ...themedButtonStyle,
-                          minHeight: 44,
-                          borderRadius: 16,
-                          background: theme.selectedBg,
-                          color: theme.selectedText,
-                          fontSize: 21,
-                          fontWeight: 720,
-                        }}
-                      >
-                        放入我的铁盒，并放入照片墙
-                      </button>
-                      <button
-                        type="button"
-                        className="pawcream-instax-button"
-                        disabled={busy}
-                        onClick={() => void saveFinishedPhoto('private')}
-                        style={{
-                          ...themedButtonStyle,
-                          minHeight: 44,
-                          borderRadius: 16,
-                          fontSize: 21,
-                          fontWeight: 650,
-                        }}
-                      >
-                        只放入我的铁盒
-                      </button>
-                    </div>
-
-                    {status && (
-                      <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: theme.selectedText, lineHeight: 1.6 }}>
-                        {status}
-                      </div>
-                    )}
-
-                    {status.startsWith('已经') && (
-                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-                        <button
-                          type="button"
-                          className="pawcream-instax-button"
-                          onClick={closeInstax}
-                          style={{ ...themedButtonStyle, minHeight: 34, borderRadius: 999, padding: '6px 18px', fontSize: 20 }}
-                        >
-                          完成
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
+            {step === 'boxing' && (
+              <InstaxTinBox
+                photos={boxPhotos}
+                newestPhotoId={newestPhotoId}
+                mobile={mobile}
+                textColor={theme.selectedText}
+                panelBg={theme.panelBg}
+                panelBorder={theme.panelBorder}
+                accent={theme.accent}
+                onMakeAnother={() => {
+                  cleanupPhotos()
+                  setBoxPhotos([])
+                  setNewestPhotoId(null)
+                  setStep('select')
+                  setStatus('')
+                }}
+                onClose={closeInstax}
+              />
             )}
+
           </section>
         </div>
       )}
