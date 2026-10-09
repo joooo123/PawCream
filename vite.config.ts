@@ -96,11 +96,11 @@ function webpReferences() {
 export default defineConfig(({ command, mode }) => ({
   plugins: [
     atelierTuningDefaults(),
-    command === 'build' && mode === 'webp' ? webpReferences() : null,
+    command === 'build' && mode.endsWith('webp') ? webpReferences() : null,
     react(),
   ],
-  // Local development stays at `/`; GitHub Pages serves this project at `/PawCream/`.
-  base: command === 'build' ? '/PawCream/' : '/',
+  // GitHub Pages uses `webp` mode at `/PawCream/`; server builds use root `/`.
+  base: command === 'build' && mode === 'webp' ? '/PawCream/' : '/',
   server: {
     host: '127.0.0.1',
     port: 5173,
