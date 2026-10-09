@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  AUTH_CHANGED_EVENT,
+  getCurrentUser,
+  openPawCreamSignin,
+  type PawCreamUser,
+} from '../pawcreamApi'
+import { saveDrawerPhoto } from '../pawcreamPhotoDrawer'
 import AtelierPlaceholderV2 from './AtelierPlaceholderV2'
+import PawCreamPhotoDrawer from './PawCreamPhotoDrawer'
 
 type DeviceProfile = 'desktop' | 'mobile'
 
@@ -81,12 +89,84 @@ const modalButtonStyle = {
   cursor: 'pointer',
 } as const
 
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.decoding = 'async'
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('图片读取失败'))
+    image.src = src
+  })
+}
+
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const sourceRatio = image.naturalWidth / image.naturalHeight
+  const targetRatio = width / height
+  let sx = 0
+  let sy = 0
+  let sw = image.naturalWidth
+  let sh = image.naturalHeight
+
+  if (sourceRatio > targetRatio) {
+    sw = image.naturalHeight * targetRatio
+    sx = (image.naturalWidth - sw) / 2
+  } else {
+    sh = image.naturalWidth / targetRatio
+    sy = (image.naturalHeight - sh) / 2
+  }
+
+  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height)
+}
+
+async function buildInstaxBlob(photoUrl: string, frame: FrameConfig) {
+  const [photo, frameImage] = await Promise.all([
+    loadImage(photoUrl),
+    loadImage(frame.src),
+  ])
+
+  const outputScale = 2
+  const canvas = document.createElement('canvas')
+  canvas.width = frame.width * outputScale
+  canvas.height = frame.height * outputScale
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('无法生成拍立得')
+
+  ctx.scale(outputScale, outputScale)
+  const x = frame.width * frame.hole.left / 100
+  const y = frame.height * frame.hole.top / 100
+  const width = frame.width * frame.hole.width / 100
+  const height = frame.height * frame.hole.height / 100
+
+  drawCover(ctx, photo, x, y, width, height)
+  ctx.drawImage(frameImage, 0, 0, frame.width, frame.height)
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => blob ? resolve(blob) : reject(new Error('无法保存拍立得')),
+      'image/webp',
+      .9,
+    )
+  })
+}
+
 export default function AtelierWithInstax(props: Props) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<InstaxStep>('pick')
   const [frameIndex, setFrameIndex] = useState(0)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [photoName, setPhotoName] = useState('')
+  const [currentUser, setCurrentUser] = useState<PawCreamUser | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerHighlightId, setDrawerHighlightId] = useState<string | null>(null)
+  const [savingPhoto, setSavingPhoto] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   const tuneMode = useMemo(
@@ -96,6 +176,21 @@ export default function AtelierWithInstax(props: Props) {
 
   const currentFrame = INSTAX_FRAMES[frameIndex]
   const mobile = props.deviceProfile === 'mobile'
+
+  const refreshCurrentUser = async () => {
+    try {
+      setCurrentUser(await getCurrentUser())
+    } catch {
+      setCurrentUser(null)
+    }
+  }
+
+  useEffect(() => {
+    void refreshCurrentUser()
+    const onAuthChanged = () => void refreshCurrentUser()
+    window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged)
+  }, [])
 
   const clearPhoto = () => {
     setPhotoUrl((current) => {
@@ -108,6 +203,7 @@ export default function AtelierWithInstax(props: Props) {
   const closeInstax = () => {
     setOpen(false)
     setStep('pick')
+    setSaveStatus('')
     clearPhoto()
   }
 
@@ -167,6 +263,64 @@ export default function AtelierWithInstax(props: Props) {
     }
   }, [props.deviceProfile, tuneMode])
 
+  useEffect(() => {
+    if (tuneMode) return
+
+    const image = document.querySelector<HTMLImageElement>(
+      'section[aria-label^="PawCream Atelier Room"] img[alt="Wall cabinet"]',
+    )
+    const control = image?.parentElement
+    if (!control) return
+
+    const oldRole = control.getAttribute('role')
+    const oldTabIndex = control.getAttribute('tabindex')
+    const oldLabel = control.getAttribute('aria-label')
+    const oldCursor = control.style.cursor
+
+    control.setAttribute('role', 'button')
+    control.setAttribute('tabindex', '0')
+    control.setAttribute('aria-label', 'Open my photo drawer')
+    control.style.cursor = 'pointer'
+
+    const openDrawer = () => {
+      if (!currentUser) {
+        openPawCreamSignin('login')
+        return
+      }
+      setDrawerHighlightId(null)
+      setDrawerOpen(true)
+    }
+
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as Element | null
+      if (!target?.closest('[aria-label="Open my photo drawer"]')) return
+      openDrawer()
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      const target = event.target as Element | null
+      if (!target?.closest('[aria-label="Open my photo drawer"]')) return
+      event.preventDefault()
+      openDrawer()
+    }
+
+    document.addEventListener('click', onClick, true)
+    document.addEventListener('keydown', onKeyDown, true)
+
+    return () => {
+      document.removeEventListener('click', onClick, true)
+      document.removeEventListener('keydown', onKeyDown, true)
+      if (oldRole === null) control.removeAttribute('role')
+      else control.setAttribute('role', oldRole)
+      if (oldTabIndex === null) control.removeAttribute('tabindex')
+      else control.setAttribute('tabindex', oldTabIndex)
+      if (oldLabel === null) control.removeAttribute('aria-label')
+      else control.setAttribute('aria-label', oldLabel)
+      control.style.cursor = oldCursor
+    }
+  }, [currentUser, props.deviceProfile, tuneMode])
+
   useEffect(() => () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
   }, [photoUrl])
@@ -185,6 +339,38 @@ export default function AtelierWithInstax(props: Props) {
 
   const choosePhoto = () => inputRef.current?.click()
 
+  const saveToDrawer = async () => {
+    if (!photoUrl || savingPhoto) return
+    if (!currentUser) {
+      setSaveStatus('登入后才能把照片收进自己的抽屉')
+      openPawCreamSignin('login')
+      return
+    }
+
+    setSavingPhoto(true)
+    setSaveStatus('正在收进抽屉…')
+    try {
+      const imageBlob = await buildInstaxBlob(photoUrl, currentFrame)
+      const saved = await saveDrawerPhoto({
+        ownerId: currentUser.id,
+        ownerName: currentUser.displayName,
+        imageBlob,
+        fileName: photoName || 'PawCream Instax',
+        frameIndex,
+      })
+      setDrawerHighlightId(saved.id)
+      setOpen(false)
+      setStep('pick')
+      clearPhoto()
+      setSaveStatus('')
+      setDrawerOpen(true)
+    } catch (error) {
+      setSaveStatus(error instanceof Error ? error.message : '照片保存失败')
+    } finally {
+      setSavingPhoto(false)
+    }
+  }
+
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
     if (!file) return
@@ -194,6 +380,7 @@ export default function AtelierWithInstax(props: Props) {
       return URL.createObjectURL(file)
     })
     setPhotoName(file.name)
+    setSaveStatus('')
     event.currentTarget.value = ''
   }
 
@@ -452,7 +639,37 @@ export default function AtelierWithInstax(props: Props) {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 9, flexWrap: 'wrap', marginTop: 20 }}>
+                {photoUrl && (
+                  <div style={{ marginTop: 16, textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      className="pawcream-instax-ok"
+                      disabled={savingPhoto}
+                      onClick={() => void saveToDrawer()}
+                      style={{
+                        ...modalButtonStyle,
+                        minHeight: 42,
+                        borderRadius: 999,
+                        padding: '9px 24px',
+                        background: '#fff0f4',
+                        color: '#a6667d',
+                        fontSize: 13,
+                        fontWeight: 750,
+                        opacity: savingPhoto ? .58 : 1,
+                        cursor: savingPhoto ? 'default' : 'pointer',
+                      }}
+                    >
+                      {savingPhoto ? '正在收好…' : '收进我的抽屉 ♡'}
+                    </button>
+                    {saveStatus && (
+                      <div style={{ marginTop: 8, fontSize: 10, color: '#a9808e', lineHeight: 1.5 }}>
+                        {saveStatus}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 9, flexWrap: 'wrap', marginTop: 14 }}>
                   <button
                     type="button"
                     className="pawcream-instax-file"
@@ -477,6 +694,19 @@ export default function AtelierWithInstax(props: Props) {
             )}
           </section>
         </div>
+      )}
+
+      {drawerOpen && currentUser && !tuneMode && (
+        <PawCreamPhotoDrawer
+          open={drawerOpen}
+          onClose={() => {
+            setDrawerOpen(false)
+            setDrawerHighlightId(null)
+          }}
+          user={currentUser}
+          mobile={mobile}
+          highlightedPhotoId={drawerHighlightId}
+        />
       )}
     </>
   )
