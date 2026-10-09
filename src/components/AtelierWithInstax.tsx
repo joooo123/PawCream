@@ -914,11 +914,12 @@ export default function AtelierWithInstax(props: Props) {
               maxHeight: 'calc(100svh - 20px)',
               overflow: 'auto',
               padding: mobile ? '26px 18px 22px' : '32px 34px 28px',
-              border: '1px solid rgba(203,153,173,.22)',
+              border: `1px solid ${theme.panelBorder}`,
               borderRadius: mobile ? 24 : 30,
-              background: 'rgba(255,253,253,.97)',
+              background: theme.panelBg,
               boxShadow: '0 30px 90px rgba(96,70,81,.2)',
-              color: '#80636d',
+              color: theme.selectedText,
+              transition: 'background 260ms ease, border-color 260ms ease, color 260ms ease',
               fontFamily: "ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
             }}
           >
@@ -948,7 +949,15 @@ export default function AtelierWithInstax(props: Props) {
             {step === 'select' && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: 18 }}>
-                  <div style={{ fontSize: mobile ? 29 : 32, fontWeight: 750, letterSpacing: '.04em' }}>
+                  <div
+                    style={{
+                      fontSize: mobile ? 29 : 32,
+                      fontWeight: 750,
+                      letterSpacing: '.04em',
+                      color: theme.selectedText,
+                      transition: 'color 220ms ease',
+                    }}
+                  >
                     make your intax
                   </div>
                   <div
