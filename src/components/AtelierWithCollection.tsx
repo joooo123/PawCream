@@ -417,7 +417,7 @@ export default function AtelierWithCollection(props: Props) {
     if (tuneMode || letterTuneMode || collectionTuneMode) return
 
     const image = document.querySelector<HTMLImageElement>(
-      'section[aria-label^="PawCream Atelier Room"] img[alt="People"]',
+      'section[aria-label^="PawCream Atelier Room"] img[alt="Sewing machine"]',
     )
     const control = image?.parentElement
     if (!control) return
@@ -429,12 +429,12 @@ export default function AtelierWithCollection(props: Props) {
 
     control.setAttribute('role', 'button')
     control.setAttribute('tabindex', '0')
-    control.setAttribute('aria-label', 'Collection lookbook interaction')
+    control.setAttribute('aria-label', 'Sewing lookbook interaction')
     control.style.cursor = 'pointer'
 
     const onClick = (event: MouseEvent) => {
       const target = event.target as Element | null
-      if (!target?.closest('[aria-label="Collection lookbook interaction"]')) return
+      if (!target?.closest('[aria-label="Sewing lookbook interaction"]')) return
       event.preventDefault()
       openLookbook()
     }
@@ -446,7 +446,7 @@ export default function AtelierWithCollection(props: Props) {
       }
       if (event.key !== 'Enter' && event.key !== ' ') return
       const target = event.target as Element | null
-      if (!target?.closest('[aria-label="Collection lookbook interaction"]')) return
+      if (!target?.closest('[aria-label="Sewing lookbook interaction"]')) return
       event.preventDefault()
       openLookbook()
     }
