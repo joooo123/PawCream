@@ -949,7 +949,7 @@ export default function AtelierWithInstax(props: Props) {
               <>
                 <div style={{ textAlign: 'center', marginBottom: 18 }}>
                   <div style={{ fontSize: mobile ? 29 : 32, fontWeight: 750, letterSpacing: '.04em' }}>
-                    pick your instax
+                    make your intax
                   </div>
                   <div
                     key={colorKey}
