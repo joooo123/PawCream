@@ -484,7 +484,7 @@ export default function AtelierWithInstax(props: Props) {
   const theme = INSTAX_THEME[colorKey]
   const colorOption = COLOR_OPTIONS.find((option) => option.key === colorKey) ?? COLOR_OPTIONS[0]
   const themedButtonStyle: CSSProperties = {
-    ...themedButtonStyle,
+    ...modalButtonStyle,
     border: `1px solid ${theme.panelBorder}`,
     background: 'rgba(255,255,255,.78)',
     color: theme.selectedText,
