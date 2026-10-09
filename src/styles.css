@@ -298,7 +298,8 @@ select {
   min-height: 100svh;
 }
 
-.pawcream-app--transition {
+.pawcream-app--covering,
+.pawcream-app--revealing {
   position: fixed;
   inset: 0;
   z-index: 80;
@@ -307,14 +308,16 @@ select {
   background: #ffffff;
 }
 
-.pawcream-app--transition .pawcream-scene-layer {
+.pawcream-app--covering .pawcream-scene-layer,
+.pawcream-app--revealing .pawcream-scene-layer {
   position: absolute;
   inset: 0;
   min-height: 0;
   overflow: hidden;
 }
 
-.pawcream-app--transition .pawcream-scene-layer--atelier {
+.pawcream-app--covering .pawcream-scene-layer--home,
+.pawcream-app--revealing .pawcream-scene-layer--atelier {
   z-index: 1;
 }
 
@@ -324,12 +327,34 @@ select {
   z-index: 2;
   pointer-events: none;
   background: #f8e8ee;
-  opacity: 1;
-  animation: pawcream-pink-fade-away 2000ms ease-in-out both;
-  will-change: opacity;
+  will-change: clip-path, opacity;
 }
 
-@keyframes pawcream-pink-fade-away {
+.pawcream-pink-transition--covering {
+  opacity: 1;
+  clip-path: circle(0vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  animation: pawcream-pink-cover 420ms cubic-bezier(.18,.72,.2,1) both;
+}
+
+.pawcream-pink-transition--revealing {
+  opacity: 1;
+  clip-path: circle(160vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  animation: pawcream-pink-reveal 320ms ease-out both;
+}
+
+@keyframes pawcream-pink-cover {
+  0% {
+    clip-path: circle(0vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  }
+  72% {
+    clip-path: circle(160vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  }
+  100% {
+    clip-path: circle(160vmax at var(--pawcream-transition-x, 50vw) var(--pawcream-transition-y, 50vh));
+  }
+}
+
+@keyframes pawcream-pink-reveal {
   0% { opacity: 1; }
   100% { opacity: 0; }
 }
@@ -340,8 +365,12 @@ select {
     animation: none !important;
   }
 
-  .pawcream-pink-transition {
-    animation-duration: 200ms;
+  .pawcream-pink-transition--covering {
+    animation-duration: 160ms;
+  }
+
+  .pawcream-pink-transition--revealing {
+    animation-duration: 160ms;
   }
 }
 
