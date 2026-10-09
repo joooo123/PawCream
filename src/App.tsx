@@ -90,7 +90,7 @@ export default function App() {
 
   useEffect(() => {
     if (scene === 'covering') {
-      const timer = window.setTimeout(() => setScene('revealing'), 560)
+      const timer = window.setTimeout(() => setScene('revealing'), 1000)
       return () => window.clearTimeout(timer)
     }
 
