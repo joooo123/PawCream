@@ -31,12 +31,12 @@ jobs:
       - name: Commit generated PNG files
         shell: bash
         run: |
-          if git diff --quiet -- public/assets/instax-transparent; then
+          git add public/assets/instax-transparent
+          if git diff --cached --quiet; then
             echo "No generated changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/assets/instax-transparent
           git commit -m "Add transparent Instax assets"
           git push
