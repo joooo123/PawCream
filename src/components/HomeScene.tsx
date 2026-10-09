@@ -220,6 +220,7 @@ export default function HomeScene({
   onDeviceChange,
 }: Props) {
   const artboardRef = useRef<HTMLDivElement | null>(null)
+  const houseHotspotRef = useRef<HTMLButtonElement | null>(null)
   const mobileScreenRef = useRef<HTMLDivElement | null>(null)
   const dragHandleRef = useRef<{
     kind: TuneHandleKind
@@ -323,13 +324,22 @@ export default function HomeScene({
 
   const beginEnter = () => {
     if (entering) return
+
+    const hotspot = houseHotspotRef.current
+    if (hotspot) {
+      const rect = hotspot.getBoundingClientRect()
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+      document.documentElement.style.setProperty('--pawcream-entry-x', `${x}px`)
+      document.documentElement.style.setProperty('--pawcream-entry-y', `${y}px`)
+    }
+
     setHouseHovered(false)
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
 
-    // Start the Atelier crossfade while the Home heartbeat is still finishing.
-    // This keeps the transition continuous instead of Home disappearing first.
-    window.setTimeout(onEnter, Math.round(MOTION.enterDurationMs * 0.56))
+    // Start the radial reveal while the Home push-in is still running.
+    window.setTimeout(onEnter, Math.round(MOTION.enterDurationMs * 0.5))
   }
 
   const updateTuneHandleFromPointer = (
@@ -444,7 +454,14 @@ export default function HomeScene({
         }}
       />
 
+      <span
+        className="house-hover-glow"
+        style={hotspotStyle}
+        aria-hidden="true"
+      />
+
       <button
+        ref={houseHotspotRef}
         className="house-hotspot"
         style={hotspotStyle}
         type="button"
