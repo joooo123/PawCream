@@ -486,11 +486,6 @@ export default function AtelierWithInstax(props: Props) {
     }
   }, [props.deviceProfile, tuneMode])
 
-  useEffect(() => () => {
-    photos.forEach((photo) => URL.revokeObjectURL(photo.url))
-    if (finalUrl) URL.revokeObjectURL(finalUrl)
-  }, [photos, finalUrl])
-
   useEffect(() => {
     if (step !== 'printing' || !finalUrl) return
     setPrintingDone(false)
