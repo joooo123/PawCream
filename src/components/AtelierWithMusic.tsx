@@ -73,21 +73,17 @@ const MOBILE_STAGE_GUTTER = 14
 type MobileViewportFrame = {
   width: number
   height: number
-  offsetLeft: number
-  offsetTop: number
 }
 
 function readMobileViewportFrame(): MobileViewportFrame {
   if (typeof window === 'undefined') {
-    return { width: MOBILE_STAGE_WIDTH, height: MOBILE_STAGE_HEIGHT, offsetLeft: 0, offsetTop: 0 }
+    return { width: MOBILE_STAGE_WIDTH, height: MOBILE_STAGE_HEIGHT }
   }
 
   const viewport = window.visualViewport
   return {
     width: viewport?.width ?? window.innerWidth,
     height: viewport?.height ?? window.innerHeight,
-    offsetLeft: viewport?.offsetLeft ?? 0,
-    offsetTop: viewport?.offsetTop ?? 0,
   }
 }
 
@@ -501,8 +497,8 @@ export default function AtelierWithMusic(props: Props) {
   const overlayViewportStyle: CSSProperties = mobile
     ? {
         position: 'fixed',
-        left: `${mobileViewport.offsetLeft}px`,
-        top: `${mobileViewport.offsetTop}px`,
+        left: 0,
+        top: 0,
         width: `${mobileViewport.width}px`,
         height: `${mobileViewport.height}px`,
       }
@@ -512,11 +508,13 @@ export default function AtelierWithMusic(props: Props) {
       }
 
   const panelStyle: CSSProperties = {
-    position: 'relative',
+    position: mobile ? 'absolute' : 'relative',
+    left: mobile ? '50%' : undefined,
+    top: mobile ? '50%' : undefined,
     width: mobile ? MOBILE_STAGE_WIDTH : 'min(1120px, calc(100vw - 34px))',
     height: mobile ? MOBILE_STAGE_HEIGHT : 'min(760px, calc(100svh - 38px))',
     maxHeight: mobile ? 'none' : 'calc(100svh - 14px)',
-    transform: mobile ? `scale(${mobileStageScale})` : undefined,
+    transform: mobile ? `translate(-50%, -50%) scale(${mobileStageScale})` : undefined,
     transformOrigin: '50% 50%',
     willChange: mobile ? 'transform' : undefined,
     border: '1px solid rgba(172, 205, 226, .72)',
@@ -556,7 +554,7 @@ export default function AtelierWithMusic(props: Props) {
             zIndex: 90,
             display: 'grid',
             placeItems: 'center',
-            padding: mobile ? 7 : 18,
+            padding: mobile ? 0 : 18,
             boxSizing: 'border-box',
             overflow: 'hidden',
             background: 'rgba(207, 231, 246, .62)',
