@@ -68,9 +68,6 @@ type DragState = {
 const assetUrl = (folder: 'instax' | 'instax-transparent', name: string) =>
   `${import.meta.env.BASE_URL}assets/${folder}/${encodeURIComponent(name)}`
 
-const atelierAssetUrl = (name: string) =>
-  `${import.meta.env.BASE_URL}assets/atelier/${name}`
-
 const COLOR_OPTIONS: Array<{
   key: ColorKey
   label: string
