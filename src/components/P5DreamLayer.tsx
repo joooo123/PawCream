@@ -415,11 +415,6 @@ export default function P5DreamLayer({
           height: s.height,
         }
 
-        const flashPeak = Math.exp(-Math.pow((t - 0.27) / 0.16, 2))
-        s.noStroke()
-        s.fill(255, 237, 245, 38 * flashPeak)
-        s.rect(frame.left, frame.top, frame.width, frame.height)
-
         const targetWidth = Math.min(frame.width * 0.88, 1280)
         const targetHeight = targetWidth * (ecgImage.height / ecgImage.width)
         const x = frame.left + (frame.width - targetWidth) / 2
@@ -447,17 +442,6 @@ export default function P5DreamLayer({
         )
         s.pop()
 
-        if (state.homeRect) {
-          const pulseT = Math.exp(-Math.pow((t - 0.34) / 0.08, 2))
-          if (pulseT > 0.01) {
-            const cx = state.homeRect.left + state.homeRect.width * 0.52
-            const cy = state.homeRect.top + state.homeRect.height * 0.44
-            s.noFill()
-            s.stroke(255, 129, 172, 62 * pulseT)
-            s.strokeWeight(1.2)
-            s.circle(cx, cy, 82 + 72 * pulseT)
-          }
-        }
       }
 
       s.draw = () => {
