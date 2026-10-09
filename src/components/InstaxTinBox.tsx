@@ -25,6 +25,7 @@ type PhotoView = PawCreamStoredPhoto & {
 }
 
 const boxAssetUrl = () => `${import.meta.env.BASE_URL}assets/iron_box.png`
+const nameTagAssetUrl = () => `${import.meta.env.BASE_URL}assets/${encodeURIComponent('姓名贴.png')}`
 
 function clampIndex(index: number, length: number) {
   if (!length) return 0
@@ -78,6 +79,12 @@ export default function InstaxTinBox({
 
   const active = views[activeIndex] ?? null
   const stacked = views.slice(0, 4).reverse()
+  const ownerName = views[0]?.ownerName || 'Creamy'
+  const ownerFontSize = ownerName.length > 12
+    ? (mobile ? 11 : 13)
+    : ownerName.length > 8
+      ? (mobile ? 12 : 14)
+      : (mobile ? 14 : 16)
 
   const themedButton: CSSProperties = {
     minHeight: 40,
@@ -324,6 +331,66 @@ export default function InstaxTinBox({
             filter: 'drop-shadow(0 16px 26px rgba(69,65,64,.14))',
           }}
         />
+
+        <div
+          aria-label={`${ownerName} 的姓名贴`}
+          style={{
+            position: 'absolute',
+            left: '27%',
+            top: '17.6%',
+            width: '46%',
+            height: '17.5%',
+            zIndex: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '80%',
+              height: '80%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <img
+              src={nameTagAssetUrl()}
+              alt=""
+              draggable={false}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                userSelect: 'none',
+              }}
+            />
+            <span
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                maxWidth: '72%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                color: '#7d655f',
+                fontSize: ownerFontSize,
+                fontWeight: 650,
+                letterSpacing: '.04em',
+                lineHeight: 1,
+                textAlign: 'center',
+                textShadow: '0 1px 0 rgba(255,255,255,.75)',
+              }}
+            >
+              {ownerName}
+            </span>
+          </div>
+        </div>
 
         <div
           aria-hidden="true"
