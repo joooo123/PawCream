@@ -79,6 +79,13 @@ export default function App() {
   }
 
   const enterAtelier = () => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('pawcream-entering-atelier')
+      window.setTimeout(() => {
+        document.documentElement.classList.remove('pawcream-entering-atelier')
+      }, 760)
+    }
+
     setScene('atelier')
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
