@@ -326,7 +326,10 @@ export default function HomeScene({
     setHouseHovered(false)
     setSceneState('entering')
     setTransitionStartedAt(performance.now())
-    onEnter()
+
+    // Keep Home and the P5 layer mounted long enough for the full heartbeat.
+    // Atelier starts only after the heartbeat transition has completed.
+    window.setTimeout(onEnter, MOTION.enterDurationMs)
   }
 
   const updateTuneHandleFromPointer = (
