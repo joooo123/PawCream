@@ -320,7 +320,7 @@ export default function InstaxTinBox({
                 transformOrigin: '50% 65%',
                 transform: isNewest
                   ? undefined
-                  : `translate(-50%,${y - 9}%) translateX(${x}px) rotate(${rotation}deg) scale(.47)`,
+                  : `translate(-50%,${y - 9}%) translateX(${x}px) rotate(${rotation}deg) scale(.94)`,
                 animation: isNewest ? 'pawcream-photo-into-box 980ms cubic-bezier(.16,1,.3,1) 120ms both' : undefined,
                 zIndex: 8 + index,
                 filter: 'drop-shadow(0 6px 9px rgba(55,49,49,.18))',
