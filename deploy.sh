@@ -48,6 +48,19 @@ ensure_base_tools() {
   fi
 }
 
+ensure_webp_tools() {
+  if command -v cwebp >/dev/null 2>&1 && command -v file >/dev/null 2>&1; then
+    return
+  fi
+
+  log "安装 WebP 图片优化工具（仅首次需要）"
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y webp file
+
+  command -v cwebp >/dev/null 2>&1 || die "cwebp 安装失败"
+  command -v file >/dev/null 2>&1 || die "file 安装失败"
+}
+
 ensure_font_tools() {
   if python3 - <<'PY' >/dev/null 2>&1
 from fontTools.ttLib import TTFont
@@ -168,6 +181,7 @@ fi
 
 require_root
 ensure_base_tools
+ensure_webp_tools
 ensure_font_tools
 ensure_docker
 
@@ -194,6 +208,7 @@ BUILD_SRC="$(dirname "$PACKAGE_JSON")"
 
 [[ -f "$BUILD_SRC/vite.config.ts" ]] || die "未找到 vite.config.ts，ZIP 结构不符合 PawCream 项目"
 [[ -f "$BUILD_SRC/scripts/convert-fonts.py" ]] || die "未找到 scripts/convert-fonts.py"
+[[ -f "$BUILD_SRC/scripts/optimize-runtime-assets.py" ]] || die "未找到 scripts/optimize-runtime-assets.py"
 
 log "源码目录：$BUILD_SRC"
 
@@ -209,15 +224,30 @@ log "生成 PawCream WOFF2 字体"
 log "安装前端依赖（在 Node Docker 容器中）"
 docker run --rm   -v "$BUILD_SRC:/app"   -v "$APP_ROOT/.npm-cache:/root/.npm"   -w /app   -e "npm_config_registry=$NPM_REGISTRY"   "$NODE_IMAGE"   npm install --no-audit --no-fund
 
-log "构建服务器版本（base=/，API=/api）"
-docker run --rm   -v "$BUILD_SRC:/app"   -w /app   -e "VITE_API_BASE_URL=/api"   -e "NODE_OPTIONS=--max-old-space-size=1024"   "$NODE_IMAGE"   npm run build:server
+log "生成 Home + Atelier 运行时 WebP"
+(
+  cd "$BUILD_SRC"
+  python3 scripts/optimize-runtime-assets.py
+)
+
+log "构建服务器 WebP 版本（base=/，API=/api）"
+docker run --rm   -v "$BUILD_SRC:/app"   -w /app   -e "VITE_API_BASE_URL=/api"   -e "NODE_OPTIONS=--max-old-space-size=1024"   "$NODE_IMAGE"   npm run build:server:webp
 
 [[ -s "$BUILD_SRC/dist/index.html" ]] || die "构建失败：dist/index.html 不存在"
 [[ -s "$BUILD_SRC/dist/assets/font/pawcream-cn.woff2" ]] || die "构建产物缺少 pawcream-cn.woff2"
 [[ -s "$BUILD_SRC/dist/assets/font/pawcream-en.woff2" ]] || die "构建产物缺少 pawcream-en.woff2"
+[[ -s "$BUILD_SRC/dist/assets/home/Home_mobile.webp" ]] || die "构建产物缺少 Home_mobile.webp"
+[[ -s "$BUILD_SRC/dist/assets/atelier/background.webp" ]] || die "构建产物缺少 background.webp"
+[[ -s "$BUILD_SRC/dist/assets/atelier/people.webp" ]] || die "构建产物缺少 people.webp"
+[[ -s "$BUILD_SRC/dist/assets/atelier/message.webp" ]] || die "构建产物缺少 message.webp"
+[[ -s "$BUILD_SRC/dist/assets/atelier/sewing machine.webp" ]] || die "构建产物缺少 sewing machine.webp"
 
-if grep -q "/PawCream/assets/font/" "$BUILD_SRC/dist/font-final-overrides.css" 2>/dev/null; then
+if grep -q "/PawCream/assets/font/" 2>/dev/null <<< "$(cat "$BUILD_SRC/dist/font-final-overrides.css" 2>/dev/null || true)"; then
   die "构建产物仍包含 GitHub Pages 专用字体绝对路径，拒绝上线"
+fi
+
+if grep -R -q "assets/home/Home_mobile.png\|assets/atelier/people.png\|assets/atelier/message.png\|assets/atelier/sewing%20machine.png" "$BUILD_SRC/dist/assets" 2>/dev/null; then
+  die "关键运行时资源仍引用 PNG，拒绝上线"
 fi
 
 log "构建完成"
