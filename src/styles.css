@@ -231,6 +231,26 @@ select {
   white-space: nowrap;
 }
 
+.house-hover-glow {
+  position: absolute;
+  z-index: 3;
+  border-radius: 42%;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(.88);
+  background:
+    radial-gradient(circle at 50% 50%,
+      rgba(255,255,255,.94) 0%,
+      rgba(255,255,255,.68) 34%,
+      rgba(255,252,246,.32) 58%,
+      rgba(255,255,255,0) 78%);
+  filter: blur(10px);
+  transition:
+    opacity 420ms ease,
+    transform 620ms cubic-bezier(.2,.72,.22,1),
+    filter 620ms ease;
+}
+
 .house-hotspot {
   position: absolute;
   z-index: 4;
@@ -249,6 +269,12 @@ select {
     transform: translateY(-3px) scale(1.018);
     filter: brightness(1.018) saturate(1.018);
   }
+
+  .home-scene--house-hovered:not(.home-scene--entering):not(.home-scene--mobile):not(.home-scene--tuning) .house-hover-glow {
+    opacity: .56;
+    transform: scale(1.08);
+    filter: blur(14px);
+  }
 }
 
 .home-scene--awake .home-artboard,
@@ -263,6 +289,35 @@ select {
 .home-scene--entering .home-artboard {
   animation: pawcream-home-enter-through 1280ms cubic-bezier(.2,.72,.22,1) both;
   will-change: transform, opacity, filter;
+}
+
+.home-scene--entering .house-hover-glow {
+  opacity: 1;
+  animation: pawcream-house-light-bloom 1280ms cubic-bezier(.18,.7,.2,1) both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes pawcream-house-light-bloom {
+  0% {
+    transform: scale(.9);
+    opacity: .28;
+    filter: blur(10px);
+  }
+  28% {
+    transform: scale(1.22);
+    opacity: .72;
+    filter: blur(16px);
+  }
+  58% {
+    transform: scale(1.78);
+    opacity: .96;
+    filter: blur(22px);
+  }
+  100% {
+    transform: scale(2.65);
+    opacity: .18;
+    filter: blur(32px);
+  }
 }
 
 @keyframes pawcream-home-enter-through {
@@ -317,37 +372,109 @@ select {
 
 .pawcream-app--transition .pawcream-scene-layer--home {
   z-index: 1;
-  animation: pawcream-home-crossfade-out 960ms cubic-bezier(.28,.1,.32,1) both;
+  animation: pawcream-home-light-fade 1260ms cubic-bezier(.24,.1,.3,1) both;
 }
 
 .pawcream-app--transition .pawcream-scene-layer--atelier {
   z-index: 2;
-  opacity: 0;
-  animation: pawcream-atelier-crossfade-in 960ms cubic-bezier(.22,.5,.28,1) both;
-  will-change: opacity;
+  opacity: 1;
+  clip-path: circle(0vmax at var(--pawcream-entry-x, 50vw) var(--pawcream-entry-y, 50vh));
+  animation: pawcream-atelier-radial-reveal 1260ms cubic-bezier(.18,.62,.2,1) both;
+  will-change: clip-path, opacity;
 }
 
-@keyframes pawcream-home-crossfade-out {
+.pawcream-entry-light {
+  position: fixed;
+  left: var(--pawcream-entry-x, 50vw);
+  top: var(--pawcream-entry-y, 50vh);
+  z-index: 3;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.18);
+  opacity: 0;
+  background:
+    radial-gradient(circle,
+      rgba(255,255,255,1) 0%,
+      rgba(255,255,255,.98) 22%,
+      rgba(255,253,247,.88) 38%,
+      rgba(255,250,240,.48) 56%,
+      rgba(255,255,255,0) 76%);
+  box-shadow:
+    0 0 28px rgba(255,255,255,.98),
+    0 0 78px rgba(255,248,232,.72),
+    0 0 150px rgba(255,255,255,.44);
+  filter: blur(1px);
+  animation: pawcream-entry-light-expand 1260ms cubic-bezier(.16,.62,.18,1) both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes pawcream-home-light-fade {
   0% { opacity: 1; }
-  28% { opacity: .94; }
-  58% { opacity: .62; }
-  82% { opacity: .22; }
+  38% { opacity: .96; }
+  68% { opacity: .58; }
+  88% { opacity: .18; }
   100% { opacity: 0; }
 }
 
-@keyframes pawcream-atelier-crossfade-in {
-  0% { opacity: 0; }
-  12% { opacity: .03; }
-  34% { opacity: .18; }
-  60% { opacity: .52; }
-  82% { opacity: .82; }
-  100% { opacity: 1; }
+@keyframes pawcream-atelier-radial-reveal {
+  0% {
+    clip-path: circle(0vmax at var(--pawcream-entry-x, 50vw) var(--pawcream-entry-y, 50vh));
+    opacity: .18;
+  }
+  18% {
+    clip-path: circle(4vmax at var(--pawcream-entry-x, 50vw) var(--pawcream-entry-y, 50vh));
+    opacity: .24;
+  }
+  42% {
+    clip-path: circle(24vmax at var(--pawcream-entry-x, 50vw) var(--pawcream-entry-y, 50vh));
+    opacity: .48;
+  }
+  68% {
+    clip-path: circle(68vmax at var(--pawcream-entry-x, 50vw) var(--pawcream-entry-y, 50vh));
+    opacity: .78;
+  }
+  100% {
+    clip-path: circle(150vmax at var(--pawcream-entry-x, 50vw) var(--pawcream-entry-y, 50vh));
+    opacity: 1;
+  }
+}
+
+@keyframes pawcream-entry-light-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(.18);
+    opacity: .16;
+    filter: blur(0);
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: .9;
+    filter: blur(1px);
+  }
+  48% {
+    transform: translate(-50%, -50%) scale(4.8);
+    opacity: 1;
+    filter: blur(3px);
+  }
+  72% {
+    transform: translate(-50%, -50%) scale(12);
+    opacity: .72;
+    filter: blur(7px);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(26);
+    opacity: 0;
+    filter: blur(14px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .home-scene--entering .home-artboard,
+  .home-scene--entering .house-hover-glow,
   .pawcream-app--transition .pawcream-scene-layer--home,
-  .pawcream-app--transition .pawcream-scene-layer--atelier {
+  .pawcream-app--transition .pawcream-scene-layer--atelier,
+  .pawcream-entry-light {
     animation: none !important;
   }
 
