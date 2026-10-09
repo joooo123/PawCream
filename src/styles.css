@@ -338,7 +338,7 @@ select {
 
 .pawcream-pink-transition--covering {
   opacity: 1;
-  animation: pawcream-pink-cover 560ms cubic-bezier(.18,.72,.2,1) both;
+  animation: pawcream-pink-cover 1000ms cubic-bezier(.18,.72,.2,1) both;
 }
 
 .pawcream-pink-transition--revealing {
