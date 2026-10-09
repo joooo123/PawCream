@@ -5,7 +5,6 @@ import {
   isPawCreamApiEnabled,
   registerPawCream,
   signInPawCream,
-  setPawCreamPreviewSignedIn,
 } from '../pawcreamApi'
 import AtelierWithCollection from './AtelierWithCollection'
 
@@ -273,14 +272,7 @@ export default function AtelierWithSignin(props: Props) {
       return
     }
     if (!isPawCreamApiEnabled()) {
-      setPawCreamPreviewSignedIn(true)
-      setStatus(copy.success)
-      window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
-      window.setTimeout(() => {
-        setOpen(false)
-        setPassword('')
-        setInviteCode('')
-      }, 420)
+      setStatus(copy.preview)
       return
     }
 
@@ -365,7 +357,7 @@ export default function AtelierWithSignin(props: Props) {
             position: 'fixed',
             left: '50%',
             bottom: mobile ? 62 : 82,
-            zIndex: 180,
+            zIndex: 96,
             width: mobile
               ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
               : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
