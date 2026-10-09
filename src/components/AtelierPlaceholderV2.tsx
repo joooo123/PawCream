@@ -240,7 +240,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
 
   const [language, setLanguage] = useState<Language>(loadLanguage)
   const [topBarOpen, setTopBarOpen] = useState(false)
-  const [hintMode, setHintMode] = useState(false)
   const [messageMoveMode, setMessageMoveMode] = useState(false)
   const [runtimeMessagePosition, setRuntimeMessagePosition] = useState<{ x: number; y: number } | null>(null)
   const [boardOpen, setBoardOpen] = useState(false)
@@ -251,7 +250,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         notePrompt: '留下你想对 PawCream 说的话吧',
         messageHint: '拖动这封信',
         lightHint: '打开工具栏',
-        toolbarHint: '提示', toolbarHome: '返回 Home', toolbarLogin: '登入', toolbarClose: '收起',
+        toolbarHome: '返回 Home', toolbarLogin: '登入', toolbarClose: '收起',
         boardTitle: 'PawCream 留言板', boardSubtitle: '写下一句话，留在这间小小的工作室里。',
         boardPlaceholder: '想对 PawCream 说点什么？', boardSubmit: '贴上留言', boardEmpty: '这里还没有留言。',
         boardLocal: '当前留言保存在此浏览器中。', loginTitle: '登入',
@@ -260,7 +259,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     : {
         notePrompt: 'Leave a little note for PawCream',
         messageHint: 'Drag this letter', lightHint: 'Open toolbar',
-        toolbarHint: 'Hints', toolbarHome: 'Home', toolbarLogin: 'Sign in', toolbarClose: 'Hide',
+        toolbarHome: 'Home', toolbarLogin: 'Sign in', toolbarClose: 'Hide',
         boardTitle: 'PawCream Message Board', boardSubtitle: 'Leave a small thought in this tiny atelier.',
         boardPlaceholder: 'What would you like to tell PawCream?', boardSubmit: 'Leave note', boardEmpty: 'No notes here yet.',
         boardLocal: 'Messages are currently stored in this browser.', loginTitle: 'Sign in',
@@ -418,7 +417,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     if (key === 'light') {
       const nextOpen = !topBarOpen
       setTopBarOpen(nextOpen)
-      setHintMode(nextOpen)
       if (!nextOpen) setLoginNoticeOpen(false)
       return
     }
@@ -489,7 +487,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
 
   const closeToolbar = () => {
     setTopBarOpen(false)
-    setHintMode(false)
     setLoginNoticeOpen(false)
   }
 
@@ -511,7 +508,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     const noteIsPassive = !tuneMode && key === 'note'
     const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color')
     const movingMessage = !tuneMode && key === 'message' && messageMoveMode
-    const hintText = !hintMode || tuneMode
+    const hintText = tuneMode
       ? null
       : key === 'message'
         ? copy.messageHint
@@ -638,7 +635,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
                 <button key={item} type="button" onClick={() => setLanguage(item)} style={{ border: 0, borderRadius: 999, padding: mobile ? '5px 7px' : '6px 9px', background: language === item ? 'rgba(255,255,255,.94)' : 'transparent', color: '#8d6d78', fontSize: mobile ? 9 : 10, cursor: 'pointer' }}>{item === 'zh' ? '中文' : 'EN'}</button>
               ))}
             </div>
-            <button type="button" onClick={() => setHintMode((v) => !v)} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px', background: hintMode ? '#f8e8ee' : 'rgba(255,255,255,.76)' }}>{copy.toolbarHint} {hintMode ? '✓' : ''}</button>
             <button type="button" onClick={onBack} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}>{copy.toolbarHome}</button>
             <button type="button" onClick={() => setLoginNoticeOpen((v) => !v)} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}>{copy.toolbarLogin}</button>
             <button type="button" onClick={closeToolbar} aria-label={copy.toolbarClose} title={copy.toolbarClose} style={{ width: mobile ? 28 : 32, height: mobile ? 28 : 32, border: '1px solid rgba(198,133,157,.2)', borderRadius: '50%', background: 'rgba(255,255,255,.78)', color: '#9b7682', cursor: 'pointer' }}>×</button>
