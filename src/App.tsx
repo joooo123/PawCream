@@ -90,7 +90,7 @@ export default function App() {
 
   useEffect(() => {
     if (scene !== 'transition') return
-    const timer = window.setTimeout(() => setScene('atelier'), 960)
+    const timer = window.setTimeout(() => setScene('atelier'), 1260)
     return () => window.clearTimeout(timer)
   }, [scene])
 
@@ -119,6 +119,10 @@ export default function App() {
             onEnter={enterAtelier}
           />
         </div>
+      )}
+
+      {scene === 'transition' && (
+        <div className="pawcream-entry-light" aria-hidden="true" />
       )}
 
       {scene !== 'home' && (
