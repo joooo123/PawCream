@@ -107,15 +107,87 @@ const SLOT_COUNT: Record<SizeKey, number> = {
   four: 4,
 }
 
-const FROSTED_TINT: Record<ColorKey, string> = {
-  gray: 'rgba(236,236,236,.54)',
-  'pink-white': 'rgba(248,220,230,.50)',
-  'pink-blue': 'linear-gradient(135deg, rgba(248,218,228,.52), rgba(220,233,247,.52))',
-  'purple-coffee': 'rgba(225,223,248,.54)',
-  'green-coffee': 'rgba(234,245,216,.56)',
-  'blue-coffee': 'rgba(220,231,243,.56)',
-  'blue-white': 'rgba(233,240,246,.56)',
-  'yellow-coffee': 'rgba(247,235,190,.54)',
+const INSTAX_THEME: Record<ColorKey, {
+  frosted: string
+  selectedBg: string
+  selectedBorder: string
+  selectedText: string
+  panelBg: string
+  panelBorder: string
+  accent: string
+}> = {
+  gray: {
+    frosted: 'rgba(236,236,236,.48)',
+    selectedBg: 'rgba(239,239,239,.92)',
+    selectedBorder: 'rgba(164,164,164,.48)',
+    selectedText: '#737373',
+    panelBg: 'rgba(249,249,249,.76)',
+    panelBorder: 'rgba(176,176,176,.22)',
+    accent: '#a2a2a2',
+  },
+  'pink-white': {
+    frosted: 'rgba(248,220,230,.44)',
+    selectedBg: 'rgba(252,232,239,.94)',
+    selectedBorder: 'rgba(216,147,174,.50)',
+    selectedText: '#a7657e',
+    panelBg: 'rgba(255,246,249,.80)',
+    panelBorder: 'rgba(216,147,174,.22)',
+    accent: '#d790aa',
+  },
+  'pink-blue': {
+    frosted: 'linear-gradient(135deg, rgba(248,218,228,.46), rgba(220,233,247,.46))',
+    selectedBg: 'linear-gradient(135deg, rgba(252,231,238,.96), rgba(233,241,250,.96))',
+    selectedBorder: 'rgba(188,154,191,.50)',
+    selectedText: '#95758f',
+    panelBg: 'linear-gradient(135deg, rgba(255,247,250,.82), rgba(246,250,255,.82))',
+    panelBorder: 'rgba(188,154,191,.22)',
+    accent: '#c38eaa',
+  },
+  'purple-coffee': {
+    frosted: 'rgba(225,223,248,.48)',
+    selectedBg: 'rgba(238,236,252,.95)',
+    selectedBorder: 'rgba(157,151,211,.50)',
+    selectedText: '#7770a9',
+    panelBg: 'rgba(248,247,255,.80)',
+    panelBorder: 'rgba(157,151,211,.22)',
+    accent: '#9d97d3',
+  },
+  'green-coffee': {
+    frosted: 'rgba(234,245,216,.30)',
+    selectedBg: 'rgba(242,249,230,.95)',
+    selectedBorder: 'rgba(153,181,111,.50)',
+    selectedText: '#75895d',
+    panelBg: 'rgba(249,253,241,.80)',
+    panelBorder: 'rgba(153,181,111,.22)',
+    accent: '#9db979',
+  },
+  'blue-coffee': {
+    frosted: 'rgba(220,231,243,.48)',
+    selectedBg: 'rgba(235,243,250,.95)',
+    selectedBorder: 'rgba(130,166,199,.50)',
+    selectedText: '#6686a3',
+    panelBg: 'rgba(247,251,255,.80)',
+    panelBorder: 'rgba(130,166,199,.22)',
+    accent: '#8aaeca',
+  },
+  'blue-white': {
+    frosted: 'rgba(233,240,246,.48)',
+    selectedBg: 'rgba(242,247,251,.96)',
+    selectedBorder: 'rgba(157,181,201,.50)',
+    selectedText: '#758a9d',
+    panelBg: 'rgba(250,252,254,.82)',
+    panelBorder: 'rgba(157,181,201,.22)',
+    accent: '#9db5c8',
+  },
+  'yellow-coffee': {
+    frosted: 'rgba(247,235,190,.46)',
+    selectedBg: 'rgba(252,245,218,.95)',
+    selectedBorder: 'rgba(199,170,93,.50)',
+    selectedText: '#947b47',
+    panelBg: 'rgba(255,252,241,.82)',
+    panelBorder: 'rgba(199,170,93,.22)',
+    accent: '#c4a75e',
+  },
 }
 
 const FRAME_MAP: Record<ColorKey, Partial<Record<SizeKey, string>>> = {
@@ -406,6 +478,7 @@ export default function AtelierWithInstax(props: Props) {
   const opaqueFrameSrc = frameName ? assetUrl('instax', frameName) : ''
   const transparentFrameSrc = frameName ? assetUrl('instax-transparent', frameName) : ''
   const machineSrc = atelierAssetUrl('instax.png')
+  const theme = INSTAX_THEME[colorKey]
 
   const cleanupPhotos = () => {
     setPhotos((current) => {
@@ -740,7 +813,7 @@ export default function AtelierWithInstax(props: Props) {
                     display: 'grid',
                     placeItems: 'center',
                     color: '#b99aa5',
-                    fontSize: 12,
+                    fontSize: 22,
                     background: 'rgba(252,246,248,.92)',
                   }}
                 >
@@ -795,7 +868,7 @@ export default function AtelierWithInstax(props: Props) {
             display: 'grid',
             placeItems: 'center',
             padding: mobile ? 10 : 24,
-            background: FROSTED_TINT[colorKey],
+            background: theme.frosted,
             backdropFilter: 'blur(12px) saturate(108%)',
             WebkitBackdropFilter: 'blur(12px) saturate(108%)',
             transition: 'background 260ms ease',
@@ -862,7 +935,7 @@ export default function AtelierWithInstax(props: Props) {
                 display: 'grid',
                 placeItems: 'center',
                 padding: 0,
-                fontSize: 21,
+                fontSize: 31,
                 zIndex: 10,
               }}
             >
@@ -872,10 +945,10 @@ export default function AtelierWithInstax(props: Props) {
             {step === 'select' && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: 18 }}>
-                  <div style={{ fontSize: mobile ? 19 : 22, fontWeight: 750, letterSpacing: '.04em' }}>
+                  <div style={{ fontSize: mobile ? 29 : 32, fontWeight: 750, letterSpacing: '.04em' }}>
                     pick your instax
                   </div>
-                  <div style={{ marginTop: 5, fontSize: 10, color: '#b08f9b' }}>
+                  <div style={{ marginTop: 5, fontSize: 20, color: '#b08f9b' }}>
                     横向选颜色 · 纵向选比例
                   </div>
                 </div>
@@ -904,17 +977,17 @@ export default function AtelierWithInstax(props: Props) {
                             padding: '6px 9px',
                             borderRadius: 14,
                             border: selected
-                              ? '1px solid rgba(201,127,157,.46)'
-                              : '1px solid rgba(190,151,165,.18)',
-                            background: selected ? '#fff0f4' : 'rgba(255,255,255,.72)',
-                            color: selected ? '#a6677d' : '#947985',
+                              ? `1px solid ${theme.selectedBorder}`
+                              : `1px solid ${theme.panelBorder}`,
+                            background: selected ? theme.selectedBg : 'rgba(255,255,255,.72)',
+                            color: selected ? theme.selectedText : '#947985',
                             opacity: enabled ? 1 : .28,
                             cursor: enabled ? 'pointer' : 'not-allowed',
                             textAlign: 'left',
                           }}
                         >
-                          <span style={{ display: 'block', fontSize: 11, fontWeight: 720 }}>{option.label}</span>
-                          <span style={{ display: 'block', marginTop: 2, fontSize: 8, opacity: .72 }}>{option.hint}</span>
+                          <span style={{ display: 'block', fontSize: 21, fontWeight: 720 }}>{option.label}</span>
+                          <span style={{ display: 'block', marginTop: 2, fontSize: 18, opacity: .72 }}>{option.hint}</span>
                         </button>
                       )
                     })}
@@ -948,7 +1021,7 @@ export default function AtelierWithInstax(props: Props) {
                               padding: 0,
                               borderRadius: '50%',
                               border: selected ? '3px solid white' : '2px solid white',
-                              outline: selected ? '2px solid rgba(185,119,145,.48)' : '1px solid rgba(130,103,113,.14)',
+                              outline: selected ? `2px solid ${theme.selectedBorder}` : '1px solid rgba(130,103,113,.14)',
                               background: option.swatch,
                               boxShadow: '0 3px 9px rgba(91,68,77,.12)',
                               cursor: 'pointer',
@@ -965,8 +1038,8 @@ export default function AtelierWithInstax(props: Props) {
                         placeItems: 'center',
                         padding: 8,
                         borderRadius: 22,
-                        background: 'rgba(252,247,249,.7)',
-                        border: '1px solid rgba(195,150,168,.14)',
+                        background: theme.panelBg,
+                        border: `1px solid ${theme.panelBorder}`,
                       }}
                     >
                       {frameName ? (
@@ -983,14 +1056,14 @@ export default function AtelierWithInstax(props: Props) {
                           }}
                         />
                       ) : (
-                        <div style={{ fontSize: 11, color: '#b08f9b' }}>这个组合暂时没有相纸</div>
+                        <div style={{ fontSize: 21, color: '#b08f9b' }}>这个组合暂时没有相纸</div>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {frameError && (
-                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 10, color: '#b27688' }}>
+                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: '#b27688' }}>
                     {frameError}
                   </div>
                 )}
@@ -1007,7 +1080,7 @@ export default function AtelierWithInstax(props: Props) {
                       minHeight: 42,
                       borderRadius: 999,
                       padding: '9px 26px',
-                      fontSize: 14,
+                      fontSize: 24,
                       fontWeight: 750,
                       opacity: frameMeta && frameName ? 1 : .42,
                     }}
@@ -1021,10 +1094,10 @@ export default function AtelierWithInstax(props: Props) {
             {step === 'edit' && frameMeta && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                  <div style={{ fontSize: mobile ? 18 : 21, fontWeight: 750 }}>
+                  <div style={{ fontSize: mobile ? 28 : 31, fontWeight: 750 }}>
                     adjust your photos
                   </div>
-                  <div style={{ marginTop: 5, fontSize: 10, color: '#b08f9b' }}>
+                  <div style={{ marginTop: 5, fontSize: 20, color: '#b08f9b' }}>
                     拖动照片调整位置 · 点击格子切换 · 滑杆缩放
                   </div>
                 </div>
@@ -1042,12 +1115,12 @@ export default function AtelierWithInstax(props: Props) {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ fontSize: 10, color: '#9c7c87' }}>
+                    <div style={{ fontSize: 20, color: '#9c7c87' }}>
                       {frameMeta.slots.length > 1
                         ? `第 ${activeSlot + 1} 格 / 共 ${frameMeta.slots.length} 格`
                         : '当前照片'}
                     </div>
-                    <div style={{ fontSize: 9, color: '#b3959f' }}>
+                    <div style={{ fontSize: 19, color: '#b3959f' }}>
                       已选择 {photos.length}/{frameMeta.slots.length}
                     </div>
                   </div>
@@ -1062,7 +1135,7 @@ export default function AtelierWithInstax(props: Props) {
                       onChange={(event) => updatePlacement(activeSlot, {
                         zoom: Number(event.currentTarget.value),
                       })}
-                      style={{ width: '100%', marginTop: 10, accentColor: '#d58ca8' }}
+                      style={{ width: '100%', marginTop: 10, accentColor: theme.accent }}
                       aria-label="Photo zoom"
                     />
                   )}
@@ -1073,7 +1146,7 @@ export default function AtelierWithInstax(props: Props) {
                         type="button"
                         className="pawcream-instax-button"
                         onClick={chooseMorePhotos}
-                        style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 10 }}
+                        style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
                       >
                         继续选照片
                       </button>
@@ -1083,7 +1156,7 @@ export default function AtelierWithInstax(props: Props) {
                         type="button"
                         className="pawcream-instax-button"
                         onClick={replaceActivePhoto}
-                        style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 10 }}
+                        style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
                       >
                         替换当前照片
                       </button>
@@ -1096,7 +1169,7 @@ export default function AtelierWithInstax(props: Props) {
                         setStep('select')
                         setStatus('')
                       }}
-                      style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 10 }}
+                      style={{ ...modalButtonStyle, minHeight: 36, borderRadius: 999, padding: '7px 15px', fontSize: 20 }}
                     >
                       重选相纸
                     </button>
@@ -1104,7 +1177,7 @@ export default function AtelierWithInstax(props: Props) {
                 </div>
 
                 {status && (
-                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 10, color: '#a87687' }}>
+                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: '#a87687' }}>
                     {status}
                   </div>
                 )}
@@ -1121,8 +1194,8 @@ export default function AtelierWithInstax(props: Props) {
                       minHeight: 42,
                       borderRadius: 999,
                       padding: '9px 22px',
-                      background: '#fff0f4',
-                      color: '#a6677d',
+                      background: theme.selectedBg,
+                      color: theme.selectedText,
                       fontWeight: 750,
                       opacity: busy || photos.length < frameMeta.slots.length ? .42 : 1,
                     }}
@@ -1136,10 +1209,10 @@ export default function AtelierWithInstax(props: Props) {
             {step === 'printing' && finalUrl && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: mobile ? 18 : 21, fontWeight: 750 }}>
+                  <div style={{ fontSize: mobile ? 28 : 31, fontWeight: 750 }}>
                     your instax!
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 10, color: '#b08f9b' }}>
+                  <div style={{ marginTop: 4, fontSize: 20, color: '#b08f9b' }}>
                     {printingDone ? '接住它 ♡' : '正在从拍立得里慢慢出来…'}
                   </div>
                 </div>
@@ -1201,7 +1274,7 @@ export default function AtelierWithInstax(props: Props) {
                       border: '1px solid rgba(195,150,168,.15)',
                     }}
                   >
-                    <div style={{ marginBottom: 11, textAlign: 'center', fontSize: 11, color: '#9c7885' }}>
+                    <div style={{ marginBottom: 11, textAlign: 'center', fontSize: 21, color: '#9c7885' }}>
                       这张照片想放去哪里？
                     </div>
                     <div style={{ display: 'grid', gap: 9 }}>
@@ -1214,9 +1287,9 @@ export default function AtelierWithInstax(props: Props) {
                           ...modalButtonStyle,
                           minHeight: 44,
                           borderRadius: 16,
-                          background: '#fff0f4',
-                          color: '#9f657a',
-                          fontSize: 11,
+                          background: theme.selectedBg,
+                          color: theme.selectedText,
+                          fontSize: 21,
                           fontWeight: 720,
                         }}
                       >
@@ -1231,7 +1304,7 @@ export default function AtelierWithInstax(props: Props) {
                           ...modalButtonStyle,
                           minHeight: 44,
                           borderRadius: 16,
-                          fontSize: 11,
+                          fontSize: 21,
                           fontWeight: 650,
                         }}
                       >
@@ -1240,7 +1313,7 @@ export default function AtelierWithInstax(props: Props) {
                     </div>
 
                     {status && (
-                      <div style={{ marginTop: 10, textAlign: 'center', fontSize: 10, color: '#a87687', lineHeight: 1.6 }}>
+                      <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: '#a87687', lineHeight: 1.6 }}>
                         {status}
                       </div>
                     )}
@@ -1251,7 +1324,7 @@ export default function AtelierWithInstax(props: Props) {
                           type="button"
                           className="pawcream-instax-button"
                           onClick={closeInstax}
-                          style={{ ...modalButtonStyle, minHeight: 34, borderRadius: 999, padding: '6px 18px', fontSize: 10 }}
+                          style={{ ...modalButtonStyle, minHeight: 34, borderRadius: 999, padding: '6px 18px', fontSize: 20 }}
                         >
                           完成
                         </button>
