@@ -251,14 +251,14 @@ export default function InstaxTinBox({
           }
           35% { opacity: 1; }
           82% {
-            transform: translate(-50%,-12%) rotate(-3deg) scale(.47);
+            transform: translate(-50%,-12%) rotate(-3deg) scale(.94);
           }
           92% {
-            transform: translate(-50%,-7%) rotate(-2deg) scale(.49);
+            transform: translate(-50%,-7%) rotate(-2deg) scale(.98);
           }
           100% {
             opacity: 1;
-            transform: translate(-50%,-9%) rotate(-2.5deg) scale(.47);
+            transform: translate(-50%,-9%) rotate(-2.5deg) scale(.94);
           }
         }
       `}</style>
@@ -314,8 +314,8 @@ export default function InstaxTinBox({
                 position: 'absolute',
                 left: '50%',
                 top: '58%',
-                width: '42%',
-                height: '35%',
+                width: '48%',
+                height: '38%',
                 objectFit: 'contain',
                 transformOrigin: '50% 65%',
                 transform: isNewest
