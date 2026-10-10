@@ -884,6 +884,7 @@ export default function AtelierWithInstax(props: Props) {
               maxHeight: 'calc(100svh - 20px)',
               overflow: 'auto',
               padding: mobile ? '26px 18px 22px' : '32px 34px 28px',
+              paddingTop: mobile && step !== 'boxing' ? 70 : mobile ? 26 : 32,
               border: `1px solid ${theme.panelBorder}`,
               borderRadius: mobile ? 24 : 30,
               background: theme.panelBg,
