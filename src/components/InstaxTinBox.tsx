@@ -541,7 +541,7 @@ export default function InstaxTinBox({
             width: '90.8%',
             height: '43.5%',
             overflow: 'hidden',
-            clipPath: 'polygon(0 0, 100% 0, 100% 89%, 99% 92%, 97% 95%, 94% 97.5%, 90% 99%, 83% 100%, 17% 100%, 10% 99%, 6% 97.5%, 3% 95%, 1% 92%, 0 89%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% calc(89% - 10px), 99% calc(92% - 10px), 97% calc(95% - 10px), 94% calc(97.5% - 10px), 90% calc(99% - 10px), 83% calc(100% - 10px), 17% calc(100% - 10px), 10% calc(99% - 10px), 6% calc(97.5% - 10px), 3% calc(95% - 10px), 1% calc(92% - 10px), 0 calc(89% - 10px))',
             zIndex: 7,
             pointerEvents: 'none',
           }}
