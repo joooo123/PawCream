@@ -515,6 +515,22 @@ export default function AtelierWithInstax(props: Props) {
     setOpen(true)
   }
 
+  const openMyBox = async () => {
+    if (busy) return
+    setBusy(true)
+    setStatus('')
+    try {
+      const mine = await listPawCreamPhotos('mine')
+      setBoxPhotos(mine)
+      setNewestPhotoId(null)
+      setStep('boxing')
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : '小盒子读取失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   useEffect(() => {
     if (!frameName) {
       setFrameMeta(null)
@@ -912,6 +928,30 @@ export default function AtelierWithInstax(props: Props) {
               </span>
             </button>
 
+            {step !== 'boxing' && (
+              <button
+                type="button"
+                className="pawcream-instax-button"
+                onClick={() => void openMyBox()}
+                disabled={busy}
+                style={{
+                  ...themedButtonStyle,
+                  position: 'absolute',
+                  top: mobile ? 12 : 14,
+                  left: mobile ? 12 : 14,
+                  zIndex: 10,
+                  minHeight: mobile ? 40 : 42,
+                  padding: mobile ? '7px 11px' : '8px 15px',
+                  fontSize: mobile ? 13 : 15,
+                  fontWeight: 700,
+                  borderRadius: 999,
+                  opacity: busy ? .5 : 1,
+                }}
+              >
+                {busy ? '打开中…' : '♡ 我的铁盒'}
+              </button>
+            )}
+
             {step === 'select' && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: 18 }}>
@@ -940,6 +980,12 @@ export default function AtelierWithInstax(props: Props) {
                     {colorOption.slogan}
                   </div>
                 </div>
+
+                {status && (
+                  <div role="alert" style={{ marginBottom: 10, textAlign: 'center', color: theme.selectedText }}>
+                    {status}
+                  </div>
+                )}
 
                 <div
                   style={{
