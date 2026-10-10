@@ -42,8 +42,10 @@ type StorePreset = {
 }
 
 type StoreTune = Record<StoreLayoutKey, number>
+type StorePositionTune = Record<StoreLayoutKey, number>
 
 const STORE_TUNE_KEY = 'pawcream-instax-box-size-tune-v1'
+const STORE_POSITION_TUNE_KEY = 'pawcream-instax-box-position-tune-v1'
 
 const STORE_LAYOUTS: Array<{ key: StoreLayoutKey; label: string }> = [
   { key: 'square', label: '方形' },
@@ -61,6 +63,15 @@ const DEFAULT_STORE_TUNE: StoreTune = {
   'portrait-1': 1,
   'portrait-2': 1,
   four: 1,
+}
+
+const DEFAULT_STORE_POSITION_TUNE: StorePositionTune = {
+  square: -10,
+  double: -10,
+  wide: -10,
+  'portrait-1': -10,
+  'portrait-2': -10,
+  four: -10,
 }
 
 function storeLayoutKey(frameName: string): StoreLayoutKey {
@@ -115,6 +126,30 @@ function readStoreTune(): StoreTune {
   }
 }
 
+
+function readStorePositionTune(): StorePositionTune {
+  if (typeof window === 'undefined') return { ...DEFAULT_STORE_POSITION_TUNE }
+  try {
+    const raw = window.localStorage.getItem(STORE_POSITION_TUNE_KEY)
+    if (!raw) return { ...DEFAULT_STORE_POSITION_TUNE }
+    const parsed = JSON.parse(raw) as Partial<StorePositionTune>
+    const readValue = (key: StoreLayoutKey) => {
+      const value = Number(parsed[key])
+      return Number.isFinite(value) ? value : DEFAULT_STORE_POSITION_TUNE[key]
+    }
+    return {
+      square: readValue('square'),
+      double: readValue('double'),
+      wide: readValue('wide'),
+      'portrait-1': readValue('portrait-1'),
+      'portrait-2': readValue('portrait-2'),
+      four: readValue('four'),
+    }
+  } catch {
+    return { ...DEFAULT_STORE_POSITION_TUNE }
+  }
+}
+
 export default function InstaxTinBox({
   photos,
   newestPhotoId,
@@ -130,6 +165,7 @@ export default function InstaxTinBox({
   const [activeIndex, setActiveIndex] = useState(0)
   const [dropDone, setDropDone] = useState(false)
   const [storeTune, setStoreTune] = useState<StoreTune>(() => readStoreTune())
+  const [storePositionTune, setStorePositionTune] = useState<StorePositionTune>(() => readStorePositionTune())
   const [copyStatus, setCopyStatus] = useState('复制参数')
   const pointerStart = useRef<number | null>(null)
   const boxTuneMode = useMemo(
@@ -153,6 +189,11 @@ export default function InstaxTinBox({
     if (typeof window === 'undefined') return
     window.localStorage.setItem(STORE_TUNE_KEY, JSON.stringify(storeTune))
   }, [storeTune])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(STORE_POSITION_TUNE_KEY, JSON.stringify(storePositionTune))
+  }, [storePositionTune])
 
   useEffect(() => {
     const newestIndex = newestPhotoId
@@ -193,14 +234,22 @@ export default function InstaxTinBox({
     setStoreTune((current) => ({ ...current, [key]: value }))
   }
 
+  const updateStorePositionTune = (key: StoreLayoutKey, value: number) => {
+    setStorePositionTune((current) => ({ ...current, [key]: value }))
+  }
+
   const resetStoreTune = () => {
     setStoreTune({ ...DEFAULT_STORE_TUNE })
+    setStorePositionTune({ ...DEFAULT_STORE_POSITION_TUNE })
     setCopyStatus('已重置')
     window.setTimeout(() => setCopyStatus('复制参数'), 900)
   }
 
   const copyStoreTune = async () => {
-    const payload = JSON.stringify(storeTune, null, 2)
+    const payload = JSON.stringify({
+      size: storeTune,
+      positionY: storePositionTune,
+    }, null, 2)
     try {
       await navigator.clipboard.writeText(payload)
       setCopyStatus('已复制 ✓')
@@ -504,6 +553,7 @@ export default function InstaxTinBox({
             const jitter = boxTuneMode ? { x: 0, y: 0, angle: 0 } : stableJitter(photo.id)
             const stackLift = boxTuneMode ? 0 : index * 1.2
             const finalScale = preset.scale * storeTune[layout]
+            const tunedY = storePositionTune[layout]
 
             return (
               <div
@@ -511,7 +561,7 @@ export default function InstaxTinBox({
                 style={{
                   position: 'absolute',
                   left: `calc(50% + ${jitter.x}%)`,
-                  top: `calc(50% + ${jitter.y + stackLift}%)`,
+                  top: `calc(50% + ${tunedY + jitter.y + stackLift}%)`,
                   width: '100%',
                   height: '100%',
                   transform: 'translate(-50%,0)',
@@ -562,35 +612,72 @@ export default function InstaxTinBox({
             小盒子尺寸调试
           </div>
           <div style={{ marginTop: 4, textAlign: 'center', fontSize: mobile ? 12 : 14, opacity: .68 }}>
-            调试模式关闭随机偏移和微旋转，只调整每种相纸的最终大小
+            调试模式关闭随机偏移和微旋转，可以分别调整每种相纸的大小和上下位置
           </div>
 
-          <div style={{ display: 'grid', gap: 9, marginTop: 12 }}>
+          <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
             {STORE_LAYOUTS.map((layout) => (
-              <label
+              <div
                 key={layout.key}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: mobile ? '70px 1fr 50px' : '84px 1fr 58px',
-                  alignItems: 'center',
-                  gap: 9,
-                  fontSize: mobile ? 13 : 15,
+                  gap: 6,
+                  paddingBottom: 8,
+                  borderBottom: `1px solid ${panelBorder}`,
                 }}
               >
-                <span>{layout.label}</span>
-                <input
-                  type="range"
-                  min=".65"
-                  max="1.45"
-                  step=".01"
-                  value={storeTune[layout.key]}
-                  onChange={(event) => updateStoreTune(layout.key, Number(event.currentTarget.value))}
-                  style={{ width: '100%', accentColor: accent }}
-                />
-                <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {Math.round(storeTune[layout.key] * 100)}%
-                </span>
-              </label>
+                <div style={{ fontSize: mobile ? 13 : 15, fontWeight: 700 }}>
+                  {layout.label}
+                </div>
+
+                <label
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: mobile ? '44px 1fr 52px' : '54px 1fr 62px',
+                    alignItems: 'center',
+                    gap: 9,
+                    fontSize: mobile ? 12 : 14,
+                  }}
+                >
+                  <span>大小</span>
+                  <input
+                    type="range"
+                    min=".65"
+                    max="2"
+                    step=".01"
+                    value={storeTune[layout.key]}
+                    onChange={(event) => updateStoreTune(layout.key, Number(event.currentTarget.value))}
+                    style={{ width: '100%', accentColor: accent }}
+                  />
+                  <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {Math.round(storeTune[layout.key] * 100)}%
+                  </span>
+                </label>
+
+                <label
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: mobile ? '44px 1fr 52px' : '54px 1fr 62px',
+                    alignItems: 'center',
+                    gap: 9,
+                    fontSize: mobile ? 12 : 14,
+                  }}
+                >
+                  <span>上下</span>
+                  <input
+                    type="range"
+                    min="-30"
+                    max="20"
+                    step="1"
+                    value={storePositionTune[layout.key]}
+                    onChange={(event) => updateStorePositionTune(layout.key, Number(event.currentTarget.value))}
+                    style={{ width: '100%', accentColor: accent }}
+                  />
+                  <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {storePositionTune[layout.key] > 0 ? '+' : ''}{storePositionTune[layout.key]}%
+                  </span>
+                </label>
+              </div>
             ))}
           </div>
 
