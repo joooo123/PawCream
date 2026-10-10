@@ -78,7 +78,7 @@ const COLOR_OPTIONS: Array<{
   { key: 'pink-white', label: '粉白', swatch: '#f5dce4', slogan: '路过这里，偷偷留下一颗草莓糖。' },
   { key: 'pink-blue', label: '粉蓝', swatch: 'linear-gradient(135deg,#f4d6df 0 50%,#dce7f3 50%)', slogan: '把草莓汽水和一小块晴天，藏进这一格。' },
   { key: 'purple-coffee', label: '紫咖', swatch: '#e1dff8', slogan: '夜晚打了个盹，落下一颗葡萄味的梦。' },
-  { key: 'green-coffee', label: '绿咖', swatch: '#EAF5D8', slogan: '从春天口袋里，悄悄掉出一颗嫩芽糖。' },
+  { key: 'green-coffee', label: '绿咖', swatch: '#EAF5D8', slogan: '从春天口袋里，悄悄掉出一颗麦芽糖。' },
   { key: 'blue-coffee', label: '蓝咖', swatch: '#dce7f3', slogan: '风从海边回来，捎来一小口咸咸的晚风。' },
   { key: 'blue-white', label: '蓝白', swatch: '#e9f0f6', slogan: '今天的云很软，顺便借你一小块蓝天。' },
   { key: 'yellow-coffee', label: '黄咖', swatch: '#f4e8b9', slogan: '太阳偷懒了一会儿，留下半块蜂蜜饼干。' },
