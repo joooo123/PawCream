@@ -506,7 +506,7 @@ export default function InstaxTinBox({
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                transform: 'scale(1.62)',
+                transform: 'scale(3.24)',
                 userSelect: 'none',
               }}
             />
