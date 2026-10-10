@@ -539,9 +539,9 @@ export default function InstaxTinBox({
             left: '4.6%',
             top: '52.2%',
             width: '90.8%',
-            height: '42.4%',
+            height: '43.5%',
             overflow: 'hidden',
-            borderRadius: '8.5%',
+            clipPath: 'polygon(0 0, 100% 0, 100% 89%, 99% 92%, 97% 95%, 94% 97.5%, 90% 99%, 83% 100%, 17% 100%, 10% 99%, 6% 97.5%, 3% 95%, 1% 92%, 0 89%)',
             zIndex: 7,
             pointerEvents: 'none',
           }}
