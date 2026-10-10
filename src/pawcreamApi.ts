@@ -16,6 +16,19 @@ export type PawCreamNote = {
   isMine: boolean
 }
 
+export type PawCreamPublicPhoto = {
+  id: string
+  authorName: string
+  frameName: string
+  createdAt: string
+  clientPhotoId?: string
+}
+
+export type PawCreamPublicPhotoBatch = {
+  photos: PawCreamPublicPhoto[]
+  total: number
+}
+
 export type PawCreamPublicNoteOrder = 'recent' | 'random'
 
 export type PawCreamNoteBatch = {
@@ -198,6 +211,44 @@ export async function signOutPawCream() {
     return
   }
   await request<{ ok: true }>('/auth/logout', { method: 'POST' })
+}
+
+export function publicPhotoImageUrl(id: string) {
+  return `${API_BASE}/photos/${encodeURIComponent(id)}/image`
+}
+
+export function listPublicPhotos(offset = 0, limit = 24) {
+  return request<PawCreamPublicPhotoBatch>(
+    `/photos?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}`,
+  )
+}
+
+export async function getMyPublishedPhoto(clientPhotoId: string) {
+  const result = await request<{ photo: PawCreamPublicPhoto | null }>(
+    `/photos/mine/${encodeURIComponent(clientPhotoId)}`,
+  )
+  return result.photo
+}
+
+export async function publishPhoto(input: { id: string; frameName: string; imageBlob: Blob }) {
+  if (!API_BASE) throw new Error('请在连接真实后端的正式站点公开返图')
+  const query = new URLSearchParams({ clientPhotoId: input.id, frameName: input.frameName })
+  const response = await fetch(`${API_BASE}/photos?${query}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': input.imageBlob.type || 'image/png' },
+    body: input.imageBlob,
+  })
+  const payload = await response.json().catch(() => ({})) as {
+    photo?: PawCreamPublicPhoto
+    error?: string
+  }
+  if (!response.ok || !payload.photo) throw new Error(payload.error || '公开返图失败')
+  return payload.photo
+}
+
+export async function revokePublishedPhoto(id: string) {
+  return request<{ ok: boolean }>(`/photos/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
 export async function getPublicNotesBatch(options: {
