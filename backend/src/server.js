@@ -479,6 +479,122 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
   }
 })
 
+
+const photoUploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+
+const imageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+function validPhotoBytes(bytes, type) {
+  if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > 3 * 1024 * 1024) return false;
+  if (type === 'image/png') return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  if (type === 'image/jpeg') return bytes.length > 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+  if (type === 'image/webp') return bytes.length > 12 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+  return false;
+}
+
+function publicPhoto(row, mine = false) {
+  return {
+    id: row.id,
+    authorName: row.author_name,
+    frameName: row.frame_name,
+    createdAt: row.created_at,
+    ...(mine ? { clientPhotoId: row.client_photo_id } : {}),
+  };
+}
+
+// Public: cross-account gallery metadata only. Private browser photos never enter this table.
+app.get('/api/photos', async (req, res, next) => {
+  const mine = req.query.scope === 'mine';
+  if (mine && !req.session.user) return res.status(401).json({ error: '请先登录 PawCream 账号' });
+  const limit = Math.min(40, Math.max(1, Number.parseInt(String(req.query.limit || '24'), 10) || 24));
+  const offset = Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0);
+  const where = mine ? 'WHERE user_id = $3::uuid' : '';
+  const args = mine ? [limit, offset, req.session.user.id] : [limit, offset];
+  try {
+    const [result, count] = await Promise.all([
+      pool.query(`SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos ${where}
+                  ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`, args),
+      pool.query(`SELECT COUNT(*)::int AS total FROM public_photos ${mine ? 'WHERE user_id = $1::uuid' : ''}`,
+        mine ? [req.session.user.id] : []),
+    ]);
+    res.set('Cache-Control', 'no-store').json({
+      photos: result.rows.map((row) => publicPhoto(row, mine)),
+      total: count.rows[0].total,
+    });
+  } catch (error) { next(error); }
+});
+
+app.get('/api/photos/mine/:clientId', requireAuth, async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos WHERE user_id = $1 AND client_photo_id = $2',
+      [req.session.user.id, req.params.clientId],
+    );
+    res.set('Cache-Control', 'no-store').json({
+      photo: result.rows[0] ? publicPhoto(result.rows[0], true) : null,
+    });
+  } catch (error) { next(error); }
+});
+
+app.get('/api/photos/:id/image', async (req, res, next) => {
+  try {
+    const result = await pool.query('SELECT image_type, image_data FROM public_photos WHERE id = $1::uuid', [req.params.id]);
+    if (!result.rows[0]) return res.status(404).end();
+    res.set('Cache-Control', 'no-store');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.type(result.rows[0].image_type).send(result.rows[0].image_data);
+  } catch (error) {
+    if (error?.code === '22P02') return res.status(404).end();
+    next(error);
+  }
+});
+
+app.post('/api/photos', requireAuth, photoUploadLimiter,
+  express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: '3mb' }),
+  async (req, res, next) => {
+    const type = String(req.get('content-type') || '').split(';')[0].toLowerCase();
+    const clientId = String(req.query.clientPhotoId || '');
+    const frameName = String(req.query.frameName || '').trim();
+    if (!imageTypes.has(type) || !validPhotoBytes(req.body, type)) {
+      return res.status(415).json({ error: '只允许上传不超过 3MB 的 PNG、JPEG 或 WebP 图片' });
+    }
+    if (!/^photo-[A-Za-z0-9-]{8,85}$/.test(clientId) || !frameName || frameName.length > 80) {
+      return res.status(400).json({ error: '照片标识或相纸类型无效' });
+    }
+    try {
+      const result = await pool.query(
+        `INSERT INTO public_photos (user_id, client_photo_id, author_name, frame_name, image_type, image_data)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (user_id, client_photo_id) DO UPDATE
+         SET image_type = EXCLUDED.image_type, image_data = EXCLUDED.image_data,
+             frame_name = EXCLUDED.frame_name, author_name = EXCLUDED.author_name
+         RETURNING id, author_name, frame_name, client_photo_id, created_at`,
+        [req.session.user.id, clientId, req.session.user.displayName, frameName, type, req.body],
+      );
+      res.status(201).json({ photo: publicPhoto(result.rows[0], true) });
+    } catch (error) { next(error); }
+  },
+);
+
+app.delete('/api/photos/:id', requireAuth, async (req, res, next) => {
+  try {
+    const deleted = await pool.query(
+      'DELETE FROM public_photos WHERE id = $1::uuid AND user_id = $2 RETURNING id',
+      [req.params.id, req.session.user.id],
+    );
+    if (!deleted.rowCount) return res.status(404).json({ error: '没有找到可撤回的返图' });
+    res.json({ ok: true });
+  } catch (error) {
+    if (error?.code === '22P02') return res.status(404).json({ error: '没有找到可撤回的返图' });
+    next(error);
+  }
+});
+
 app.use((error, _req, res, _next) => {
   console.error(error)
   res.status(500).json({ error: 'PawCream 服务暂时出了点问题，请稍后再试' })
