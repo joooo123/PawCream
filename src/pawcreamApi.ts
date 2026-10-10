@@ -230,14 +230,35 @@ export async function getMyPublishedPhoto(clientPhotoId: string) {
   return result.photo
 }
 
+async function preparePublicImage(original: Blob): Promise<Blob> {
+  if (original.size <= 3 * 1024 * 1024) return original
+  // Reduce only the uploaded public copy; keep the original in the private tin box.
+  const image = await createImageBitmap(original)
+  const scale = Math.min(1, 1600 / Math.max(image.width, image.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(image.width * scale)
+  canvas.height = Math.round(image.height * scale)
+  const context = canvas.getContext('2d')
+  if (!context) {
+    image.close()
+    throw new Error('照片压缩失败')
+  }
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  image.close()
+  const result = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', .82))
+  if (!result || result.size > 3 * 1024 * 1024) throw new Error('返图超过 3MB，无法公开')
+  return result
+}
+
 export async function publishPhoto(input: { id: string; frameName: string; imageBlob: Blob }) {
   if (!API_BASE) throw new Error('请在连接真实后端的正式站点公开返图')
+  const imageBlob = await preparePublicImage(input.imageBlob)
   const query = new URLSearchParams({ clientPhotoId: input.id, frameName: input.frameName })
   const response = await fetch(`${API_BASE}/photos?${query}`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': input.imageBlob.type || 'image/png' },
-    body: input.imageBlob,
+    headers: { 'Content-Type': imageBlob.type || 'image/png' },
+    body: imageBlob,
   })
   const payload = await response.json().catch(() => ({})) as {
     photo?: PawCreamPublicPhoto
