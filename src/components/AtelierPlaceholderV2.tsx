@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import PawCreamNotesBoard from './PawCreamNotesBoard'
+import PublicPhotoWall from './PublicPhotoWall'
 
 type DeviceProfile = 'desktop' | 'mobile'
 type Language = 'zh' | 'en'
@@ -247,6 +248,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const [messageMoveMode, setMessageMoveMode] = useState(false)
   const [runtimeMessagePosition, setRuntimeMessagePosition] = useState<{ x: number; y: number } | null>(null)
   const [boardOpen, setBoardOpen] = useState(false)
+  const [publicWallOpen, setPublicWallOpen] = useState(false)
   const [loginNoticeOpen, setLoginNoticeOpen] = useState(false)
 
   const copy = language === 'zh'
@@ -414,6 +416,10 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       setSelectedKey(key)
       return
     }
+    if (key === 'people') {
+      setPublicWallOpen(true)
+      return
+    }
     if (key === 'message') {
       setMessageMoveMode(true)
       return
@@ -562,7 +568,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       : baseLayout
     const selectedAsset = tuneMode && selectedKey === key
     const noteIsPassive = !tuneMode && key === 'note'
-    const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color')
+    const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people')
     const movingMessage = !tuneMode && key === 'message' && messageMoveMode
     const hintText = tuneMode
       ? null
@@ -741,6 +747,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           </div>
         </div>
       ) : stage}
+
+      {publicWallOpen && <PublicPhotoWall mobile={mobile} onClose={() => setPublicWallOpen(false)} />}
 
       {tuneMode && (
         <aside style={{ ...panelStyle, width: collapsed ? 220 : panelStyle.width }}>
