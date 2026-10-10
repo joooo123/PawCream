@@ -7,6 +7,15 @@ import {
   useState,
 } from 'react'
 import type { PawCreamStoredPhoto } from '../pawcreamPhotoStore'
+import {
+  getCurrentUser,
+  getMyPublishedPhoto,
+  isPawCreamApiEnabled,
+  openPawCreamSignin,
+  publishPhoto,
+  revokePublishedPhoto,
+  type PawCreamPublicPhoto,
+} from '../pawcreamApi'
 
 type Props = {
   photos: PawCreamStoredPhoto[]
@@ -167,6 +176,9 @@ export default function InstaxTinBox({
   const [storeTune, setStoreTune] = useState<StoreTune>(() => readStoreTune())
   const [storePositionTune, setStorePositionTune] = useState<StorePositionTune>(() => readStorePositionTune())
   const [copyStatus, setCopyStatus] = useState('复制参数')
+  const [publishedPhoto, setPublishedPhoto] = useState<PawCreamPublicPhoto | null>(null)
+  const [publishBusy, setPublishBusy] = useState(false)
+  const [publishStatus, setPublishStatus] = useState('')
   const pointerStart = useRef<number | null>(null)
   const boxTuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('boxTune') === '1',
@@ -206,6 +218,52 @@ export default function InstaxTinBox({
   }, [newestPhotoId, views])
 
   const active = views[activeIndex] ?? null
+  useEffect(() => {
+    if (!expanded || !active || !isPawCreamApiEnabled()) return
+    let cancelled = false
+    setPublishedPhoto(null)
+    void getMyPublishedPhoto(active.id)
+      .then((photo) => { if (!cancelled) setPublishedPhoto(photo) })
+      .catch(() => { if (!cancelled) setPublishedPhoto(null) })
+    return () => { cancelled = true }
+  }, [expanded, active?.id])
+
+  const togglePublished = async () => {
+    if (!active || publishBusy) return
+    if (!isPawCreamApiEnabled()) {
+      setPublishStatus('当前预览站未连接照片共享后端，请使用正式站点公开返图')
+      return
+    }
+
+    setPublishBusy(true)
+    setPublishStatus('')
+    try {
+      const user = await getCurrentUser()
+      if (!user) {
+        setPublishStatus('请先登录 PawCream 后再公开返图')
+        openPawCreamSignin('login')
+        return
+      }
+      if (publishedPhoto) {
+        if (!window.confirm('要从公共返图墙撤回这张照片吗？铁盒里的原图会保留。')) return
+        await revokePublishedPhoto(publishedPhoto.id)
+        setPublishedPhoto(null)
+        setPublishStatus('已撤回公开，铁盒里的照片仍保留 ♡')
+      } else {
+        if (!window.confirm('确认公开这张拍立得？公开后其他访客都能看到图片和你的用户名。')) return
+        const published = await publishPhoto({
+          id: active.id, frameName: active.frameName, imageBlob: active.imageBlob,
+        })
+        setPublishedPhoto(published)
+        setPublishStatus('已公开到公共返图墙 ♡')
+      }
+    } catch (error) {
+      setPublishStatus(error instanceof Error ? error.message : '公开状态更新失败')
+    } finally {
+      setPublishBusy(false)
+    }
+  }
+
   const stacked = views.slice(0, 4).reverse()
   const ownerName = views[0]?.ownerName || 'Creamy'
   const ownerFontSize = ownerName.length > 12
@@ -388,6 +446,13 @@ export default function InstaxTinBox({
                 <button type="button" onClick={() => setExpanded(false)} style={themedButton}>
                   收回盒子里
                 </button>
+                <button type="button" onClick={() => void togglePublished()} disabled={publishBusy} style={{
+                  ...themedButton,
+                  opacity: publishBusy ? .55 : 1,
+                  borderColor: publishedPhoto ? '#e0a9b5' : panelBorder,
+                }}>
+                  {publishBusy ? '请稍候…' : publishedPhoto ? '撤回公开' : '公开到返图墙'}
+                </button>
                 <button
                   type="button"
                   disabled={activeIndex >= views.length - 1}
@@ -397,6 +462,11 @@ export default function InstaxTinBox({
                   →
                 </button>
               </div>
+              {publishStatus && (
+                <div role="status" style={{ color: textColor, textAlign: 'center', fontSize: 13, marginTop: 10 }}>
+                  {publishStatus}
+                </div>
+              )}
             </div>
           </>
         ) : (
