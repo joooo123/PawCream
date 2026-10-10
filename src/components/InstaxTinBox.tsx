@@ -536,12 +536,12 @@ export default function InstaxTinBox({
           aria-hidden="true"
           style={{
             position: 'absolute',
-            left: '13.2%',
-            top: '56.4%',
-            width: '73.6%',
-            height: '35.2%',
+            left: '4.6%',
+            top: '52.2%',
+            width: '90.8%',
+            height: '42.4%',
             overflow: 'hidden',
-            borderRadius: '6%',
+            borderRadius: '8.5%',
             zIndex: 7,
             pointerEvents: 'none',
           }}
