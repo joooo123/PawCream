@@ -44,8 +44,8 @@ type StorePreset = {
 type StoreTune = Record<StoreLayoutKey, number>
 type StorePositionTune = Record<StoreLayoutKey, number>
 
-const STORE_TUNE_KEY = 'pawcream-instax-box-size-tune-v1'
-const STORE_POSITION_TUNE_KEY = 'pawcream-instax-box-position-tune-v1'
+const STORE_TUNE_KEY = 'pawcream-instax-box-size-tune-v2'
+const STORE_POSITION_TUNE_KEY = 'pawcream-instax-box-position-tune-v2'
 
 const STORE_LAYOUTS: Array<{ key: StoreLayoutKey; label: string }> = [
   { key: 'square', label: '方形' },
@@ -57,21 +57,21 @@ const STORE_LAYOUTS: Array<{ key: StoreLayoutKey; label: string }> = [
 ]
 
 const DEFAULT_STORE_TUNE: StoreTune = {
-  square: 1,
-  double: 1,
-  wide: 1,
-  'portrait-1': 1,
-  'portrait-2': 1,
-  four: 1,
+  square: 1.15,
+  double: 1.07,
+  wide: 1.29,
+  'portrait-1': 1.34,
+  'portrait-2': 1.45,
+  four: 1.89,
 }
 
 const DEFAULT_STORE_POSITION_TUNE: StorePositionTune = {
-  square: -10,
-  double: -10,
-  wide: -10,
-  'portrait-1': -10,
-  'portrait-2': -10,
-  four: -10,
+  square: -30,
+  double: -30,
+  wide: -30,
+  'portrait-1': -30,
+  'portrait-2': -30,
+  four: -30,
 }
 
 function storeLayoutKey(frameName: string): StoreLayoutKey {
