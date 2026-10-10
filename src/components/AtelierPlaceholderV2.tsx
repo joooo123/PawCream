@@ -248,7 +248,9 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const [messageMoveMode, setMessageMoveMode] = useState(false)
   const [runtimeMessagePosition, setRuntimeMessagePosition] = useState<{ x: number; y: number } | null>(null)
   const [boardOpen, setBoardOpen] = useState(false)
-  const [publicWallOpen, setPublicWallOpen] = useState(false)
+  const [publicWallOpen, setPublicWallOpen] = useState(
+    () => new URLSearchParams(window.location.search).get('wallDemo') === '1',
+  )
   const [loginNoticeOpen, setLoginNoticeOpen] = useState(false)
 
   const copy = language === 'zh'
