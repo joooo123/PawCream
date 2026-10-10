@@ -506,7 +506,7 @@ export default function InstaxTinBox({
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                transform: 'scale(3.24)',
+                transform: 'translateY(10px) scale(3.24)',
                 userSelect: 'none',
               }}
             />
@@ -541,7 +541,7 @@ export default function InstaxTinBox({
             width: '90.8%',
             height: '43.5%',
             overflow: 'hidden',
-            clipPath: 'polygon(0 0, 100% 0, 100% calc(89% - 10px), 99% calc(92% - 10px), 97% calc(95% - 10px), 94% calc(97.5% - 10px), 90% calc(99% - 10px), 83% calc(100% - 10px), 17% calc(100% - 10px), 10% calc(99% - 10px), 6% calc(97.5% - 10px), 3% calc(95% - 10px), 1% calc(92% - 10px), 0 calc(89% - 10px))',
+            clipPath: 'polygon(0 0, 100% 0, 100% calc(89% - 13px), 99% calc(92% - 13px), 97% calc(95% - 13px), 94% calc(97.5% - 13px), 90% calc(99% - 13px), 83% calc(100% - 13px), 17% calc(100% - 13px), 10% calc(99% - 13px), 6% calc(97.5% - 13px), 3% calc(95% - 13px), 1% calc(92% - 13px), 0 calc(89% - 13px))',
             zIndex: 7,
             pointerEvents: 'none',
           }}
