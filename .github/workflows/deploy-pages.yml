@@ -46,7 +46,15 @@ jobs:
       - name: Convert PawCream fonts to WOFF2
         run: python3 scripts/convert-fonts.py
 
+      - name: Test photo upload validation
+        run: node --test backend/test/photoValidation.test.mjs
+
+      - name: Check backend syntax
+        run: node --check backend/src/server.js
+
       - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ vars.PAWCREAM_API_BASE_URL }}
         run: npm run build:webp
 
       - name: Setup Pages
