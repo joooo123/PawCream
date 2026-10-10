@@ -79,6 +79,9 @@ const STANDARD_ASSET_ORDER: AssetKey[] = [
   'cabinet', 'people', 'light', 'instax', 'sewing', 'bear',
   'music', 'note', 'message', 'color',
 ]
+const HOVER_ASSET_ORDER = [...STANDARD_ASSET_ORDER, 'window' as AssetKey]
+  .sort((a, b) => ASSETS[b].zIndex - ASSETS[a].zIndex)
+const HOVER_SCALE = 1.04
 
 const L = (x: number, y: number, width: number, rotation = 0): AssetLayout => ({
   x, y, width, rotation,
@@ -236,6 +239,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState('复制双端参数')
   const [windowHovered, setWindowHovered] = useState(false)
+  const [hoveredAsset, setHoveredAsset] = useState<AssetKey | null>(null)
   const [backgroundIndex, setBackgroundIndex] = useState(loadBackgroundIndex)
 
   const [language, setLanguage] = useState<Language>(loadLanguage)
@@ -281,6 +285,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
 
   useEffect(() => {
     setWindowHovered(false)
+    setHoveredAsset(null)
     setRuntimeMessagePosition(null)
     setMessageMoveMode(false)
   }, [deviceProfile])
@@ -424,6 +429,58 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     }
   }
 
+  const assetOpaqueAt = (key: AssetKey, clientX: number, clientY: number) => {
+    const stage = artboardRef.current
+    const control = stage?.querySelector<HTMLElement>(`[data-atelier-asset="${key}"]`)
+    const image = control?.querySelector<HTMLImageElement>(':scope > img')
+    if (!stage || !control || !image?.complete || !image.naturalWidth || !image.naturalHeight) return false
+
+    const layout = renderTuning[key]
+    const stageRect = stage.getBoundingClientRect()
+    // Bear's existing image rule enlarges its visible artwork by 4x.
+    const scale = (key === 'bear' ? 4 : 1) * (hoveredAsset === key ? HOVER_SCALE : 1)
+    const width = control.offsetWidth * scale
+    const height = control.offsetHeight * scale
+    if (!width || !height) return false
+
+    const dx = clientX - (stageRect.left + layout.x / 100 * stageRect.width)
+    const dy = clientY - (stageRect.top + layout.y / 100 * stageRect.height)
+    const angle = -layout.rotation * Math.PI / 180
+    const x = dx * Math.cos(angle) - dy * Math.sin(angle)
+    const y = dx * Math.sin(angle) + dy * Math.cos(angle)
+    const nx = (x + width / 2) / width
+    const ny = (y + height / 2) / height
+    if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return false
+
+    try {
+      const canvas = hitCanvasRef.current ?? document.createElement('canvas')
+      hitCanvasRef.current = canvas
+      canvas.width = 1
+      canvas.height = 1
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) return false
+      ctx.drawImage(
+        image,
+        Math.min(image.naturalWidth - 1, Math.floor(nx * image.naturalWidth)),
+        Math.min(image.naturalHeight - 1, Math.floor(ny * image.naturalHeight)),
+        1, 1, 0, 0, 1, 1,
+      )
+      return ctx.getImageData(0, 0, 1, 1).data[3] >= 40
+    } catch {
+      return false
+    }
+  }
+
+  const handleStagePointerHover = (event: ReactPointerEvent<HTMLElement>) => {
+    if (mobile || tuneMode || event.pointerType !== 'mouse') return
+    const target = event.target
+    const blocked = target instanceof Element && target.closest('nav, [role="dialog"]')
+    const key = blocked
+      ? null
+      : HOVER_ASSET_ORDER.find((asset) => assetOpaqueAt(asset, event.clientX, event.clientY)) ?? null
+    setHoveredAsset(key === 'cabinet' ? null : key)
+  }
+
   const noteOpaqueAt = (clientX: number, clientY: number) => {
     const stage = artboardRef.current
     if (!stage) return false
@@ -516,6 +573,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     return (
       <div
         key={key}
+        data-atelier-asset={key}
         role={tuneMode || interactive ? 'button' : undefined}
         tabIndex={tuneMode || interactive ? 0 : undefined}
         aria-label={tuneMode ? `Move ${asset.label}` : interactive ? `${asset.label} interaction` : undefined}
@@ -537,6 +595,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         style={{
           position: 'absolute', left: `${layout.x}%`, top: `${layout.y}%`, width: `${layout.width}%`,
           transform: `translate(-50%, -50%) rotate(${layout.rotation}deg)`, transformOrigin: '50% 50%',
+          scale: !mobile && !tuneMode && hoveredAsset === key ? HOVER_SCALE : 1,
+          transition: !mobile && !tuneMode && key !== 'cabinet' ? 'scale 220ms ease-out' : undefined,
           zIndex: asset.zIndex,
           cursor: tuneMode ? 'grab' : key === 'message' ? (movingMessage ? 'move' : 'grab') : interactive ? 'pointer' : 'default',
           touchAction: tuneMode || key === 'message' ? 'none' : 'auto', userSelect: 'none',
@@ -581,6 +641,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       aria-label={`PawCream Atelier Room ${deviceProfile} layout`}
       style={stageStyle}
       onClick={handleStageClick}
+      onPointerMove={handleStagePointerHover}
+      onPointerLeave={() => setHoveredAsset(null)}
     >
       <h1 style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>PawCream Atelier Room</h1>
 
@@ -591,6 +653,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       )}
 
       <div
+        data-atelier-asset="window"
         role={tuneMode ? 'button' : undefined}
         tabIndex={tuneMode ? 0 : undefined}
         aria-label={tuneMode ? `Move ${showPawcream ? 'PawCream' : 'Window'}` : undefined}
@@ -604,6 +667,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         style={{
           position: 'absolute', left: `${pairLayout.x}%`, top: `${pairLayout.y}%`, width: `${pairLayout.width}%`,
           transform: `translate(-50%, -50%) rotate(${pairLayout.rotation}deg)`, transformOrigin: '50% 50%',
+          scale: !mobile && !tuneMode && hoveredAsset === 'window' ? HOVER_SCALE : 1,
+          transition: !mobile && !tuneMode ? 'scale 220ms ease-out' : undefined,
           zIndex: ASSETS.window.zIndex, cursor: tuneMode ? 'grab' : mobile ? 'default' : 'pointer',
           touchAction: tuneMode ? 'none' : 'auto', userSelect: 'none',
           outline: pairSelectedOutline ? '1.5px dashed rgba(213,111,157,.9)' : 'none', outlineOffset: pairSelectedOutline ? 6 : 0,
