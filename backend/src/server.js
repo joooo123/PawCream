@@ -6,6 +6,7 @@ import { rateLimit } from 'express-rate-limit'
 import session from 'express-session'
 import helmet from 'helmet'
 import pg from 'pg'
+import { validPhotoBytes } from './photoValidation.js'
 
 const { Pool } = pg
 
@@ -487,16 +488,6 @@ const photoUploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const imageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
-
-function validPhotoBytes(bytes, type) {
-  if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > 3 * 1024 * 1024) return false;
-  if (type === 'image/png') return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-  if (type === 'image/jpeg') return bytes.length > 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-  if (type === 'image/webp') return bytes.length > 12 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
-  return false;
-}
-
 function publicPhoto(row, mine = false) {
   return {
     id: row.id,
@@ -560,7 +551,7 @@ app.post('/api/photos', requireAuth, photoUploadLimiter,
     const type = String(req.get('content-type') || '').split(';')[0].toLowerCase();
     const clientId = String(req.query.clientPhotoId || '');
     const frameName = String(req.query.frameName || '').trim();
-    if (!imageTypes.has(type) || !validPhotoBytes(req.body, type)) {
+    if (!validPhotoBytes(req.body, type)) {
       return res.status(415).json({ error: '只允许上传不超过 3MB 的 PNG、JPEG 或 WebP 图片' });
     }
     if (!/^photo-[A-Za-z0-9-]{8,85}$/.test(clientId) || !frameName || frameName.length > 80) {
