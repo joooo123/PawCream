@@ -76,7 +76,21 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
     demoMode ? (
       <div
         className={`pawcream-public-wall-sample pawcream-public-wall-sample-${size}`}
-        style={{ '--sample-paper': photo.paper, aspectRatio: photo.ratio } as CSSProperties}
+        style={{
+          '--sample-paper': photo.paper,
+          aspectRatio: photo.ratio,
+          ...(size === 'tile' ? {} : {
+            width: '100%',
+            height: 'auto',
+            maxWidth: (() => {
+              const [w, h] = (photo.ratio || '1 / 1').split('/').map(Number)
+              const scale = w / h
+              return size === 'hero'
+                ? `min(100%, ${52 * scale}vh, ${490 * scale}px)`
+                : `min(100%, 620px, ${65 * scale}dvh)`
+            })(),
+          }),
+        } as CSSProperties}
         aria-label="演示用空白相纸"
       >
         <span aria-hidden="true" />
