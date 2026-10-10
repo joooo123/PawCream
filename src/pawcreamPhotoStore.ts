@@ -129,7 +129,7 @@ export async function listPawCreamPhotos(scope: 'mine' | 'wall' = 'mine') {
     return photos
       .filter((photo) => scope === 'wall'
         ? photo.visibility === 'public'
-        : photo.ownerId === owner.ownerId)
+        : photo.ownerId === owner.ownerId || (owner.signedIn && photo.ownerId === browserOwnerId()))
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
   } finally {
     db.close()
