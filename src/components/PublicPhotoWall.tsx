@@ -271,17 +271,28 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           .pawcream-public-wall-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
           .pawcream-public-wall-grid.is-demo { columns: 2; column-gap: 11px; }
         }
+        .pawcream-public-wall.is-mobile .pawcream-public-wall-layout { display: block; }
+        .pawcream-public-wall.is-mobile .pawcream-public-wall-hero { display: none; }
+        .pawcream-public-wall.is-mobile .pawcream-public-wall-grid {
+          grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px;
+        }
+        .pawcream-public-wall.is-mobile .pawcream-public-wall-grid.is-demo {
+          columns: 2; column-gap: 11px;
+        }
         @media (prefers-reduced-motion:reduce) {
           .pawcream-public-wall *, .pawcream-public-wall-mobile-sheet {
             transition: none !important; animation: none !important;
           }
         }
       `}</style>
-      <section className="pawcream-public-wall" role="dialog" aria-modal="true" aria-label="PawCream 公共返图墙">
+      <section className={`pawcream-public-wall${mobile ? ' is-mobile' : ''}`} role="dialog" aria-modal="true" aria-label="PawCream 公共返图墙">
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, marginBottom: 22 }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 650, letterSpacing: '.09em' }}>our little gallery ♡</div>
             <div style={{ fontSize: 13, marginTop: 5 }}>公共返图墙 · 分享每一张温柔瞬间</div>
+            <div style={{ fontSize: 12, marginTop: 5, opacity: .72 }}>
+              {mobile ? '轻点相纸预览，左右滑动切换' : '将鼠标移近相纸，感受磁吸和弹性回弹'}
+            </div>
             <div style={{ fontSize: 12, marginTop: 6, opacity: .65 }}>
               {demoMode ? `交互演示 · ${displayedTotal} 张虚拟空白相纸（非真实返图）` : `${displayedTotal} 张公开返图`}
             </div>
