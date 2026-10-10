@@ -4,7 +4,7 @@ import { validPhotoBytes } from '../src/photoValidation.js'
 
 const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0])
 const jpeg = Buffer.from([255, 216, 255, 224, 0])
-const webp = Buffer.from('RIFF0000WEBP', 'ascii')
+const webp = Buffer.from('RIFF0000WEBPxxxx', 'ascii')
 
 test('accepts supported image signatures', () => {
   assert.equal(validPhotoBytes(png, 'image/png'), true)
