@@ -357,7 +357,7 @@ export default function AtelierWithSignin(props: Props) {
             position: 'fixed',
             left: '50%',
             bottom: mobile ? 62 : 82,
-            zIndex: 96,
+            zIndex: 210,
             width: mobile
               ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
               : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
