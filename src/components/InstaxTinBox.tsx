@@ -32,6 +32,8 @@ function clampIndex(index: number, length: number) {
   return Math.min(length - 1, Math.max(0, index))
 }
 
+type StoreLayoutKey = 'square' | 'double' | 'wide' | 'portrait-1' | 'portrait-2' | 'four'
+
 type StorePreset = {
   rotation: 0 | 90
   width: string
@@ -39,23 +41,78 @@ type StorePreset = {
   scale: number
 }
 
+type StoreTune = Record<StoreLayoutKey, number>
+
+const STORE_TUNE_KEY = 'pawcream-instax-box-size-tune-v1'
+
+const STORE_LAYOUTS: Array<{ key: StoreLayoutKey; label: string }> = [
+  { key: 'square', label: '方形' },
+  { key: 'double', label: '两格' },
+  { key: 'wide', label: '横向' },
+  { key: 'portrait-1', label: '竖向 1' },
+  { key: 'portrait-2', label: '竖向 2' },
+  { key: 'four', label: '四格' },
+]
+
+const DEFAULT_STORE_TUNE: StoreTune = {
+  square: 1,
+  double: 1,
+  wide: 1,
+  'portrait-1': 1,
+  'portrait-2': 1,
+  four: 1,
+}
+
+function storeLayoutKey(frameName: string): StoreLayoutKey {
+  if (frameName.includes('横')) return 'wide'
+  if (frameName.includes('两格') || frameName.includes('两张')) return 'double'
+  if (frameName.includes('四格')) return 'four'
+  if (frameName.includes('竖2')) return 'portrait-2'
+  if (frameName.includes('竖1')) return 'portrait-1'
+  return 'square'
+}
+
 function storePreset(frameName: string): StorePreset {
-  if (frameName.includes('横')) {
-    return { rotation: 0, width: '86%', height: '82%', scale: 1.02 }
-  }
-  if (frameName.includes('两格') || frameName.includes('两张')) {
-    return { rotation: 0, width: '88%', height: '84%', scale: 1.02 }
-  }
-  if (frameName.includes('四格')) {
-    return { rotation: 90, width: '74%', height: '94%', scale: 1.06 }
-  }
-  if (frameName.includes('竖2')) {
-    return { rotation: 90, width: '72%', height: '94%', scale: 1.08 }
-  }
-  if (frameName.includes('竖1')) {
-    return { rotation: 90, width: '76%', height: '92%', scale: 1.08 }
-  }
+  const layout = storeLayoutKey(frameName)
+  if (layout === 'wide') return { rotation: 0, width: '86%', height: '82%', scale: 1.02 }
+  if (layout === 'double') return { rotation: 0, width: '88%', height: '84%', scale: 1.02 }
+  if (layout === 'four') return { rotation: 90, width: '74%', height: '94%', scale: 1.06 }
+  if (layout === 'portrait-2') return { rotation: 90, width: '72%', height: '94%', scale: 1.08 }
+  if (layout === 'portrait-1') return { rotation: 90, width: '76%', height: '92%', scale: 1.08 }
   return { rotation: 90, width: '80%', height: '90%', scale: 1.08 }
+}
+
+function stableJitter(id: string) {
+  let hash = 2166136261
+  for (let index = 0; index < id.length; index += 1) {
+    hash ^= id.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  const unit = (shift: number) => ((hash >>> shift) & 255) / 255
+  return {
+    x: (unit(0) - .5) * 5.2,
+    y: (unit(8) - .5) * 3.2,
+    angle: (unit(16) - .5) * 4.4,
+  }
+}
+
+function readStoreTune(): StoreTune {
+  if (typeof window === 'undefined') return { ...DEFAULT_STORE_TUNE }
+  try {
+    const raw = window.localStorage.getItem(STORE_TUNE_KEY)
+    if (!raw) return { ...DEFAULT_STORE_TUNE }
+    const parsed = JSON.parse(raw) as Partial<StoreTune>
+    return {
+      square: Number(parsed.square) || 1,
+      double: Number(parsed.double) || 1,
+      wide: Number(parsed.wide) || 1,
+      'portrait-1': Number(parsed['portrait-1']) || 1,
+      'portrait-2': Number(parsed['portrait-2']) || 1,
+      four: Number(parsed.four) || 1,
+    }
+  } catch {
+    return { ...DEFAULT_STORE_TUNE }
+  }
 }
 
 export default function InstaxTinBox({
@@ -72,7 +129,13 @@ export default function InstaxTinBox({
   const [expanded, setExpanded] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [dropDone, setDropDone] = useState(false)
+  const [storeTune, setStoreTune] = useState<StoreTune>(() => readStoreTune())
+  const [copyStatus, setCopyStatus] = useState('复制参数')
   const pointerStart = useRef<number | null>(null)
+  const boxTuneMode = useMemo(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('boxTune') === '1',
+    [],
+  )
 
   const views = useMemo<PhotoView[]>(
     () => photos.map((photo) => ({
@@ -85,6 +148,11 @@ export default function InstaxTinBox({
   useEffect(() => () => {
     views.forEach((photo) => URL.revokeObjectURL(photo.url))
   }, [views])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(STORE_TUNE_KEY, JSON.stringify(storeTune))
+  }, [storeTune])
 
   useEffect(() => {
     const newestIndex = newestPhotoId
@@ -119,6 +187,27 @@ export default function InstaxTinBox({
 
   const move = (direction: number) => {
     setActiveIndex((current) => clampIndex(current + direction, views.length))
+  }
+
+  const updateStoreTune = (key: StoreLayoutKey, value: number) => {
+    setStoreTune((current) => ({ ...current, [key]: value }))
+  }
+
+  const resetStoreTune = () => {
+    setStoreTune({ ...DEFAULT_STORE_TUNE })
+    setCopyStatus('已重置')
+    window.setTimeout(() => setCopyStatus('复制参数'), 900)
+  }
+
+  const copyStoreTune = async () => {
+    const payload = JSON.stringify(storeTune, null, 2)
+    try {
+      await navigator.clipboard.writeText(payload)
+      setCopyStatus('已复制 ✓')
+    } catch {
+      setCopyStatus(payload)
+    }
+    window.setTimeout(() => setCopyStatus('复制参数'), 1400)
   }
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -335,22 +424,24 @@ export default function InstaxTinBox({
           aria-label={`${ownerName} 的姓名贴`}
           style={{
             position: 'absolute',
-            left: '27%',
-            top: '17.6%',
-            width: '46%',
-            height: '17.5%',
+            left: '23%',
+            top: '14.8%',
+            width: '54%',
+            height: '23.5%',
             zIndex: 6,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            overflow: 'hidden',
+            clipPath: 'ellipse(50% 50% at 50% 50%)',
             pointerEvents: 'none',
           }}
         >
           <div
             style={{
               position: 'relative',
-              width: '80%',
-              height: '80%',
+              width: '100%',
+              height: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -366,6 +457,7 @@ export default function InstaxTinBox({
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
+                transform: 'scale(1.62)',
                 userSelect: 'none',
               }}
             />
@@ -378,7 +470,7 @@ export default function InstaxTinBox({
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 color: '#7d655f',
-                fontSize: ownerFontSize,
+                fontSize: ownerFontSize * 1.75,
                 fontWeight: 650,
                 letterSpacing: '.04em',
                 lineHeight: 1,
@@ -407,20 +499,22 @@ export default function InstaxTinBox({
         >
           {stacked.map((photo, index) => {
             const isNewest = photo.id === newestPhotoId
+            const layout = storeLayoutKey(photo.frameName)
             const preset = storePreset(photo.frameName)
-            const x = [-8, 7, -4, 4][index % 4]
-            const y = index * 3
+            const jitter = boxTuneMode ? { x: 0, y: 0, angle: 0 } : stableJitter(photo.id)
+            const stackLift = boxTuneMode ? 0 : index * 1.2
+            const finalScale = preset.scale * storeTune[layout]
 
             return (
               <div
                 key={photo.id}
                 style={{
                   position: 'absolute',
-                  left: '50%',
-                  top: '50%',
+                  left: `calc(50% + ${jitter.x}%)`,
+                  top: `calc(50% + ${jitter.y + stackLift}%)`,
                   width: '100%',
                   height: '100%',
-                  transform: `translate(-50%,${y}%) translateX(${x}px)`,
+                  transform: 'translate(-50%,0)',
                   animation: isNewest
                     ? 'pawcream-photo-stack-drop 980ms cubic-bezier(.16,1,.3,1) 120ms both'
                     : undefined,
@@ -439,7 +533,7 @@ export default function InstaxTinBox({
                     width: preset.width,
                     height: preset.height,
                     objectFit: 'contain',
-                    transform: `translate(-50%,-50%) rotate(${preset.rotation}deg) scale(${preset.scale})`,
+                    transform: `translate(-50%,-50%) rotate(${preset.rotation + jitter.angle}deg) scale(${finalScale})`,
                     transformOrigin: '50% 50%',
                     filter: 'drop-shadow(0 5px 8px rgba(55,49,49,.16))',
                     pointerEvents: 'none',
@@ -451,6 +545,65 @@ export default function InstaxTinBox({
           })}
         </div>
       </div>
+
+      {boxTuneMode && (
+        <div
+          style={{
+            width: 'min(560px,100%)',
+            margin: '-4px auto 12px',
+            padding: '14px 16px',
+            borderRadius: 18,
+            border: `1px dashed ${panelBorder}`,
+            background: 'rgba(255,255,255,.72)',
+            color: textColor,
+          }}
+        >
+          <div style={{ textAlign: 'center', fontSize: mobile ? 16 : 18, fontWeight: 750 }}>
+            小盒子尺寸调试
+          </div>
+          <div style={{ marginTop: 4, textAlign: 'center', fontSize: mobile ? 12 : 14, opacity: .68 }}>
+            调试模式关闭随机偏移和微旋转，只调整每种相纸的最终大小
+          </div>
+
+          <div style={{ display: 'grid', gap: 9, marginTop: 12 }}>
+            {STORE_LAYOUTS.map((layout) => (
+              <label
+                key={layout.key}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: mobile ? '70px 1fr 50px' : '84px 1fr 58px',
+                  alignItems: 'center',
+                  gap: 9,
+                  fontSize: mobile ? 13 : 15,
+                }}
+              >
+                <span>{layout.label}</span>
+                <input
+                  type="range"
+                  min=".65"
+                  max="1.45"
+                  step=".01"
+                  value={storeTune[layout.key]}
+                  onChange={(event) => updateStoreTune(layout.key, Number(event.currentTarget.value))}
+                  style={{ width: '100%', accentColor: accent }}
+                />
+                <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {Math.round(storeTune[layout.key] * 100)}%
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+            <button type="button" onClick={() => void copyStoreTune()} style={themedButton}>
+              {copyStatus}
+            </button>
+            <button type="button" onClick={resetStoreTune} style={themedButton}>
+              重置尺寸
+            </button>
+          </div>
+        </div>
+      )}
 
       {dropDone && (
         <div
