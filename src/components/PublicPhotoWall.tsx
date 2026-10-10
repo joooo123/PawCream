@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
 import {
   isPawCreamApiEnabled,
   listPublicPhotos,
@@ -33,6 +33,8 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
   const [error, setError] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
   const [detail, setDetail] = useState<string | null>(null)
+  const [mobilePreviewId, setMobilePreviewId] = useState<string | null>(null)
+  const touchStartX = useRef<number | null>(null)
   const [drift, setDrift] = useState({ x: 0, y: 0 })
 
   const load = async (offset: number) => {
@@ -61,16 +63,32 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (detail) setDetail(null)
+      else if (mobilePreviewId) setMobilePreviewId(null)
       else onClose()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [detail, onClose])
+  }, [detail, mobilePreviewId, onClose])
 
   const displayedPhotos: DisplayPhoto[] = demoMode ? DEMO_PHOTOS : photos
   const displayedTotal = demoMode ? DEMO_PHOTOS.length : total
   const selected = displayedPhotos.find((photo) => photo.id === focused) ?? displayedPhotos[0]
   const detailPhoto = displayedPhotos.find((photo) => photo.id === detail)
+  const mobilePreviewPhoto = displayedPhotos.find((photo) => photo.id === mobilePreviewId)
+
+  const stepMobilePreview = (step: number) => {
+    const index = displayedPhotos.findIndex((photo) => photo.id === mobilePreviewId)
+    if (index === -1) return
+    const next = (index + step + displayedPhotos.length) % displayedPhotos.length
+    setMobilePreviewId(displayedPhotos[next].id)
+  }
+
+  const endPreviewSwipe = (event: ReactTouchEvent<HTMLElement>) => {
+    if (touchStartX.current === null) return
+    const delta = event.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(delta) >= 45) stepMobilePreview(delta < 0 ? 1 : -1)
+  }
 
   const artwork = (photo: DisplayPhoto, size: 'tile' | 'hero' | 'detail') =>
     demoMode ? (
@@ -106,12 +124,33 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
 
   const hover = (photo: DisplayPhoto, event: ReactPointerEvent<HTMLButtonElement>) => {
     if (mobile || event.pointerType !== 'mouse') return
-    setFocused(photo.id)
-    const rect = event.currentTarget.getBoundingClientRect()
-    setDrift({
-      x: Math.max(-12, Math.min(12, (event.clientX - rect.left - rect.width / 2) * .18)),
-      y: Math.max(-12, Math.min(12, (event.clientY - rect.top - rect.height / 2) * .18)),
-    })
+    setFocused((previous) => previous === photo.id ? previous : photo.id)
+    const tile = event.currentTarget
+    const rect = tile.getBoundingClientRect()
+    // Compensate for the tile's existing translation: calculating against the
+    // shifted center would cause the magnetic movement to oscillate.
+    const currentX = Number(tile.dataset.magnetX || 0)
+    const currentY = Number(tile.dataset.magnetY || 0)
+    const dx = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2 - currentX)) / (rect.width / 2)))
+    const dy = Math.max(-1, Math.min(1, (event.clientY - (rect.top + rect.height / 2 - currentY)) / (rect.height / 2)))
+    const x = Math.round(dx * 14)
+    const y = Math.round(dy * 12)
+    tile.dataset.magnetX = String(x)
+    tile.dataset.magnetY = String(y)
+    tile.style.setProperty('--magnet-x', `${x}px`)
+    tile.style.setProperty('--magnet-y', `${y}px`)
+    tile.style.setProperty('--magnet-rotate', `${(dx * 3).toFixed(1)}deg`)
+    setDrift({ x: dx * 12, y: dy * 9 })
+  }
+
+  const releaseMagnet = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const tile = event.currentTarget
+    tile.dataset.magnetX = '0'
+    tile.dataset.magnetY = '0'
+    tile.style.setProperty('--magnet-x', '0px')
+    tile.style.setProperty('--magnet-y', '0px')
+    tile.style.setProperty('--magnet-rotate', '0deg')
+    setDrift({ x: 0, y: 0 })
   }
 
   return (
@@ -144,11 +183,19 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         .pawcream-public-wall-tile {
           border: 1px solid rgba(194,170,181,.36); border-radius: 10px; overflow: hidden;
           padding: 0; background: #fff; aspect-ratio: 4/5;
-          transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms;
+          transform: translate3d(var(--magnet-x,0px),var(--magnet-y,0px),0) rotate(var(--magnet-rotate,0deg)) scale(1);
+          transition: transform 340ms cubic-bezier(.2,1.25,.32,1), box-shadow 240ms ease, border-color 240ms ease;
+          will-change: transform;
         }
-        .pawcream-public-wall-tile:hover,.pawcream-public-wall-tile:focus-visible {
-          transform: scale(1.07); border-color: #c6a0b8;
-          box-shadow: 0 8px 18px rgba(126,93,113,.19); position: relative; z-index: 1;
+        @media (hover:hover) and (pointer:fine) {
+          .pawcream-public-wall-tile:hover,.pawcream-public-wall-tile:focus-visible {
+            transform: translate3d(var(--magnet-x,0px),var(--magnet-y,0px),0) rotate(var(--magnet-rotate,0deg)) scale(1.13);
+            border-color: #c6a0b8; box-shadow: 0 14px 26px rgba(126,93,113,.24);
+            position: relative; z-index: 2;
+          }
+        }
+        .pawcream-public-wall-tile.is-selected {
+          border-color: #be9db6; box-shadow: 0 7px 20px rgba(126,93,113,.18);
         }
         .pawcream-public-wall-tile img { width: 100%; height: 100%; display: block; object-fit: contain; }
         .pawcream-public-wall-grid.is-demo {
@@ -181,8 +228,34 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           height: auto; width: auto; max-width: 100%; max-height: 65dvh;
           margin: auto; box-shadow: 0 12px 35px rgba(64,48,61,.12);
         }
+        .pawcream-public-wall-mobile-backdrop {
+          position: fixed; inset: 0; z-index: 181; background: rgba(55,43,56,.27);
+          backdrop-filter: blur(4px);
+        }
+        .pawcream-public-wall-mobile-sheet {
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 182;
+          display: flex; flex-direction: column; align-items: center; gap: 11px;
+          padding: 14px 20px max(22px,env(safe-area-inset-bottom));
+          border-radius: 25px 25px 0 0; background: #fffafc;
+          box-shadow: 0 -15px 50px rgba(73,49,67,.18);
+          animation: pawcream-wall-sheet-enter 250ms cubic-bezier(.16,1,.3,1);
+          touch-action: pan-y;
+        }
+        .pawcream-public-wall-mobile-sheet .pawcream-public-wall-sample-detail {
+          max-height: 45dvh; width: auto; max-width: 90%;
+        }
+        .pawcream-public-wall-mobile-sheet img {
+          display: block; max-height: 45dvh; max-width: 90%; object-fit: contain;
+        }
+        .pawcream-public-wall-sheet-actions {
+          display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;
+        }
+        @keyframes pawcream-wall-sheet-enter {
+          from { opacity: .6; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         .pawcream-public-wall-detail {
-          position: fixed; inset: 0; z-index: 181; display: grid; place-items: center;
+          position: fixed; inset: 0; z-index: 183; display: grid; place-items: center;
           padding: 20px; background: rgba(45,35,46,.73);
         }
         .pawcream-public-wall-detail-inner {
@@ -199,7 +272,9 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           .pawcream-public-wall-grid.is-demo { columns: 2; column-gap: 11px; }
         }
         @media (prefers-reduced-motion:reduce) {
-          .pawcream-public-wall * { transition: none !important; }
+          .pawcream-public-wall *, .pawcream-public-wall-mobile-sheet {
+            transition: none !important; animation: none !important;
+          }
         }
       `}</style>
       <section className="pawcream-public-wall" role="dialog" aria-modal="true" aria-label="PawCream 公共返图墙">
@@ -236,13 +311,16 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
                 <div>
                   <div className={`pawcream-public-wall-grid${demoMode ? " is-demo" : ""}`}>
                     {displayedPhotos.map((photo) => (
-                      <button key={photo.id} type="button" className="pawcream-public-wall-tile"
+                      <button key={photo.id} type="button"
+                        className={`pawcream-public-wall-tile${mobilePreviewId === photo.id ? ' is-selected' : ''}`}
                         style={demoMode ? { aspectRatio: photo.ratio } : undefined}
                         title={demoMode ? `空白相纸 ${photo.ratio?.replace(' / ', ':')}` : `${photo.authorName} · ${photo.frameName}`}
                         aria-label={demoMode ? '查看空白相纸演示' : `查看 ${photo.authorName} 的返图`}
+                        onPointerEnter={(event) => hover(photo, event)}
                         onPointerMove={(event) => hover(photo, event)}
+                        onPointerLeave={releaseMagnet}
                         onFocus={() => setFocused(photo.id)}
-                        onClick={() => setDetail(photo.id)}>
+                        onClick={() => mobile ? setMobilePreviewId(photo.id) : setDetail(photo.id)}>
                         {artwork(photo, 'tile')}
                       </button>
                     ))}
@@ -259,6 +337,36 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
             {loading && !photos.length && <p role="status">正在收集大家的返图…</p>}
         </>
       </section>
+      {mobile && mobilePreviewPhoto && !detailPhoto && (
+        <>
+          <div className="pawcream-public-wall-mobile-backdrop" role="presentation"
+            onClick={() => setMobilePreviewId(null)} />
+          <section className="pawcream-public-wall-mobile-sheet"
+            role="dialog" aria-modal="true" aria-label="返图快速预览"
+            onTouchStart={(event) => { touchStartX.current = event.touches[0].clientX }}
+            onTouchEnd={endPreviewSwipe}
+            onTouchCancel={() => { touchStartX.current = null }}>
+            <div aria-hidden="true" style={{ width: 38, height: 4, borderRadius: 999, background: '#dcccd9' }} />
+            {artwork(mobilePreviewPhoto, 'detail')}
+            <div style={{ fontSize: 13, color: '#967b90', textAlign: 'center' }}>
+              {demoMode
+                ? `Sample ${mobilePreviewPhoto.id.replace('sample-', '')} · ${mobilePreviewPhoto.ratio?.replace(' / ', ':')}`
+                : `@${mobilePreviewPhoto.authorName} · ${mobilePreviewPhoto.frameName}`}
+            </div>
+            <div style={{ fontSize: 12, opacity: .65 }}>左右滑动切换相纸</div>
+            <div className="pawcream-public-wall-sheet-actions">
+              <button type="button" className="pawcream-public-wall-close"
+                onClick={() => stepMobilePreview(-1)} aria-label="上一张相纸">‹</button>
+              <button type="button" className="pawcream-public-wall-close"
+                onClick={() => { setDetail(mobilePreviewPhoto.id); setMobilePreviewId(null) }}>查看大图</button>
+              <button type="button" className="pawcream-public-wall-close"
+                onClick={() => stepMobilePreview(1)} aria-label="下一张相纸">›</button>
+              <button type="button" className="pawcream-public-wall-close"
+                onClick={() => setMobilePreviewId(null)}>收起</button>
+            </div>
+          </section>
+        </>
+      )}
       {detailPhoto && (
         <div className="pawcream-public-wall-detail" role="presentation" onClick={() => setDetail(null)}>
           <div className="pawcream-public-wall-detail-inner" role="dialog" aria-modal="true"
