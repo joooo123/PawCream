@@ -732,7 +732,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   )
 
   return (
-    <main style={{ minHeight: mobilePreview ? 940 : '100svh', display: mobilePreview ? 'block' : 'grid', placeItems: mobilePreview ? undefined : 'center', overflowX: 'hidden', overflowY: mobilePreview ? 'auto' : 'hidden', background: mobilePreview ? '#fbf9fa' : '#ffffff', position: 'relative', isolation: 'isolate' }}>
+    <main style={{ minHeight: mobilePreview ? 940 : mobile ? '100dvh' : '100svh', height: !mobilePreview && mobile ? '100dvh' : undefined, display: mobilePreview ? 'block' : 'grid', placeItems: mobilePreview ? undefined : 'center', overflowX: 'hidden', overflowY: mobilePreview ? 'auto' : 'hidden', background: mobilePreview ? '#fbf9fa' : '#ffffff', position: 'relative', isolation: 'isolate' }}>
       {tuneMode && (
         <button type="button" onClick={onBack} aria-label="Back to PawCream home" style={{ position: 'fixed', left: 18, top: 18, zIndex: 75, border: '1px solid rgba(164,132,143,.2)', borderRadius: 999, background: 'rgba(255,255,255,.82)', color: '#8e757d', padding: '8px 13px', cursor: 'pointer', boxShadow: '0 8px 28px rgba(100,79,86,.07)', backdropFilter: 'blur(12px)' }}>← Home</button>
       )}
