@@ -89,7 +89,8 @@ app.use(async (req, res, next) => {
     if (!row || row.is_disabled) {
       await new Promise((resolve) => req.session.destroy(() => resolve()))
       res.clearCookie('pawcream.sid')
-      return next()
+      if (req.path === '/api/auth/me') return res.json({ user: null })
+      return res.status(401).json({ error: '账号已停用或会话失效，请重新登录' })
     }
     req.session.user = {
       id: row.id, email: row.email, displayName: row.display_name, role: row.role,
