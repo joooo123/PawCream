@@ -45,7 +45,7 @@ if (allowedOrigins.length) {
         callback(null, true)
         return
       }
-      callback(new Error('Origin is not allowed'))
+      callback(Object.assign(new Error('Origin is not allowed'), { status: 403 }))
     },
   }))
 }
@@ -512,6 +512,9 @@ registerPhotoRoutes(app, pool, requireAuth)
 registerAdminRoutes(app, pool)
 
 app.use((error, _req, res, _next) => {
+  if (error?.status === 403) {
+    return res.status(403).json({ error: '请求来源不被允许' })
+  }
   console.error(error)
   res.status(500).json({ error: 'PawCream 服务暂时出了点问题，请稍后再试' })
 })
