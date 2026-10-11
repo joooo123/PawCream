@@ -42,9 +42,9 @@ async function atomicAction(pool, actor, action, target, targetId, details, chan
   try {
     await db.query('BEGIN')
     const result = await change(db)
-    if (!result) {
+    if (!result || result.conflict) {
       await db.query('ROLLBACK')
-      return null
+      return result
     }
     await db.query(
       'INSERT INTO admin_audit (actor_user_id,actor_email,action,target_type,target_id,details) VALUES ($1,$2,$3,$4,$5,$6::jsonb)',
