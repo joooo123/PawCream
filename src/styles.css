@@ -314,6 +314,33 @@ select {
   min-height: 100svh;
 }
 
+/* Lock the real mobile Atelier to the visible viewport. Dialogs scroll inside. */
+@media (hover: none) and (pointer: coarse) {
+  html:has(.pawcream-app--atelier) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body:has(.pawcream-app--atelier) {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  .pawcream-app--atelier,
+  .pawcream-app--atelier .pawcream-scene-layer--atelier {
+    height: 100svh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
 .pawcream-app--covering,
 .pawcream-app--revealing {
   position: fixed;
