@@ -82,7 +82,7 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 -U pawcream -d pawcream < back
 阿里云控制台操作：
 
 1. RAM 访问控制 → 身份管理 → 角色 → 创建**阿里云服务 ECS**可信角色。
-2. 自定义权限策略：把示例中的 `YOUR_BUCKET_NAME` 替换为实际 Bucket 名称。
+2. 自定义权限策略：把示例中的 `pawcream-photo` 替换为实际 Bucket 名称。
 3. 给该角色授予这份**仅允许指定对象前缀**的策略。
 4. ECS 控制台 → 实例 → 实例 RAM 角色 → 绑定到北京 ECS。
 5. 如需明确角色名，在 `backend/.env` 中设置 `OSS_ECS_ROLE_NAME`。
@@ -99,7 +99,7 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 -U pawcream -d pawcream < back
         "oss:DeleteObject"
       ],
       "Resource": [
-        "acs:oss:*:*:YOUR_BUCKET_NAME/public/*"
+        "acs:oss:*:*:pawcream-photo/public/*"
       ]
     }
   ]
@@ -114,7 +114,7 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 -U pawcream -d pawcream < back
 
 ```ini
 PHOTO_STORAGE=oss
-OSS_BUCKET=你已经创建的Bucket完整名称
+OSS_BUCKET=pawcream-photo
 OSS_REGION=oss-cn-beijing
 OSS_ENDPOINT=https://oss-cn-beijing-internal.aliyuncs.com
 OSS_ECS_ROLE_NAME=你绑定的ECS角色名称
