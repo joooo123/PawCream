@@ -27,10 +27,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install WebP tools
+      - name: Install WebP and Nginx tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y webp
+          sudo apt-get install -y webp nginx
 
       - name: Install font tools
         run: python3 -m pip install --disable-pip-version-check fonttools brotli
@@ -49,6 +49,11 @@ jobs:
 
       - name: Test photo upload validation
         run: node --test backend/test/photoValidation.test.mjs
+
+      - name: Validate local-only deployment configuration
+        run: |
+          bash -n scripts/deploy-local-preview.sh
+          sudo nginx -t -c "$PWD/nginx/pawcream-preview.conf"
 
       - name: Install backend dependencies
         run: npm install --prefix backend --no-audit --no-fund
