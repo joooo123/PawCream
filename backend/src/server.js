@@ -7,6 +7,7 @@ import session from 'express-session'
 import helmet from 'helmet'
 import pg from 'pg'
 import { registerPhotoRoutes } from './publicPhotoRoutes.js'
+import { registerAdminRoutes } from './adminRoutes.js'
 
 const { Pool } = pg
 
@@ -73,6 +74,29 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24 * 30,
   },
 }))
+
+// Refresh authorization from PostgreSQL for every existing session.
+ // This revokes disabled/deleted accounts and stale admin roles immediately,
+ // including sessions that were created before the moderation console existed.
+app.use(async (req, res, next) => {
+  if (!req.session?.user?.id) return next()
+  try {
+    const result = await pool.query(
+      'SELECT id,email,display_name,role,is_disabled FROM users WHERE id=$1',
+      [req.session.user.id],
+    )
+    const row = result.rows[0]
+    if (!row || row.is_disabled) {
+      await new Promise((resolve) => req.session.destroy(() => resolve()))
+      res.clearCookie('pawcream.sid')
+      return next()
+    }
+    req.session.user = {
+      id: row.id, email: row.email, displayName: row.display_name, role: row.role,
+    }
+    next()
+  } catch (error) { next(error) }
+})
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -143,8 +167,9 @@ async function fetchOneNote(noteId, viewerId) {
         COALESCE(BOOL_OR(l.user_id = $2::uuid), false) AS liked_by_me,
         COALESCE(n.user_id = $2::uuid, false) AS is_mine
       FROM notes n
+      JOIN users u ON u.id=n.user_id
       LEFT JOIN note_likes l ON l.note_id = n.id
-      WHERE n.id = $1::uuid AND n.is_hidden = false
+      WHERE n.id = $1::uuid AND n.is_hidden = false AND NOT u.is_disabled
       GROUP BY n.id
     `,
     [noteId, viewerId || null],
@@ -221,11 +246,11 @@ app.post('/api/auth/login', authLimiter, async (req, res, next) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, email, password_hash, display_name, role FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, display_name, role, is_disabled FROM users WHERE email = $1',
       [email],
     )
     const row = result.rows[0]
-    if (!row || !(await bcrypt.compare(password, row.password_hash))) {
+    if (!row || row.is_disabled || !(await bcrypt.compare(password, row.password_hash))) {
       res.status(401).json({ error: '邮箱或密码不正确' })
       return
     }
@@ -288,8 +313,9 @@ app.get('/api/notes', async (req, res, next) => {
               COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
               true AS is_mine
             FROM notes n
+            JOIN users u ON u.id=n.user_id
             LEFT JOIN note_likes l ON l.note_id = n.id
-            WHERE n.is_hidden = false
+            WHERE n.is_hidden = false AND NOT u.is_disabled
               AND n.user_id = $1::uuid
             GROUP BY n.id
             ORDER BY n.created_at DESC
@@ -298,7 +324,7 @@ app.get('/api/notes', async (req, res, next) => {
           [viewerId],
         ),
         pool.query(
-          'SELECT COUNT(*)::int AS total FROM notes WHERE is_hidden = false AND user_id = $1::uuid',
+          'SELECT COUNT(*)::int AS total FROM notes n JOIN users u ON u.id=n.user_id WHERE NOT n.is_hidden AND NOT u.is_disabled AND n.user_id = $1::uuid',
           [viewerId],
         ),
       ])
@@ -324,8 +350,9 @@ app.get('/api/notes', async (req, res, next) => {
             COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
             COALESCE(n.user_id = $1::uuid, false) AS is_mine
           FROM notes n
+          JOIN users u ON u.id=n.user_id
           LEFT JOIN note_likes l ON l.note_id = n.id
-          WHERE n.is_hidden = false
+          WHERE n.is_hidden = false AND NOT u.is_disabled
           GROUP BY n.id
           ORDER BY
             CASE WHEN $2::text = 'random' THEN md5(n.id::text || $3::text) END ASC,
@@ -336,7 +363,7 @@ app.get('/api/notes', async (req, res, next) => {
         `,
         [viewerId, order, seed, limit, offset],
       ),
-      pool.query('SELECT COUNT(*)::int AS total FROM notes WHERE is_hidden = false'),
+      pool.query('SELECT COUNT(*)::int AS total FROM notes n JOIN users u ON u.id=n.user_id WHERE NOT n.is_hidden AND NOT u.is_disabled'),
     ])
 
     res.json({
@@ -437,7 +464,7 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
   try {
     await client.query('BEGIN')
     const note = await client.query(
-      'SELECT id FROM notes WHERE id = $1::uuid AND is_hidden = false FOR UPDATE',
+      'SELECT n.id FROM notes n JOIN users u ON u.id=n.user_id WHERE n.id = $1::uuid AND NOT n.is_hidden AND NOT u.is_disabled FOR UPDATE OF n',
       [req.params.id],
     )
     if (!note.rows[0]) {
@@ -482,6 +509,7 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
 
 
 registerPhotoRoutes(app, pool, requireAuth)
+registerAdminRoutes(app, pool)
 
 app.use((error, _req, res, _next) => {
   console.error(error)

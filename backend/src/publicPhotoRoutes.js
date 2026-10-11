@@ -33,18 +33,18 @@ export function registerPhotoRoutes(app, pool, requireAuth) {
     if (mine && !req.session.user) return res.status(401).json({ error: '请先登录 PawCream 账号' })
     const limit = Math.min(40, Math.max(1, Number.parseInt(String(req.query.limit || '24'), 10) || 24))
     const offset = Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0)
-    const where = mine ? 'WHERE user_id = $3::uuid' : ''
+    const where = mine ? 'WHERE p.user_id = $3::uuid AND NOT p.is_hidden' : 'WHERE NOT p.is_hidden AND NOT u.is_disabled'
     const args = mine ? [limit, offset, req.session.user.id] : [limit, offset]
     try {
       const [result, count] = await Promise.all([
         pool.query(
-          'SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos ' +
-          where + ' ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2',
+          'SELECT p.id, p.author_name, p.frame_name, p.client_photo_id, p.created_at FROM public_photos p JOIN users u ON u.id=p.user_id ' +
+          where + ' ORDER BY p.created_at DESC, p.id DESC LIMIT $1 OFFSET $2',
           args,
         ),
         pool.query(
-          'SELECT COUNT(*)::int AS total FROM public_photos ' +
-          (mine ? 'WHERE user_id = $1::uuid' : ''),
+          'SELECT COUNT(*)::int AS total FROM public_photos p JOIN users u ON u.id=p.user_id ' +
+          (mine ? 'WHERE p.user_id = $1::uuid AND NOT p.is_hidden' : 'WHERE NOT p.is_hidden AND NOT u.is_disabled'),
           mine ? [req.session.user.id] : [],
         ),
       ])
@@ -58,7 +58,7 @@ export function registerPhotoRoutes(app, pool, requireAuth) {
   app.get('/api/photos/mine/:clientId', requireAuth, async (req, res, next) => {
     try {
       const result = await pool.query(
-        'SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos WHERE user_id = $1 AND client_photo_id = $2',
+        'SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos WHERE user_id = $1 AND client_photo_id = $2 AND NOT is_hidden',
         [req.session.user.id, req.params.clientId],
       )
       res.set('Cache-Control', 'no-store').json({
@@ -72,7 +72,7 @@ export function registerPhotoRoutes(app, pool, requireAuth) {
   app.get('/api/photos/:id/image', async (req, res, next) => {
     try {
       const result = await pool.query(
-        'SELECT image_type, image_data, oss_key FROM public_photos WHERE id = $1::uuid',
+        'SELECT p.image_type, p.image_data, p.oss_key FROM public_photos p JOIN users u ON u.id=p.user_id WHERE p.id = $1::uuid AND NOT p.is_hidden AND NOT u.is_disabled',
         [req.params.id],
       )
       const row = result.rows[0]
