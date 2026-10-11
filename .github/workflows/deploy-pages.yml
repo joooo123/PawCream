@@ -50,6 +50,12 @@ jobs:
       - name: Test photo upload validation
         run: node --test backend/test/photoValidation.test.mjs
 
+      - name: Install backend dependencies
+        run: npm install --prefix backend --no-audit --no-fund
+
+      - name: Test OSS storage helpers
+        run: node --test backend/test/photoStorage.test.mjs
+
       - name: Check backend syntax
         run: |
           node --check backend/src/server.js
