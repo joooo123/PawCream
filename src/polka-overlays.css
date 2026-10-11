@@ -5,7 +5,7 @@
 @font-face {
   font-family: 'PawCream EN';
   src:
-    url('/PawCream/assets/font/pawcream-en.woff2') format('woff2'),
+    url('/assets/font/pawcream-en.woff2') format('woff2'),
     url('/assets/font/Apple-Regular.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
@@ -15,8 +15,8 @@
 @font-face {
   font-family: 'PawCream CN';
   src:
-    url('/PawCream/assets/font/pawcream-cn.woff2') format('woff2'),
-    url('/assets/font/AaZiTiGuanJiaWanWanTi%EF%BC%88JianFan%EF%BC%89-2.ttf') format('truetype');
+    url('/assets/font/pawcream-cn.woff2') format('woff2'),
+    url('/assets/font/AaZiTiGuanJiaWanWanTi-2.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
