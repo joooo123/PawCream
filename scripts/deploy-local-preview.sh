@@ -20,7 +20,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-[[ "$EUID" -eq 0 ]] || die "请用 root 运行，或 sudo bash $p"
+[[ "$EUID" -eq 0 ]] || die "请用 root 运行，或 sudo bash $SOURCE_ROOT/scripts/deploy-local-preview.sh"
 [[ -d "$SOURCE_ROOT/.git" ]] || die "找不到 Git 源码目录：$SOURCE_ROOT"
 [[ -f "$SOURCE_ROOT/package.json" ]] || die "缺少前端 package.json"
 [[ -f "$SOURCE_ROOT/vite.config.ts" ]] || die "缺少 vite.config.ts"
