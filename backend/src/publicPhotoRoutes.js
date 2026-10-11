@@ -102,17 +102,25 @@ export function registerPhotoRoutes(app, pool, requireAuth) {
 
       const newKey = PHOTO_STORAGE === 'oss' ? newPublicPhotoKey(req.session.user.id, type) : null
       let uploaded = false
+      let client
       try {
-        const old = await pool.query(
-          'SELECT oss_key FROM public_photos WHERE user_id = $1 AND client_photo_id = $2',
-          [req.session.user.id, clientId],
-        )
         if (newKey) {
           await putPublicPhoto(newKey, req.body, type)
           uploaded = true
         }
 
-        const result = await pool.query(
+        client = await pool.connect()
+        await client.query('BEGIN')
+        // Serialize replacement uploads of the same user/photo, including retries.
+        await client.query(
+          'SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))',
+          [req.session.user.id + ':' + clientId],
+        )
+        const old = await client.query(
+          'SELECT oss_key FROM public_photos WHERE user_id = $1 AND client_photo_id = $2',
+          [req.session.user.id, clientId],
+        )
+        const result = await client.query(
           'INSERT INTO public_photos (user_id, client_photo_id, author_name, frame_name, image_type, image_data, oss_key) ' +
           'VALUES ($1, $2, $3, $4, $5, $6, $7) ' +
           'ON CONFLICT (user_id, client_photo_id) DO UPDATE SET ' +
@@ -125,6 +133,10 @@ export function registerPhotoRoutes(app, pool, requireAuth) {
             type, newKey ? null : req.body, newKey,
           ],
         )
+        await client.query('COMMIT')
+        uploaded = false
+        client.release()
+        client = undefined
 
         const oldKey = old.rows[0]?.oss_key
         if (oldKey && oldKey !== newKey) {
@@ -135,6 +147,10 @@ export function registerPhotoRoutes(app, pool, requireAuth) {
         }
         res.status(201).json({ photo: publicPhoto(result.rows[0], true) })
       } catch (error) {
+        if (client) {
+          await client.query('ROLLBACK').catch(() => {})
+          client.release()
+        }
         if (uploaded && newKey) {
           await deletePublicPhoto(newKey).catch((cleanupError) => {
             console.error('Unable to clean up failed photo upload', cleanupError)
