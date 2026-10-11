@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import OSS from 'ali-oss'
-import Credential, { Config } from '@alicloud/credentials'
+import CredentialsModule from '@alicloud/credentials'
 
 export const PHOTO_STORAGE = (process.env.PHOTO_STORAGE || 'database').trim().toLowerCase()
 const OSS_BUCKET = (process.env.OSS_BUCKET || '').trim()
@@ -22,11 +22,13 @@ let ossClientPromise
 async function createOssClient() {
   // Use the RAM role attached to the ECS instance; never store permanent keys in Git.
   const roleName = (process.env.OSS_ECS_ROLE_NAME || '').trim()
-  const credentialClient = new Credential(new Config({
+  // Support the CommonJS/ESM export shapes used by the official credentials package.
+  const Credential = CredentialsModule.default || CredentialsModule
+  const credentialClient = new Credential({
     type: 'ecs_ram_role',
     ...(roleName ? { roleName } : {}),
     disableIMDSv1: true,
-  }))
+  })
   const initial = await credentialClient.getCredential()
   return new OSS({
     region: OSS_REGION,
