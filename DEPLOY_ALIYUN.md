@@ -50,6 +50,16 @@ openssl rand -hex 32
 POSTGRES_PASSWORD=此处填刚生成的随机密码
 ```
 
+**中国内地 ECS 无法连接 Docker Hub 时**，本机已验证可以从 Amazon ECR Public 下载官方镜像。在 `/opt/pawcream/source/.env` 中保留原有 `POSTGRES_PASSWORD`，另加以下三行（不要覆盖、重新生成数据库密码）：
+
+```ini
+POSTGRES_IMAGE=public.ecr.aws/docker/library/postgres:16-alpine
+NODE_BASE_IMAGE=public.ecr.aws/docker/library/node:22-alpine
+NPM_REGISTRY=https://registry.npmmirror.com
+```
+
+这些变量只控制镜像来源与后端安装依赖的 npm registry，不改变 PostgreSQL 或 Node.js 的应用配置。如果 ECR 不可访问，先验证镜像仓库连通性。
+
 编辑 `backend/.env`：
 
 - `SESSION_SECRET`：独立生成至少 32 字节的随机值，例如 `openssl rand -hex 32`
