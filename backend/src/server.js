@@ -414,7 +414,7 @@ app.patch('/api/notes/:id', requireAuth, async (req, res, next) => {
     }
 
     const user = req.session.user
-    if (owner.rows[0].user_id !== user.id && user.role !== 'admin') {
+    if (owner.rows[0].user_id !== user.id) {
       res.status(403).json({ error: '只能编辑自己的便签' })
       return
     }
@@ -443,7 +443,7 @@ app.delete('/api/notes/:id', requireAuth, async (req, res, next) => {
     }
 
     const user = req.session.user
-    if (owner.rows[0].user_id !== user.id && user.role !== 'admin') {
+    if (owner.rows[0].user_id !== user.id) {
       res.status(403).json({ error: '只能删除自己的便签' })
       return
     }
