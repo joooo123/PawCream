@@ -82,6 +82,24 @@ jobs:
         with:
           path: ./dist
 
+      - name: Build and verify standalone PawCream domain
+        env:
+          VITE_API_BASE_URL: /api
+        run: |
+          npm run build:server:webp
+          test -s dist/index.html
+          test -s dist/assets/font/pawcream-cn.woff2
+          test -s dist/assets/font/pawcream-en.woff2
+          test -s dist/assets/home/Home_mobile.webp
+          if grep -R -q '/PawCream/assets/font/' dist; then
+            echo "ERROR: GitHub Pages font path leaked into standalone build"
+            exit 1
+          fi
+          if grep -q '/PawCream/' dist/index.html; then
+            echo "ERROR: GitHub Pages base path leaked into standalone index.html"
+            exit 1
+          fi
+
   deploy:
     if: github.event_name != 'pull_request'
     environment:
