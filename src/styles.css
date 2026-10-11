@@ -30,6 +30,22 @@ select {
   font: inherit;
 }
 
+/* Disable the browser's blue tap flash without changing PawCream's selected styles. */
+@media (hover: none) and (pointer: coarse) {
+  .pawcream-app,
+  .pawcream-app * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pawcream-app button,
+  .pawcream-app button *,
+  .pawcream-app [role='button'],
+  .pawcream-app [role='button'] * {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 .home-scene {
   min-height: 100svh;
   position: relative;
