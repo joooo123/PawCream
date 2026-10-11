@@ -3,6 +3,7 @@ name: Deploy PawCream Preview
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -50,7 +51,10 @@ jobs:
         run: node --test backend/test/photoValidation.test.mjs
 
       - name: Check backend syntax
-        run: node --check backend/src/server.js
+        run: |
+          node --check backend/src/server.js
+          node --check backend/src/publicPhotoRoutes.js
+          node --check backend/src/photoStorage.js
 
       - name: Build
         env:
@@ -68,6 +72,7 @@ jobs:
           path: ./dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
