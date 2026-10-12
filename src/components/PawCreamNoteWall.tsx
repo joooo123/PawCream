@@ -165,7 +165,7 @@ export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Pr
   }
 
   return (
-    <div className="pawcream-note-gallery" aria-label={language === 'zh' ? '公共便签画廊' : 'Public note gallery'}>
+    <div className={'pawcream-note-gallery' + (mobile ? ' is-mobile' : '')} aria-label={language === 'zh' ? '公共便签画廊' : 'Public note gallery'}>
       <div className="pawcream-note-gallery-layout">
         {!mobile && focused && (
           <aside className="pawcream-note-gallery-hero" aria-label={copy.preview}>
