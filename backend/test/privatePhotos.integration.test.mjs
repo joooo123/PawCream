@@ -90,12 +90,33 @@ test('private tin photos: uploads are idempotent and all reads/deletes are owner
     assert.equal((await call('b', `/api/private-photos/${clientId}`, 'DELETE')).status, 404)
     assert.equal((await call('a', imagePath)).status, 200)
 
+    // Each source slot is a private OSS object, not a public-wall photo.
+    const slot0 = `/api/private-photos/${clientId}/sources/0`
+    const slot3 = `/api/private-photos/${clientId}/sources/3`
+    const slotsPath = `/api/private-photos/${clientId}/sources`
+    assert.equal((await call(null, slotsPath)).status, 401)
+    assert.equal((await call(null, slot0, 'POST', tinyPng)).status, 401)
+    assert.equal((await call('b', slot0, 'POST', tinyPng)).status, 404)
+    assert.equal((await call('a', slot0, 'POST', tinyPng)).status, 201)
+    assert.equal((await call('a', slot0, 'POST', tinyPng)).status, 200)
+    assert.equal((await call('a', slot3, 'POST', tinyPng)).status, 201)
+    assert.equal(objects.size, 3, 'same-slot retries must be idempotent')
+    assert.deepEqual((await (await call('a', slotsPath)).json()).slots, [0, 3])
+    assert.deepEqual((await (await call('b', slotsPath)).json()).slots, [])
+    assert.equal((await call('b', slot0)).status, 404)
+    assert.equal((await call(null, slot0)).status, 401)
+    const sourceImage = await call('a', slot0)
+    assert.equal(sourceImage.status, 200)
+    assert.equal(sourceImage.headers.get('cache-control'), 'private, no-store')
+    assert.deepEqual(Buffer.from(await sourceImage.arrayBuffer()), tinyPng)
+    assert.equal((await call('a', `/api/private-photos/${clientId}/sources/4`, 'POST', tinyPng)).status, 400)
+
     assert.equal((await call('b', target, 'POST', tinyPng)).status, 201)
-    assert.equal(objects.size, 2, 'different accounts must have different OSS objects')
+    assert.equal(objects.size, 4, 'sources and composites have separate OSS objects')
     assert.equal((await call('a', `/api/private-photos/${clientId}`, 'DELETE')).status, 200)
     assert.equal((await call('a', imagePath)).status, 404)
     assert.equal((await call('b', imagePath)).status, 200)
-    assert.equal(objects.size, 1)
+    assert.equal(objects.size, 1, 'parent deletion removes the owned source objects')
     const publics = await pool.query(
       'SELECT COUNT(*)::int AS total FROM public_photos WHERE user_id = ANY($1::uuid[])',
       [[owners.a, owners.b]],
