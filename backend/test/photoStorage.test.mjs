@@ -24,7 +24,7 @@ test('private keys are scoped, unique and never use public prefix', () => {
   const user = 'c05ddf72-5589-4949-8a8b-40ef6906c6e6'
   const first = newPrivatePhotoKey(user, 'image/png')
   const second = newPrivatePhotoKey(user, 'image/png')
-  assert.match(first, /^private\\/c05ddf72-5589-4949-8a8b-40ef6906c6e6\\/[a-f0-9-]{36}\\.png$/)
+  assert.match(first, /^private\/c05ddf72-5589-4949-8a8b-40ef6906c6e6\/[a-f0-9-]{36}\.png$/)
   assert.notEqual(first, second)
   assert.throws(() => newPrivatePhotoKey('not-a-uuid', 'image/png'))
   assert.throws(() => newPrivatePhotoKey(user, 'image/svg+xml'))
