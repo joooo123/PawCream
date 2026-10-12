@@ -92,9 +92,19 @@ test('admin moderation: role boundary, CSRF, ban sessions, hide content, audit t
     const signupEmail = 'signup-ci@example.test'
     const invite = generated.body.codes[0].code
     const ih = inviteCodeHash(invite)
-    // Check verification enforcement and one-time consumption with the CI code hash.
+    // Check nickname validation and one-time invitation consumption.
+    const blankName = await req('/api/auth/register', {method:'POST',body:{
+      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'123456',displayName:'   ',
+    }})
+    assert.equal(blankName.status, 400)
+    assert.match(blankName.body.error, /昵称/)
+    const longName = await req('/api/auth/register', {method:'POST',body:{
+      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'123456',displayName:'a'.repeat(41),
+    }})
+    assert.equal(longName.status, 400)
+    assert.match(longName.body.error, /昵称/)
     const needsCode = await req('/api/auth/register', {method:'POST',body:{
-      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'987654',
+      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'987654',displayName:'奶油小熊',
     }})
     assert.equal(needsCode.status, 400)
     await pool.query(
@@ -103,22 +113,26 @@ test('admin moderation: role boundary, CSRF, ban sessions, hide content, audit t
       [signupEmail,ih,otpHash('CI-TEST-ONLY-THIS-IS-NOT-A-PRODUCTION-SECRET-2026',signupEmail,ih,'123456')],
     )
     const wrong = await req('/api/auth/register', {method:'POST',body:{
-      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'999999',
+      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'999999',displayName:'奶油小熊',
     }})
     assert.equal(wrong.status, 400)
     const signed = await req('/api/auth/register', {method:'POST',body:{
-      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'123456',
+      email:signupEmail,password:'a-strong-password',inviteCode:invite,emailCode:'123456',displayName:'奶油小熊',
     }})
     assert.equal(signed.status, 201, JSON.stringify(signed.body))
+    assert.equal(signed.body.user.displayName, '奶油小熊')
+    const nickname = await pool.query('SELECT display_name FROM users WHERE email=$1', [signupEmail])
+    assert.equal(nickname.rows[0].display_name, '奶油小熊')
     const row = await pool.query('SELECT used_by,used_at FROM registration_invites WHERE code_hash=$1',[ih])
     assert.equal(row.rows[0].used_by,signed.body.user.id)
     assert.ok(row.rows[0].used_at)
     const reuse = await req('/api/auth/register', {method:'POST',body:{
-      email:'another-ci@example.test',password:'a-strong-password',inviteCode:invite,emailCode:'123456',
+      email:'another-ci@example.test',password:'a-strong-password',inviteCode:invite,emailCode:'123456',displayName:'另一个用户',
     }})
     assert.equal(reuse.status, 403)
     const restoredRegistration = await req('/api/auth/login',{method:'POST',body:{email:signupEmail,password:'a-strong-password'}})
     assert.equal(restoredRegistration.status,200)
+    assert.equal(restoredRegistration.body.user.displayName, '奶油小熊')
 
     const userDenied = await req('/api/admin/users', { cookie: visitor.cookie })
     assert.equal(userDenied.status, 403)
