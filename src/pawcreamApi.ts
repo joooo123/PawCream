@@ -283,6 +283,42 @@ export async function deletePrivatePhoto(clientPhotoId: string) {
   if (!response.ok) throw new Error(payload.error || '删除云端私人照片失败')
 }
 
+export async function listPrivatePhotoSourceSlots(clientPhotoId: string): Promise<number[]> {
+  const data = await request<{ slots: number[] }>(
+    `/private-photos/${encodeURIComponent(clientPhotoId)}/sources`,
+  )
+  return data.slots
+}
+
+export async function downloadPrivatePhotoSource(clientPhotoId: string, slot: number): Promise<Blob> {
+  if (!API_BASE) throw new Error('私人照片需要正式站点')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}/sources/${slot}`,
+    { credentials: 'include', cache: 'no-store' },
+  )
+  if (!response.ok) throw new Error(`原图读取失败 (${response.status})`)
+  return response.blob()
+}
+
+export async function uploadPrivatePhotoSource(clientPhotoId: string, slot: number, imageBlob: Blob) {
+  if (!API_BASE) throw new Error('私人照片需要正式站点')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}/sources/${slot}`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': imageBlob.type || 'image/png' },
+      body: imageBlob,
+    },
+  )
+  const payload = await response.json().catch(() => ({})) as { error?: string }
+  if (!response.ok) throw new Error(payload.error || `第 ${slot + 1} 张原图备份失败`)
+}
+
+export function publicSlotPhotoId(parentId: string, index: number) {
+  return `${parentId}-slot-${index + 1}`
+}
+
 export function publicPhotoImageUrl(id: string) {
   return `${API_BASE}/photos/${encodeURIComponent(id)}/image`
 }
