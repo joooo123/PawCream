@@ -45,6 +45,9 @@ export async function sendVerificationMail(to, code) {
   if (!MAIL_ENABLED) throw new Error('SMTP_UNCONFIGURED')
   transporter ||= nodemailer.createTransport({
     host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE,
+    // Remote port-587 relays MUST negotiate STARTTLS (no silent cleartext fallback).
+    // Loopback SMTP is used only by the isolated automated test mail sink.
+    requireTLS: !SMTP_SECURE && SMTP_HOST !== '127.0.0.1' && SMTP_HOST !== 'localhost',
     ...(SMTP_USER ? { auth: { user: SMTP_USER, pass: SMTP_PASS } } : {}),
     connectionTimeout: 10000,
     greetingTimeout: 10000,
