@@ -550,7 +550,7 @@ export default function AtelierWithSignin(props: Props) {
                     type="text" inputMode="numeric" autoComplete="one-time-code"
                     maxLength={6} pattern="[0-9]{6}" required
                     value={emailCode}
-                    onChange={e => { setEmailCode(e.currentTarget.value.replace(/\\D/g,'').slice(0,6)); setStatus('') }}
+                    onChange={e => { setEmailCode(e.currentTarget.value.replace(/\D/g,'').slice(0,6)); setStatus('') }}
                     style={inputStyle}
                     placeholder="123456"
                   />
