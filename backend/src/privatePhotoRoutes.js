@@ -24,7 +24,14 @@ function privatePhoto(row) {
   }
 }
 
-export function registerPrivatePhotoRoutes(app, pool, requireAuth) {
+// Optional storage adapter keeps API authorization testable without real OSS credentials.
+export function registerPrivatePhotoRoutes(app, pool, requireAuth, storage = {
+  enabled: PHOTO_STORAGE === 'oss',
+  newKey: newPrivatePhotoKey,
+  put: putPublicPhoto,
+  read: readPublicPhoto,
+  remove: deletePublicPhoto,
+}) {
   // None of these routes are exposed on the public gallery or to admins.
   app.get('/api/private-photos', requireAuth, async (req, res, next) => {
     const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '100'), 10) || 100))
@@ -54,7 +61,7 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth) {
       )
       if (!result.rows.length) return res.status(404).end()
       const row = result.rows[0]
-      const bytes = await readPublicPhoto(row.oss_key)
+      const bytes = await storage.read(row.oss_key)
       res.set('Cache-Control', 'private, no-store')
       res.set('Cross-Origin-Resource-Policy', 'same-origin')
       res.set('X-Content-Type-Options', 'nosniff')
@@ -68,7 +75,7 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth) {
   app.post('/api/private-photos', requireAuth, privateUploadLimiter,
     express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: MAX_PRIVATE_BYTES }),
     async (req, res, next) => {
-      if (PHOTO_STORAGE !== 'oss') return res.status(503).json({ error: '私人云端铁盒需要启用 OSS 存储' })
+      if (!storage.enabled) return res.status(503).json({ error: '私人云端铁盒需要启用 OSS 存储' })
       const type = String(req.get('content-type') || '').split(';')[0].toLowerCase()
       const clientId = req.query.clientPhotoId
       const frameName = typeof req.query.frameName === 'string' ? req.query.frameName.trim() : ''
@@ -92,8 +99,8 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth) {
           incomingTime <= new Date() && incomingTime.getTime() >= Date.UTC(2000, 0, 1)
           ? incomingTime : new Date()
 
-        uploadedKey = newPrivatePhotoKey(ownerId, type)
-        await putPublicPhoto(uploadedKey, req.body, type)
+        uploadedKey = storage.newKey(ownerId, type)
+        await storage.put(uploadedKey, req.body, type)
         const inserted = await pool.query(
           'INSERT INTO private_photos(user_id,client_photo_id,frame_name,image_type,oss_key,created_at) ' +
           'VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id,client_photo_id) DO NOTHING ' +
@@ -114,7 +121,7 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth) {
         next(error)
       } finally {
         if (uploadedKey) {
-          await deletePublicPhoto(uploadedKey).catch((error) => {
+          await storage.remove(uploadedKey).catch((error) => {
             console.error('Unable to clean up unreferenced private photo object', error?.message)
           })
         }
@@ -131,7 +138,7 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth) {
       )
       if (!deleted.rows.length) return res.status(404).json({ error: '照片不存在' })
       try {
-        await deletePublicPhoto(deleted.rows[0].oss_key)
+        await storage.remove(deleted.rows[0].oss_key)
       } catch (error) {
         // Record is already removed and inaccessible; retain the error for storage cleanup.
         console.error('Unable to remove private OSS photo after database deletion', error?.message)
