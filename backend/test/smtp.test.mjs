@@ -42,7 +42,13 @@ test('OTP mail is sent over SMTP to the supplied address, never returned in HTTP
     assert.equal(mailConfigured(), true)
     await sendVerificationMail('newuser@example.test', '654321')
     assert.match(receiver, /newuser@example\.test/)
-    assert.match(mail, /654321/)
+    // Nodemailer MIME-encodes Chinese message bodies (usually base64).
+    // Decode the transport payload before asserting the user's OTP content.
+    const body = mail.split(/\r\n\r\n/).slice(1).join('\r\n\r\n')
+    const decoded = /Content-Transfer-Encoding: base64/i.test(mail)
+      ? Buffer.from(body.replace(/\s/g, ''), 'base64').toString('utf8')
+      : body
+    assert.match(decoded, /654321/)
   } finally {
     for (const socket of sockets) socket.destroy()
     await new Promise(resolve => smtp.close(resolve))
