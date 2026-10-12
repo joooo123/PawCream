@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "check": "node --check src/server.js && node --check src/adminRoutes.js && node --check src/inviteAdminRoutes.js && node --check src/registrationMail.js && node --check src/registrationRoutes.js && node --check src/publicPhotoRoutes.js && node --check src/photoStorage.js"
+    "check": "node --check src/server.js && node --check src/adminRoutes.js && node --check src/inviteAdminRoutes.js && node --check src/registrationMail.js && node --check src/registrationRoutes.js && node --check src/publicPhotoRoutes.js && node --check src/privatePhotoRoutes.js && node --check src/photoStorage.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

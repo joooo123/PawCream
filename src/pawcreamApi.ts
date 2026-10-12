@@ -24,6 +24,18 @@ export type PawCreamPublicPhoto = {
   clientPhotoId?: string
 }
 
+export type PawCreamPrivatePhoto = {
+  id: string
+  clientPhotoId: string
+  frameName: string
+  createdAt: string
+}
+
+export type PawCreamPrivatePhotoBatch = {
+  photos: PawCreamPrivatePhoto[]
+  total: number
+}
+
 export type PawCreamPublicPhotoBatch = {
   photos: PawCreamPublicPhoto[]
   total: number
@@ -218,6 +230,57 @@ export async function signOutPawCream() {
     return
   }
   await request<{ ok: true }>('/auth/logout', { method: 'POST' })
+}
+
+export function listPrivatePhotos(offset = 0, limit = 100) {
+  return request<PawCreamPrivatePhotoBatch>(
+    `/private-photos?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}`,
+  )
+}
+
+export async function uploadPrivatePhoto(input: {
+  id: string; frameName: string; imageBlob: Blob; createdAt: string
+}) {
+  if (!API_BASE) throw new Error('私人云端铁盒仅支持正式站点')
+  const params = new URLSearchParams({
+    clientPhotoId: input.id,
+    frameName: input.frameName,
+    createdAt: input.createdAt,
+  })
+  const response = await fetch(`${API_BASE}/private-photos?${params}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': input.imageBlob.type || 'image/png' },
+    body: input.imageBlob,
+  })
+  const payload = await response.json().catch(() => ({})) as {
+    photo?: PawCreamPrivatePhoto
+    error?: string
+  }
+  if (!response.ok || !payload.photo) throw new Error(payload.error || '私人照片上传失败')
+  return payload.photo
+}
+
+export async function getPrivatePhotoImage(clientPhotoId: string) {
+  if (!API_BASE) throw new Error('未连接私人云端铁盒')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}/image`,
+    { credentials: 'include', cache: 'no-store' },
+  )
+  if (!response.ok) throw new Error(`读取云端私人照片失败 (${response.status})`)
+  return response.blob()
+}
+
+export async function deletePrivatePhoto(clientPhotoId: string) {
+  if (!API_BASE) throw new Error('未连接私人云端铁盒')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  )
+  // Deleting a never-uploaded local photo or repeating a completed delete is safe.
+  if (response.status === 404) return
+  const payload = await response.json().catch(() => ({})) as { error?: string }
+  if (!response.ok) throw new Error(payload.error || '删除云端私人照片失败')
 }
 
 export function publicPhotoImageUrl(id: string) {

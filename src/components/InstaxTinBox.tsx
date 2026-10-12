@@ -25,6 +25,10 @@ type Props = {
   panelBg: string
   panelBorder: string
   accent: string
+  syncStatus: string
+  syncBusy: boolean
+  onRetrySync: () => Promise<void>
+  onDeletePhoto: (photo: PawCreamStoredPhoto) => Promise<void>
   onMakeAnother: () => void
   onClose: () => void
 }
@@ -167,6 +171,10 @@ export default function InstaxTinBox({
   panelBg,
   panelBorder,
   accent,
+  syncStatus,
+  syncBusy,
+  onRetrySync,
+  onDeletePhoto,
   onMakeAnother,
   onClose,
 }: Props) {
@@ -178,6 +186,7 @@ export default function InstaxTinBox({
   const [copyStatus, setCopyStatus] = useState('复制参数')
   const [publishedPhoto, setPublishedPhoto] = useState<PawCreamPublicPhoto | null>(null)
   const [publishBusy, setPublishBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [publishStatus, setPublishStatus] = useState('')
   const pointerStart = useRef<number | null>(null)
   const boxTuneMode = useMemo(
@@ -227,6 +236,14 @@ export default function InstaxTinBox({
       .catch(() => { if (!cancelled) setPublishedPhoto(null) })
     return () => { cancelled = true }
   }, [expanded, active?.id])
+
+  const removePrivatePhoto = async () => {
+    if (!active || deleting || syncBusy) return
+    if (!window.confirm('确定从私人云端铁盒永久删除这张照片吗？此操作不可撤销。已公开到返图墙的副本不会自动撤回。')) return
+    setDeleting(true)
+    try { await onDeletePhoto(active) }
+    finally { setDeleting(false) }
+  }
 
   const togglePublished = async () => {
     if (!active || publishBusy) return
@@ -341,6 +358,13 @@ export default function InstaxTinBox({
           <div style={{ marginTop: 4, fontSize: mobile ? 14 : 16, color: textColor, opacity: .68 }}>
             左右滑一滑，翻翻收好的每一张 ♡
           </div>
+          {syncStatus && <div role="status" style={{ fontSize: 12, color: textColor, marginTop: 6 }}>{syncStatus}</div>}
+          {photos.some(photo => !photo.cloudSynced) && (
+            <button type="button" disabled={syncBusy} onClick={() => void onRetrySync()}
+              style={{ marginTop: 6, ...themedButton, fontSize: 13, minHeight: 32 }}>
+              {syncBusy ? '同步中…' : '重试同步到 OSS'}
+            </button>
+          )}
         </div>
 
         {views.length ? (
@@ -432,6 +456,7 @@ export default function InstaxTinBox({
               <div style={{ fontSize: mobile ? 14 : 16, color: textColor, opacity: .72 }}>
                 {activeIndex + 1} / {views.length}
                 {active ? ` · ${new Date(active.createdAt).toLocaleDateString('zh-CN')}` : ''}
+                {active ? (active.cloudSynced ? ' · 私有云端已保存' : ' · 尚待云端同步') : ''}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
@@ -445,6 +470,10 @@ export default function InstaxTinBox({
                 </button>
                 <button type="button" onClick={() => setExpanded(false)} style={themedButton}>
                   收回盒子里
+                </button>
+                <button type="button" disabled={deleting || syncBusy}
+                  onClick={() => void removePrivatePhoto()} style={{ ...themedButton, fontSize: 13 }}>
+                  {deleting ? '删除中…' : '删除私人照片'}
                 </button>
                 <button type="button" onClick={() => void togglePublished()} disabled={publishBusy} style={{
                   ...themedButton,
@@ -511,6 +540,14 @@ export default function InstaxTinBox({
         <div style={{ marginTop: 4, fontSize: mobile ? 14 : 16, color: textColor, opacity: .7 }}>
           {dropDone ? '收好啦 ♡' : '轻轻放进去…'}
         </div>
+        {syncStatus && <div role="status" style={{ marginTop: 5, fontSize: 12, color: textColor }}>{syncStatus}</div>}
+        {photos.some(photo => !photo.cloudSynced) && (
+          <button type="button" disabled={syncBusy} onClick={() => void onRetrySync()}
+            style={{ marginTop: 6, border: `1px solid ${panelBorder}`,
+              borderRadius: 999, padding: '5px 12px', background: panelBg, color: textColor, cursor: 'pointer' }}>
+            {syncBusy ? '同步中…' : '重试同步到 OSS'}
+          </button>
+        )
       </div>
 
       <div

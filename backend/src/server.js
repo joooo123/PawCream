@@ -7,6 +7,7 @@ import session from 'express-session'
 import helmet from 'helmet'
 import pg from 'pg'
 import { registerPhotoRoutes } from './publicPhotoRoutes.js'
+import { registerPrivatePhotoRoutes } from './privatePhotoRoutes.js'
 import { registerAdminRoutes } from './adminRoutes.js'
 import { registerSignupRoutes } from './registrationRoutes.js'
 import { registerInviteAdminRoutes } from './inviteAdminRoutes.js'
@@ -463,6 +464,7 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
 
 
 registerPhotoRoutes(app, pool, requireAuth)
+registerPrivatePhotoRoutes(app, pool, requireAuth)
 registerAdminRoutes(app, pool)
 registerInviteAdminRoutes(app, pool)
 
