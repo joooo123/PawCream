@@ -60,7 +60,7 @@ jobs:
         run: npm install --prefix backend --no-audit --no-fund
 
       - name: Test admin permission guards and invitation format
-        run: node --test backend/test/adminRoutes.test.mjs backend/test/invitation.test.mjs
+        run: node --test backend/test/adminRoutes.test.mjs backend/test/invitation.test.mjs backend/test/smtp.test.mjs
 
       - name: Test OSS storage helpers
         run: node --test backend/test/photoStorage.test.mjs
