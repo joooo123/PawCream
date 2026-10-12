@@ -53,6 +53,7 @@ type FrameSlot = {
 
 type PhotoPlacement = {
   url: string
+  sourceBlob: Blob
   name: string
   x: number
   y: number
@@ -429,7 +430,7 @@ function drawPlacedPhoto(
 async function composeFinishedPhoto(
   overlaySrc: string,
   frameMeta: FrameMeta,
-  placements: PhotoPlacement[],
+  placements: Array<PhotoPlacement | undefined>,
 ) {
   const overlay = await loadImage(overlaySrc)
   const canvas = document.createElement('canvas')
@@ -462,7 +463,7 @@ export default function AtelierWithInstax(props: Props) {
   const [sizeKey, setSizeKey] = useState<SizeKey>('square')
   const [frameMeta, setFrameMeta] = useState<FrameMeta | null>(null)
   const [frameError, setFrameError] = useState('')
-  const [photos, setPhotos] = useState<PhotoPlacement[]>([])
+  const [photos, setPhotos] = useState<Array<PhotoPlacement | undefined>>([])
   const [activeSlot, setActiveSlot] = useState(0)
   const [replaceTarget, setReplaceTarget] = useState<number | null>(null)
   const [boxPhotos, setBoxPhotos] = useState<PawCreamStoredPhoto[]>([])
@@ -472,6 +473,7 @@ export default function AtelierWithInstax(props: Props) {
   const [status, setStatus] = useState('')
   const inputRef = useRef<HTMLInputElement | null>(null)
   const dragRef = useRef<DragState>(null)
+  const slotDragMovedRef = useRef(false)
 
   const tuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
@@ -480,6 +482,8 @@ export default function AtelierWithInstax(props: Props) {
 
   const mobile = props.deviceProfile === 'mobile'
   const frameName = FRAME_MAP[colorKey][sizeKey] ?? ''
+  const selectedCount = frameMeta?.slots.filter((_, index) => Boolean(photos[index])).length ?? 0
+  const allSlotsFilled = Boolean(frameMeta && selectedCount === frameMeta.slots.length)
   const opaqueFrameSrc = frameName ? assetUrl('instax', frameName) : ''
   const transparentFrameSrc = frameName ? assetUrl('instax-transparent', frameName) : ''
   const theme = INSTAX_THEME[colorKey]
@@ -494,7 +498,7 @@ export default function AtelierWithInstax(props: Props) {
 
   const cleanupPhotos = () => {
     setPhotos((current) => {
-      current.forEach((photo) => URL.revokeObjectURL(photo.url))
+      current.forEach((photo) => { if (photo) URL.revokeObjectURL(photo.url) })
       return []
     })
     setActiveSlot(0)
@@ -682,10 +686,15 @@ export default function AtelierWithInstax(props: Props) {
     inputRef.current?.click()
   }
 
-  const replaceActivePhoto = () => {
-    setReplaceTarget(activeSlot)
-    inputRef.current?.click()
+  const pickSlotPhoto = (index: number) => {
+    if (busy) return
+    setActiveSlot(index)
+    setReplaceTarget(index)
+    // React commits the single-file mode before the native picker opens.
+    window.setTimeout(() => inputRef.current?.click(), 0)
   }
+
+  const replaceActivePhoto = () => pickSlotPhoto(activeSlot)
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -698,7 +707,7 @@ export default function AtelierWithInstax(props: Props) {
       setPhotos((current) => {
         const next = [...current]
         if (next[replaceTarget]) URL.revokeObjectURL(next[replaceTarget].url)
-        next[replaceTarget] = { url, name: file.name, x: 0, y: 0, zoom: 1.12 }
+        next[replaceTarget] = { url, sourceBlob: file, name: file.name, x: 0, y: 0, zoom: 1.12 }
         return next
       })
       setReplaceTarget(null)
@@ -707,16 +716,17 @@ export default function AtelierWithInstax(props: Props) {
 
     setPhotos((current) => {
       const next = [...current]
-      const remaining = Math.max(0, frameMeta.slots.length - next.length)
-
-      files.slice(0, remaining).forEach((file) => {
-        next.push({
+      const emptySlots = frameMeta.slots.map((_, index) => index)
+        .filter(index => !next[index])
+      files.slice(0, emptySlots.length).forEach((file, index) => {
+        next[emptySlots[index]] = {
           url: URL.createObjectURL(file),
+          sourceBlob: file,
           name: file.name,
           x: 0,
           y: 0,
           zoom: 1.12,
-        })
+        }
       })
       return next
     })
@@ -724,7 +734,7 @@ export default function AtelierWithInstax(props: Props) {
 
   const updatePlacement = (index: number, patch: Partial<PhotoPlacement>) => {
     setPhotos((current) => current.map((photo, photoIndex) =>
-      photoIndex === index ? { ...photo, ...patch } : photo))
+      photo && photoIndex === index ? { ...photo, ...patch } : photo))
   }
 
   const onSlotPointerDown = (index: number, event: ReactPointerEvent<HTMLDivElement>) => {
@@ -732,6 +742,7 @@ export default function AtelierWithInstax(props: Props) {
     if (!placement) return
     const rect = event.currentTarget.getBoundingClientRect()
     setActiveSlot(index)
+    slotDragMovedRef.current = false
     dragRef.current = {
       index,
       startX: event.clientX,
@@ -750,6 +761,10 @@ export default function AtelierWithInstax(props: Props) {
     const placement = photos[index]
     if (!placement) return
 
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 6) {
+      slotDragMovedRef.current = true
+    }
+    if (!slotDragMovedRef.current) return
     const limit = clamp((placement.zoom - 1) * 42 + 6, 6, 34)
     const x = clamp(drag.baseX + (event.clientX - drag.startX) / drag.width * 100, -limit, limit)
     const y = clamp(drag.baseY + (event.clientY - drag.startY) / drag.height * 100, -limit, limit)
@@ -761,7 +776,7 @@ export default function AtelierWithInstax(props: Props) {
   }
 
   const placeInBox = async () => {
-    if (!frameMeta || !frameName || photos.length < frameMeta.slots.length || busy) return
+    if (!frameMeta || !frameName || !allSlotsFilled || busy) return
     setBusy(true)
     setStatus('正在把它收进小盒子…')
 
@@ -774,6 +789,7 @@ export default function AtelierWithInstax(props: Props) {
       const blob = await composeFinishedPhoto(transparentFrameSrc, frameMeta, photos)
       const saved = await savePawCreamPhoto({
         imageBlob: blob,
+        sourceBlobs: frameMeta.slots.map((_, index) => photos[index]!.sourceBlob),
         frameName,
         visibility: 'private',
       })
@@ -820,7 +836,22 @@ export default function AtelierWithInstax(props: Props) {
               onPointerMove={(event) => onSlotPointerMove(index, event)}
               onPointerUp={onSlotPointerUp}
               onPointerCancel={onSlotPointerUp}
-              onClick={() => setActiveSlot(index)}
+              role="button"
+              tabIndex={0}
+              aria-label={`第 ${index + 1} 格，${photo ? '更换照片' : '选择照片'}`}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  pickSlotPhoto(index)
+                }
+              }}
+              onClick={() => {
+                if (slotDragMovedRef.current) {
+                  slotDragMovedRef.current = false
+                  return
+                }
+                pickSlotPhoto(index)
+              }}
               style={{
                 position: 'absolute',
                 left: `${slot.left}%`,
@@ -865,6 +896,14 @@ export default function AtelierWithInstax(props: Props) {
                   {index + 1}
                 </div>
               )}
+              <span style={{
+                position: 'absolute', top: 5, left: 5,
+                borderRadius: 999, minWidth: 23, height: 23, padding: '0 5px',
+                display: 'grid', placeItems: 'center',
+                background: 'rgba(255,255,255,.9)', color: theme.selectedText,
+                fontSize: 13, fontWeight: 750, pointerEvents: 'none',
+                boxShadow: '0 2px 7px rgba(0,0,0,.14)',
+              }}>{index + 1}</span>
             </div>
           )
         })}
@@ -895,7 +934,7 @@ export default function AtelierWithInstax(props: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp"
         multiple={replaceTarget === null}
         onChange={onFileChange}
         style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
@@ -1192,7 +1231,7 @@ export default function AtelierWithInstax(props: Props) {
                     adjust your photos
                   </div>
                   <div style={{ marginTop: 5, fontSize: 20, color: theme.selectedText, opacity: .78 }}>
-                    拖动照片调整位置 · 点击格子切换 · 滑杆缩放
+                    点击任意编号格直接选图或替换 · 拖动调整位置 · 滑杆缩放
                   </div>
                 </div>
 
@@ -1216,7 +1255,7 @@ export default function AtelierWithInstax(props: Props) {
                         : '当前照片'}
                     </div>
                     <div style={{ fontSize: 19, color: theme.selectedText, opacity: .72 }}>
-                      已选择 {photos.length}/{frameMeta.slots.length}
+                      已选择 {selectedCount}/{frameMeta.slots.length}
                     </div>
                   </div>
 
@@ -1236,7 +1275,7 @@ export default function AtelierWithInstax(props: Props) {
                   )}
 
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-                    {photos.length < frameMeta.slots.length && (
+                    {selectedCount < frameMeta.slots.length && (
                       <button
                         type="button"
                         className="pawcream-instax-button"
@@ -1281,7 +1320,7 @@ export default function AtelierWithInstax(props: Props) {
                   <button
                     type="button"
                     className="pawcream-instax-button"
-                    disabled={busy || photos.length < frameMeta.slots.length}
+                    disabled={busy || !allSlotsFilled}
                     onClick={() => void placeInBox()}
                     style={{
                       ...themedButtonStyle,
@@ -1292,7 +1331,7 @@ export default function AtelierWithInstax(props: Props) {
                       background: theme.selectedBg,
                       color: theme.selectedText,
                       fontWeight: 750,
-                      opacity: busy || photos.length < frameMeta.slots.length ? .42 : 1,
+                      opacity: busy || !allSlotsFilled ? .42 : 1,
                     }}
                   >
                     {busy ? '收好中…' : '放入我的小盒子'}
