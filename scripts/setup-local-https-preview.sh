@@ -50,6 +50,6 @@ else
   echo '[PawCream] 已启动回环预览 Nginx'
 fi
 
-ss -lntp | grep -E '127\\.0\\.0\\.1:(8080|8443)' || true
+ss -lntp | grep -E '127\.0\.0\.1:(8080|8443)' || true
 echo '[PawCream] HTTP:  http://127.0.0.1:8080/'
 echo '[PawCream] HTTPS: https://127.0.0.1:8443/admin （仅通过 SSH 隧道访问）'
