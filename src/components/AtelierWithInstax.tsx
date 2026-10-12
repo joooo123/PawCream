@@ -1312,8 +1312,8 @@ export default function AtelierWithInstax(props: Props) {
                 accent={theme.accent}
                 syncStatus={boxSyncStatus}
                 syncBusy={busy}
-                onRetrySync={() => void retryBoxSync()}
-                onDeletePhoto={(photo) => void deleteBoxPhoto(photo)}
+                onRetrySync={retryBoxSync}
+                onDeletePhoto={deleteBoxPhoto}
                 onMakeAnother={() => {
                   cleanupPhotos()
                   setBoxPhotos([])
