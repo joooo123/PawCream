@@ -131,19 +131,32 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth, storage = {
 
   app.delete('/api/private-photos/:clientId', requireAuth, async (req, res, next) => {
     if (!validClientId(req.params.clientId)) return res.status(404).json({ error: '照片不存在' })
+    let client
     try {
-      const deleted = await pool.query(
-        'DELETE FROM private_photos WHERE user_id=$1 AND client_photo_id=$2 RETURNING oss_key',
+      client = await pool.connect()
+      await client.query('BEGIN')
+      const found = await client.query(
+        'SELECT oss_key FROM private_photos WHERE user_id=$1 AND client_photo_id=$2 FOR UPDATE',
         [req.session.user.id, req.params.clientId],
       )
-      if (!deleted.rows.length) return res.status(404).json({ error: '照片不存在' })
-      try {
-        await storage.remove(deleted.rows[0].oss_key)
-      } catch (error) {
-        // Record is already removed and inaccessible; retain the error for storage cleanup.
-        console.error('Unable to remove private OSS photo after database deletion', error?.message)
+      if (!found.rows.length) {
+        await client.query('ROLLBACK')
+        return res.status(404).json({ error: '照片不存在' })
       }
+      // Never report success before OSS confirms deletion; a failure keeps the DB row
+      // for a safe retry, instead of silently leaving an orphaned private object.
+      await storage.remove(found.rows[0].oss_key)
+      await client.query(
+        'DELETE FROM private_photos WHERE user_id=$1 AND client_photo_id=$2',
+        [req.session.user.id, req.params.clientId],
+      )
+      await client.query('COMMIT')
       res.set('Cache-Control', 'no-store').json({ ok: true })
-    } catch (error) { next(error) }
+    } catch (error) {
+      if (client) await client.query('ROLLBACK').catch(() => {})
+      next(error)
+    } finally {
+      client?.release()
+    }
   })
 }
