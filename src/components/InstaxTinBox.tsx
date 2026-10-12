@@ -309,6 +309,12 @@ export default function InstaxTinBox({
         setPublishStatus('历史拍立得没有保存原图，无法公开无边框照片。请用新版制作并保存。')
         return
       }
+      const layout = storeLayoutKey(active.frameName)
+      const expected = layout === 'four' ? 4 : layout === 'double' ? 2 : 1
+      if (originals.length !== expected) {
+        setPublishStatus(`该拍立得需要 ${expected} 张原图，但云端只有 ${originals.length} 张。请在制作时使用的浏览器重试同步，避免漏公开。`)
+        return
+      }
       const alreadyPublished = (await Promise.all(originals.map((_, index) =>
         getMyPublishedPhoto(publicSlotPhotoId(active.id, index))
       ))).filter((photo): photo is PawCreamPublicPhoto => Boolean(photo))
