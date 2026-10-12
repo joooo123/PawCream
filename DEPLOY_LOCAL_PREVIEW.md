@@ -2,7 +2,7 @@
 
 适用：已经在阿里云**轻量应用服务器**上使用 Docker Compose 启动了 PostgreSQL + Node.js API，`127.0.0.1:8787/api/health` 返回 `{"ok":true}`，且 OSS `pawcream-photo` 的上传/读取/删除测试都通过。
 
-这是一套**本机预览**部署：Nginx 仅绑定 `127.0.0.1:8080`，不会开放公网 80/443，也不会激活正式域名。项目正式上线必须先完成 ICP 备案及 HTTPS 等配置。
+这是一套**本机预览**部署：Nginx 仅绑定回环地址 `127.0.0.1:8080`（HTTP）和 `127.0.0.1:8443`（HTTPS），不会开放公网 80/443，也不会激活正式域名。项目正式上线必须先完成 ICP 备案及 HTTPS 等配置。
 
 ## 1. 获取已审核的部署代码
 
@@ -41,24 +41,24 @@ bash scripts/deploy-local-preview.sh
 
 > 首次构建会耗费几分钟并临时使用磁盘空间（服务器为 2GB RAM / 40GB 磁盘）。不要同时跑多份构建。
 
-## 4. 启动仅本机可见的 Nginx
+## 4. 启动仅本机可见的 Nginx（先生成 HTTPS 预览证书）
 
 原本关闭的 `nginx.service` 继续保持禁用。使用**独立预览配置**，不加载 `/etc/nginx/sites-enabled/default`：
 
 ```bash
-nginx -t -c /opt/pawcream/source/nginx/pawcream-preview.conf
-nginx -c /opt/pawcream/source/nginx/pawcream-preview.conf
+bash scripts/setup-local-https-preview.sh
 ```
 
 检查：
 
 ```bash
-ss -lntp | grep ':8080'
+ss -lntp | grep -E ':(8080|8443)'
 curl -I http://127.0.0.1:8080/
-curl -fsS http://127.0.0.1:8080/api/health
+curl -kI https://127.0.0.1:8443/admin
+curl -kfsS https://127.0.0.1:8443/api/health
 ```
 
-预期只看到 `127.0.0.1:8080` 的 Nginx 监听，前端 HEAD 请求成功，API 返回 `{"ok":true}`。
+预期只看到 `127.0.0.1:8080` 和 `127.0.0.1:8443` 的 Nginx 回环监听，前端 HEAD 请求成功，API 返回 `{"ok":true}`。
 
 预览控制：
 
@@ -79,7 +79,22 @@ ssh -N -L 8080:127.0.0.1:8080 root@你的轻量服务器公网IP
 
 再在自己的浏览器打开 `http://127.0.0.1:8080/`。它通过 SSH 隧道访问远程服务器回环端口，无需开放轻量服务器的 8080/80/443 公网防火墙。
 
-由于正式站点会使用 HTTPS 安全 Cookie，**本机 HTTP 预览主要检查页面和 API 路由**；登录、会话 Cookie、跨浏览器图片展示等应在有备案和正式 HTTPS 后做完整端到端验证。
+**认证请使用 HTTPS 预览（SSH 隧道）：**
+
+```bash
+# 在自己的 Windows PowerShell 打开一个新窗口，不是在云服务器中：
+ssh -N -L 18443:127.0.0.1:8443 root@你的轻量服务器公网IP
+```
+
+在 Windows 浏览器打开 `https://127.0.0.1:18443/admin`。**浏览器 URL 端口 18443 与服务器监听端口 8443 不同**，Node.js 的安全 Cookie 不受这个端口变化影响，但 `CORS_ORIGIN` 必须加入实际的浏览器 Origin：`https://127.0.0.1:18443`。
+
+在更新 `backend/.env` 的 `CORS_ORIGIN=` 这一行时，**保留所有原有值**，在逗号后附加 `https://127.0.0.1:18443`。不要改动 `COOKIE_SECURE=true`、`SESSION_SECRET` 或 OSS 配置。然后执行 `docker compose up -d --no-deps --force-recreate api` 使新环境变量生效。
+
+这个证书由服务器本地生成、仅用于 SSH 隧道预览，是自签名证书，**Chrome 会显示证书不受信任**。仅当地址栏确实为本机 `127.0.0.1`、且 SSH 隧道由你自己建立时，才可在 Chrome 中选择“高级 → 继续访问”；不要将该证书用于公网正式域名。
+
+注意：本地页面 URL 是 `https://127.0.0.1:18443`，后端 `app.set('trust proxy',1)` 从 Nginx 转发的 `X-Forwarded-Proto: https` 判断 TLS，从而发送 Secure Cookie。浏览器刷新 `https://127.0.0.1:18443/api/auth/me` 可确认 Session。
+
+HTTP `http://127.0.0.1:8080` 仍可用于不登录的视觉检查。**不要经 HTTP 输入管理员密码**。证书只保存在服务器 `/etc/nginx/pawcream-preview-{cert,key}.pem`，不会提交进 Git。证书有效期 90 天，到期应重新生成；正式上线必须使用可信 CA 证书。
 
 ## 6. 后续正式上线
 

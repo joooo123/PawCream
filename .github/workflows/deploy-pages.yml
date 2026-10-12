@@ -30,7 +30,7 @@ jobs:
       - name: Install WebP and Nginx tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y webp nginx
+          sudo apt-get install -y webp nginx openssl
 
       - name: Install font tools
         run: python3 -m pip install --disable-pip-version-check fonttools brotli
@@ -53,7 +53,8 @@ jobs:
       - name: Validate local-only deployment configuration
         run: |
           bash -n scripts/deploy-local-preview.sh
-          sudo nginx -t -c "$PWD/nginx/pawcream-preview.conf"
+          bash -n scripts/setup-local-https-preview.sh
+          sudo bash scripts/setup-local-https-preview.sh --check-only
 
       - name: Install backend dependencies
         run: npm install --prefix backend --no-audit --no-fund
