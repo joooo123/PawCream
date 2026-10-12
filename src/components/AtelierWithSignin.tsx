@@ -276,7 +276,7 @@ export default function AtelierWithSignin(props: Props) {
 
   const sendEmailCode = async () => {
     const normalizedEmail = email.trim()
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) { setStatus(copy.badEmail); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { setStatus(copy.badEmail); return }
     if (password.length < 6) { setStatus(copy.badPassword); return }
     if (!inviteCode.trim()) { setStatus(copy.badInvite); return }
     if (!isPawCreamApiEnabled()) { setStatus(copy.preview); return }
