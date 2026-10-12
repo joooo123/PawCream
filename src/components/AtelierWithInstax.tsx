@@ -466,12 +466,14 @@ export default function AtelierWithInstax(props: Props) {
   const [photos, setPhotos] = useState<Array<PhotoPlacement | undefined>>([])
   const [activeSlot, setActiveSlot] = useState(0)
   const [replaceTarget, setReplaceTarget] = useState<number | null>(null)
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false)
   const [boxPhotos, setBoxPhotos] = useState<PawCreamStoredPhoto[]>([])
   const [boxSyncStatus, setBoxSyncStatus] = useState('')
   const [newestPhotoId, setNewestPhotoId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
-  const inputRef = useRef<HTMLInputElement | null>(null)
+  const galleryInputRef = useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
   const dragRef = useRef<DragState>(null)
   const slotDragMovedRef = useRef(false)
 
@@ -503,6 +505,7 @@ export default function AtelierWithInstax(props: Props) {
     })
     setActiveSlot(0)
     setReplaceTarget(null)
+    setSourcePickerOpen(false)
   }
 
   const resetSession = () => {
@@ -678,20 +681,29 @@ export default function AtelierWithInstax(props: Props) {
     cleanupPhotos()
     setStep('edit')
     setStatus('')
-    window.setTimeout(() => inputRef.current?.click(), 30)
+    // Enter the editor first. Only a subsequent tap on a photo slot may open
+    // the camera/gallery choice; never launch the OS picker automatically.
   }
 
   const chooseMorePhotos = () => {
+    if (busy) return
     setReplaceTarget(null)
-    inputRef.current?.click()
+    setSourcePickerOpen(true)
   }
 
   const pickSlotPhoto = (index: number) => {
     if (busy) return
     setActiveSlot(index)
     setReplaceTarget(index)
-    // React commits the single-file mode before the native picker opens.
-    window.setTimeout(() => inputRef.current?.click(), 0)
+    setSourcePickerOpen(true)
+  }
+
+  const chooseSource = (source: 'camera' | 'gallery') => {
+    // This is a direct tap on a visible menu action, preserving user activation
+    // for mobile OS camera/photo-library file pickers.
+    setSourcePickerOpen(false)
+    if (source === 'camera') cameraInputRef.current?.click()
+    else galleryInputRef.current?.click()
   }
 
   const replaceActivePhoto = () => pickSlotPhoto(activeSlot)
@@ -896,14 +908,6 @@ export default function AtelierWithInstax(props: Props) {
                   {index + 1}
                 </div>
               )}
-              <span style={{
-                position: 'absolute', top: 5, left: 5,
-                borderRadius: 999, minWidth: 23, height: 23, padding: '0 5px',
-                display: 'grid', placeItems: 'center',
-                background: 'rgba(255,255,255,.9)', color: theme.selectedText,
-                fontSize: 13, fontWeight: 750, pointerEvents: 'none',
-                boxShadow: '0 2px 7px rgba(0,0,0,.14)',
-              }}>{index + 1}</span>
             </div>
           )
         })}
@@ -932,10 +936,20 @@ export default function AtelierWithInstax(props: Props) {
       <AtelierPlaceholderV2 {...props} />
 
       <input
-        ref={inputRef}
+        ref={galleryInputRef}
         type="file"
         accept="image/png,image/jpeg,image/webp"
         multiple={replaceTarget === null}
+        onChange={onFileChange}
+        style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         onChange={onFileChange}
         style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
         aria-hidden="true"
@@ -1231,7 +1245,7 @@ export default function AtelierWithInstax(props: Props) {
                     adjust your photos
                   </div>
                   <div style={{ marginTop: 5, fontSize: 20, color: theme.selectedText, opacity: .78 }}>
-                    点击任意编号格直接选图或替换 · 拖动调整位置 · 滑杆缩放
+                    点击照片框选择拍照或图库 · 拖动调整位置 · 滑杆缩放
                   </div>
                 </div>
 
@@ -1364,6 +1378,66 @@ export default function AtelierWithInstax(props: Props) {
               />
             )}
 
+          </section>
+        </div>
+      )}
+      {open && step === 'edit' && sourcePickerOpen && (
+        <div
+          role="presentation"
+          onClick={() => setSourcePickerOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 190,
+            display: 'grid',
+            placeItems: mobile ? 'end center' : 'center',
+            padding: mobile ? '12px 12px max(20px, env(safe-area-inset-bottom))' : 24,
+            background: 'rgba(45,38,48,.38)',
+            backdropFilter: 'blur(5px)',
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={replaceTarget === null ? '添加照片' : `第 ${replaceTarget + 1} 格选择照片来源`}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: mobile ? '100%' : 'min(380px,100%)',
+              maxWidth: 440,
+              boxSizing: 'border-box',
+              border: `1px solid ${theme.panelBorder}`,
+              borderRadius: 24,
+              background: 'rgba(255,251,253,.98)',
+              boxShadow: '0 20px 55px rgba(74,52,67,.22)',
+              padding: 20,
+              color: theme.selectedText,
+              textAlign: 'center',
+            }}
+          >
+            <strong style={{ display: 'block', fontSize: 19, marginBottom: 6 }}>
+              {replaceTarget === null ? '添加照片' : `第 ${replaceTarget + 1} 格 · ${photos[replaceTarget] ? '替换照片' : '选择照片'}`}
+            </strong>
+            <div style={{ fontSize: 13, opacity: .72, marginBottom: 17 }}>
+              请选择照片来源
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <button type="button" onClick={() => chooseSource('camera')}
+                style={{ ...themedButtonStyle, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
+                <span aria-hidden="true">📷 </span>拍照
+              </button>
+              <button type="button" onClick={() => chooseSource('gallery')}
+                style={{ ...themedButtonStyle, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
+                <span aria-hidden="true">🖼️ </span>从图库选择
+              </button>
+              <button type="button" onClick={() => setSourcePickerOpen(false)}
+                style={{
+                  ...themedButtonStyle,
+                  borderRadius: 16, padding: '11px 12px',
+                  fontSize: 14, opacity: .78,
+                }}>
+                取消
+              </button>
+            </div>
           </section>
         </div>
       )}
