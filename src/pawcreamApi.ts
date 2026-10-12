@@ -272,9 +272,15 @@ export async function getPrivatePhotoImage(clientPhotoId: string) {
 }
 
 export async function deletePrivatePhoto(clientPhotoId: string) {
-  return request<{ ok: true }>(
-    `/private-photos/${encodeURIComponent(clientPhotoId)}`, { method: 'DELETE' },
+  if (!API_BASE) throw new Error('未连接私人云端铁盒')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}`,
+    { method: 'DELETE', credentials: 'include' },
   )
+  // Deleting a never-uploaded local photo or repeating a completed delete is safe.
+  if (response.status === 404) return
+  const payload = await response.json().catch(() => ({})) as { error?: string }
+  if (!response.ok) throw new Error(payload.error || '删除云端私人照片失败')
 }
 
 export function publicPhotoImageUrl(id: string) {
