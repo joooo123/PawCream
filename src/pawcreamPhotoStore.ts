@@ -2,6 +2,9 @@ import {
   deletePrivatePhoto,
   getCurrentUser,
   getPrivatePhotoImage,
+  downloadPrivatePhotoSource,
+  listPrivatePhotoSourceSlots,
+  uploadPrivatePhotoSource,
   isPawCreamApiEnabled,
   listPrivatePhotos,
   uploadPrivatePhoto,
@@ -16,6 +19,7 @@ export type PawCreamStoredPhoto = {
   ownerId: string
   ownerName: string
   imageBlob: Blob
+  sourceBlobs?: Blob[]
   frameName: string
   visibility: PawCreamPhotoVisibility
   createdAt: string
@@ -143,8 +147,27 @@ export async function claimUnclaimedBrowserPhotos() {
   return adopted
 }
 
+async function syncSourceBlobs(photo: PawCreamStoredPhoto) {
+  if (!photo.sourceBlobs?.length) return
+  const remoteSlots = new Set(await listPrivatePhotoSourceSlots(photo.id))
+  for (let index = 0; index < photo.sourceBlobs.length; index++) {
+    if (!remoteSlots.has(index)) {
+      await uploadPrivatePhotoSource(photo.id, index, photo.sourceBlobs[index])
+    }
+  }
+}
+
+export async function loadPawCreamOriginals(photo: PawCreamStoredPhoto): Promise<Blob[]> {
+  if (photo.sourceBlobs?.length) return photo.sourceBlobs
+  const slots = await listPrivatePhotoSourceSlots(photo.id)
+  // Historic composite files do not contain recoverable source photos.
+  if (!slots.length) return []
+  return Promise.all(slots.map(index => downloadPrivatePhotoSource(photo.id, index)))
+}
+
 export async function savePawCreamPhoto(input: {
   imageBlob: Blob
+  sourceBlobs?: Blob[]
   frameName: string
   visibility: PawCreamPhotoVisibility
 }): Promise<PawCreamStoredPhoto> {
@@ -154,6 +177,7 @@ export async function savePawCreamPhoto(input: {
     ownerId: user.id,
     ownerName: user.displayName,
     imageBlob: input.imageBlob,
+    sourceBlobs: input.sourceBlobs,
     frameName: input.frameName,
     visibility: 'private',
     createdAt: new Date().toISOString(),
@@ -163,6 +187,7 @@ export async function savePawCreamPhoto(input: {
   await putLocalPhoto(photo)
   try {
     await uploadPrivatePhoto(photo)
+    await syncSourceBlobs(photo)
     const synced = { ...photo, cloudSynced: true }
     await putLocalPhoto(synced).catch(() => {}) // Cloud upload already succeeded.
     return synced
@@ -205,11 +230,13 @@ export async function listPawCreamPhotos(scope: 'mine' | 'wall' = 'mine') {
   const pending = new Map<string, string>()
   // Migrate existing account-owned IndexedDB photos, and retry interrupted uploads.
   for (const photo of mine) {
-    if (cloud.has(photo.id)) continue
     try {
-      const uploaded = await uploadPrivatePhoto(photo)
-      cloud.set(photo.id, uploaded)
-      await putLocalPhoto({ ...photo, cloudSynced: true }).catch(() => {})
+      if (!cloud.has(photo.id)) {
+        const uploaded = await uploadPrivatePhoto(photo)
+        cloud.set(photo.id, uploaded)
+      }
+      await syncSourceBlobs(photo)
+      if (!photo.cloudSynced) await putLocalPhoto({ ...photo, cloudSynced: true }).catch(() => {})
     } catch (error) {
       pending.set(photo.id, error instanceof Error ? error.message : '云端上传失败')
     }
@@ -219,7 +246,7 @@ export async function listPawCreamPhotos(scope: 'mine' | 'wall' = 'mine') {
   const all = new Map<string, PawCreamStoredPhoto>()
   for (const photo of mine) {
     all.set(photo.id, {
-      ...photo, cloudSynced: cloud.has(photo.id),
+      ...photo, cloudSynced: cloud.has(photo.id) && !pending.has(photo.id),
       syncError: pending.get(photo.id),
     })
   }
