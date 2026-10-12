@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { PHOTO_STORAGE, newPublicPhotoKey } from '../src/photoStorage.js'
+import { PHOTO_STORAGE, newPublicPhotoKey, newPrivatePhotoKey } from '../src/photoStorage.js'
 
 test('legacy database storage is the safe initial default', () => {
   assert.equal(PHOTO_STORAGE, 'database')
@@ -18,6 +18,16 @@ test('public photo keys are unique and scoped to the owner', () => {
   assert.match(newPublicPhotoKey(userId, 'image/jpeg'), /\.jpg$/)
   assert.throws(() => newPublicPhotoKey(userId, 'image/svg+xml'))
   assert.throws(() => newPublicPhotoKey('../admin', 'image/webp'))
+})
+
+test('private keys are scoped, unique and never use public prefix', () => {
+  const user = 'c05ddf72-5589-4949-8a8b-40ef6906c6e6'
+  const first = newPrivatePhotoKey(user, 'image/png')
+  const second = newPrivatePhotoKey(user, 'image/png')
+  assert.match(first, /^private\\/c05ddf72-5589-4949-8a8b-40ef6906c6e6\\/[a-f0-9-]{36}\\.png$/)
+  assert.notEqual(first, second)
+  assert.throws(() => newPrivatePhotoKey('not-a-uuid', 'image/png'))
+  assert.throws(() => newPrivatePhotoKey(user, 'image/svg+xml'))
 })
 
 test('lightweight RAM user mode rejects missing credentials without network requests', () => {
