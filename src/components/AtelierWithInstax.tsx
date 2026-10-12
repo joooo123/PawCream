@@ -7,7 +7,11 @@ import {
   useRef,
   useState,
 } from 'react'
-import { listPawCreamPhotos, savePawCreamPhoto, type PawCreamStoredPhoto } from '../pawcreamPhotoStore'
+import {
+  claimUnclaimedBrowserPhotos, countUnclaimedBrowserPhotos, deletePawCreamPhoto,
+  listPawCreamPhotos, savePawCreamPhoto, type PawCreamStoredPhoto,
+} from '../pawcreamPhotoStore'
+import { getCurrentUser, openPawCreamSignin } from '../pawcreamApi'
 import AtelierPlaceholderV2 from './AtelierPlaceholderV2'
 import InstaxTinBox from './InstaxTinBox'
 
@@ -462,6 +466,7 @@ export default function AtelierWithInstax(props: Props) {
   const [activeSlot, setActiveSlot] = useState(0)
   const [replaceTarget, setReplaceTarget] = useState<number | null>(null)
   const [boxPhotos, setBoxPhotos] = useState<PawCreamStoredPhoto[]>([])
+  const [boxSyncStatus, setBoxSyncStatus] = useState('')
   const [newestPhotoId, setNewestPhotoId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
@@ -499,6 +504,7 @@ export default function AtelierWithInstax(props: Props) {
   const resetSession = () => {
     cleanupPhotos()
     setBoxPhotos([])
+    setBoxSyncStatus('')
     setNewestPhotoId(null)
     setStep('select')
     setBusy(false)
@@ -515,13 +521,32 @@ export default function AtelierWithInstax(props: Props) {
     setOpen(true)
   }
 
+  const reloadBoxPhotos = async () => {
+    const mine = await listPawCreamPhotos('mine')
+    setBoxPhotos(mine)
+    setBoxSyncStatus(mine.some(photo => !photo.cloudSynced)
+      ? '部分照片尚未同步到 OSS，原图仍保存在此浏览器。请点击重试同步。'
+      : '所有照片已存入私人云端铁盒 ♡')
+    return mine
+  }
+
   const openMyBox = async () => {
     if (busy) return
     setBusy(true)
     setStatus('')
     try {
-      const mine = await listPawCreamPhotos('mine')
-      setBoxPhotos(mine)
+      const user = await getCurrentUser()
+      if (!user) {
+        openPawCreamSignin('login')
+        throw new Error('请先登录账号，再打开私人云端铁盒')
+      }
+      const legacyCount = await countUnclaimedBrowserPhotos()
+      if (legacyCount && window.confirm(
+        `检测到此浏览器在未登录时制作的 ${legacyCount} 张照片。是否将它们归入当前账号的私人铁盒并备份到 OSS？`,
+      )) {
+        await claimUnclaimedBrowserPhotos()
+      }
+      await reloadBoxPhotos()
       setNewestPhotoId(null)
       setStep('boxing')
     } catch (error) {
@@ -529,6 +554,29 @@ export default function AtelierWithInstax(props: Props) {
     } finally {
       setBusy(false)
     }
+  }
+
+  const retryBoxSync = async () => {
+    if (busy) return
+    setBusy(true)
+    setBoxSyncStatus('正在同步私人铁盒…')
+    try {
+      await reloadBoxPhotos()
+    } catch (error) {
+      setBoxSyncStatus(error instanceof Error ? error.message : '云端同步失败，请稍后重试')
+    } finally { setBusy(false) }
+  }
+
+  const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await deletePawCreamPhoto(photo)
+      await reloadBoxPhotos()
+      setNewestPhotoId(null)
+    } catch (error) {
+      setBoxSyncStatus(error instanceof Error ? error.message : '私人照片删除失败')
+    } finally { setBusy(false) }
   }
 
   useEffect(() => {
@@ -718,14 +766,25 @@ export default function AtelierWithInstax(props: Props) {
     setStatus('正在把它收进小盒子…')
 
     try {
+      const user = await getCurrentUser()
+      if (!user) {
+        openPawCreamSignin('login')
+        throw new Error('请先登录账号，再把照片放入私人云端铁盒')
+      }
       const blob = await composeFinishedPhoto(transparentFrameSrc, frameMeta, photos)
       const saved = await savePawCreamPhoto({
         imageBlob: blob,
         frameName,
         visibility: 'private',
       })
-      const mine = await listPawCreamPhotos('mine')
-      setBoxPhotos(mine)
+      try {
+        await reloadBoxPhotos()
+      } catch {
+        setBoxPhotos([saved])
+        setBoxSyncStatus(saved.cloudSynced
+          ? '照片已上传 OSS，但云端列表暂时无法读取'
+          : '照片仅保存在此浏览器，云端上传失败，请稍后重试')
+      }
       setNewestPhotoId(saved.id)
       setStatus('')
       setStep('boxing')
@@ -1251,6 +1310,10 @@ export default function AtelierWithInstax(props: Props) {
                 panelBg={theme.panelBg}
                 panelBorder={theme.panelBorder}
                 accent={theme.accent}
+                syncStatus={boxSyncStatus}
+                syncBusy={busy}
+                onRetrySync={() => void retryBoxSync()}
+                onDeletePhoto={(photo) => void deleteBoxPhoto(photo)}
                 onMakeAnother={() => {
                   cleanupPhotos()
                   setBoxPhotos([])
