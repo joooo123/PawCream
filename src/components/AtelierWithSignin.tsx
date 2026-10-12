@@ -502,6 +502,7 @@ export default function AtelierWithSignin(props: Props) {
                 </div>
               )}
               {(mode === 'login' || registerStage === 'details') && (
+              <>
               <label style={labelStyle}>
                 <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.email}</span>
                 <input
@@ -539,7 +540,7 @@ export default function AtelierWithSignin(props: Props) {
                   />
                 </label>
               )}
-
+              </>
               )}
               {mode === 'register' && registerStage === 'verify' && (
                 <label style={labelStyle}>
