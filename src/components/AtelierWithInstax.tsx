@@ -1407,7 +1407,9 @@ export default function AtelierWithInstax(props: Props) {
               boxSizing: 'border-box',
               border: `1px solid ${theme.panelBorder}`,
               borderRadius: 24,
-              background: 'rgba(255,251,253,.98)',
+              background: theme.panelBg,
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               boxShadow: '0 20px 55px rgba(74,52,67,.22)',
               padding: 20,
               color: theme.selectedText,
@@ -1422,16 +1424,17 @@ export default function AtelierWithInstax(props: Props) {
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               <button type="button" onClick={() => chooseSource('camera')}
-                style={{ ...themedButtonStyle, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
+                style={{ ...themedButtonStyle, background: theme.selectedBg, borderColor: theme.selectedBorder, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
                 <span aria-hidden="true">📷 </span>拍照
               </button>
               <button type="button" onClick={() => chooseSource('gallery')}
-                style={{ ...themedButtonStyle, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
+                style={{ ...themedButtonStyle, background: theme.selectedBg, borderColor: theme.selectedBorder, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
                 <span aria-hidden="true">🖼️ </span>从图库选择
               </button>
               <button type="button" onClick={() => setSourcePickerOpen(false)}
                 style={{
                   ...themedButtonStyle,
+                  background: theme.panelBg,
                   borderRadius: 16, padding: '11px 12px',
                   fontSize: 14, opacity: .78,
                 }}>
