@@ -6,11 +6,13 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { PawCreamStoredPhoto } from '../pawcreamPhotoStore'
+import { loadPawCreamOriginals, type PawCreamStoredPhoto } from '../pawcreamPhotoStore'
 import {
   getCurrentUser,
   getMyPublishedPhoto,
   isPawCreamApiEnabled,
+  listPrivatePhotoSourceSlots,
+  publicSlotPhotoId,
   openPawCreamSignin,
   publishPhoto,
   revokePublishedPhoto,
@@ -184,11 +186,17 @@ export default function InstaxTinBox({
   const [storeTune, setStoreTune] = useState<StoreTune>(() => readStoreTune())
   const [storePositionTune, setStorePositionTune] = useState<StorePositionTune>(() => readStorePositionTune())
   const [copyStatus, setCopyStatus] = useState('复制参数')
-  const [publishedPhoto, setPublishedPhoto] = useState<PawCreamPublicPhoto | null>(null)
+  const [publishedPhotos, setPublishedPhotos] = useState<PawCreamPublicPhoto[]>([])
+  const [legacyPublished, setLegacyPublished] = useState<PawCreamPublicPhoto | null>(null)
+  const [sourceSlots, setSourceSlots] = useState<number[]>([])
+  const [originalUrls, setOriginalUrls] = useState<string[]>([])
+  const [originalIndex, setOriginalIndex] = useState(0)
+  const [originalBusy, setOriginalBusy] = useState(false)
   const [publishBusy, setPublishBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [publishStatus, setPublishStatus] = useState('')
-  const pointerStart = useRef<number | null>(null)
+  const pointerStart = useRef<{ x: number; y: number } | null>(null)
+  const swipeHandled = useRef(false)
   const boxTuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('boxTune') === '1',
     [],
@@ -205,6 +213,10 @@ export default function InstaxTinBox({
   useEffect(() => () => {
     views.forEach((photo) => URL.revokeObjectURL(photo.url))
   }, [views])
+
+  useEffect(() => () => {
+    originalUrls.forEach(url => URL.revokeObjectURL(url))
+  }, [originalUrls])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -230,10 +242,25 @@ export default function InstaxTinBox({
   useEffect(() => {
     if (!expanded || !active || !isPawCreamApiEnabled()) return
     let cancelled = false
-    setPublishedPhoto(null)
-    void getMyPublishedPhoto(active.id)
-      .then((photo) => { if (!cancelled) setPublishedPhoto(photo) })
-      .catch(() => { if (!cancelled) setPublishedPhoto(null) })
+    setPublishedPhotos([])
+    setLegacyPublished(null)
+    setSourceSlots([])
+    setPublishStatus('')
+    const loadPublished = async () => {
+      const slots = active.sourceBlobs?.map((_, index) => index)
+        ?? await listPrivatePhotoSourceSlots(active.id)
+      const [published, legacy] = await Promise.all([
+        Promise.all(slots.map(index => getMyPublishedPhoto(publicSlotPhotoId(active.id, index)))),
+        getMyPublishedPhoto(active.id),
+      ])
+      if (cancelled) return
+      setSourceSlots(slots)
+      setPublishedPhotos(published.filter((photo): photo is PawCreamPublicPhoto => Boolean(photo)))
+      setLegacyPublished(legacy)
+    }
+    void loadPublished().catch(error => {
+      if (!cancelled) setPublishStatus(error instanceof Error ? error.message : '无法检查返图状态')
+    })
     return () => { cancelled = true }
   }, [expanded, active?.id])
 
@@ -245,40 +272,83 @@ export default function InstaxTinBox({
     finally { setDeleting(false) }
   }
 
+  const openUnframedOriginal = async (photo: PawCreamStoredPhoto) => {
+    if (originalBusy) return
+    setOriginalBusy(true)
+    setPublishStatus('')
+    try {
+      const sources = await loadPawCreamOriginals(photo)
+      if (!sources.length) {
+        setPublishStatus('这是旧版拍立得：只保存了带框成品，无法从中还原无边框原图。')
+        return
+      }
+      setOriginalIndex(0)
+      setOriginalUrls(sources.map(blob => URL.createObjectURL(blob)))
+    } catch (error) {
+      setPublishStatus(error instanceof Error ? error.message : '无法读取无边框原图')
+    } finally { setOriginalBusy(false) }
+  }
+
   const togglePublished = async () => {
     if (!active || publishBusy) return
     if (!isPawCreamApiEnabled()) {
-      setPublishStatus('当前预览站未连接照片共享后端，请使用正式站点公开返图')
+      setPublishStatus('当前预览站未连接照片共享后端')
       return
     }
-
     setPublishBusy(true)
     setPublishStatus('')
     try {
       const user = await getCurrentUser()
       if (!user) {
-        setPublishStatus('请先登录 PawCream 后再公开返图')
         openPawCreamSignin('login')
+        setPublishStatus('请先登录 PawCream')
         return
       }
-      if (publishedPhoto) {
-        if (!window.confirm('要从公共返图墙撤回这张照片吗？铁盒里的原图会保留。')) return
-        await revokePublishedPhoto(publishedPhoto.id)
-        setPublishedPhoto(null)
-        setPublishStatus('已撤回公开，铁盒里的照片仍保留 ♡')
+      const originals = await loadPawCreamOriginals(active)
+      if (!originals.length) {
+        setPublishStatus('历史拍立得没有保存原图，无法公开无边框照片。请用新版制作并保存。')
+        return
+      }
+      const alreadyPublished = (await Promise.all(originals.map((_, index) =>
+        getMyPublishedPhoto(publicSlotPhotoId(active.id, index))
+      ))).filter((photo): photo is PawCreamPublicPhoto => Boolean(photo))
+      if (alreadyPublished.length === originals.length) {
+        if (!window.confirm(`要撤回这 ${alreadyPublished.length} 张原图吗？私人铁盒照片保留。`)) return
+        for (const photo of alreadyPublished) await revokePublishedPhoto(photo.id)
+        setPublishedPhotos([])
+        setPublishStatus('已从返图墙撤回全部原图，私人铁盒仍保留 ♡')
       } else {
-        if (!window.confirm('确认公开这张拍立得？公开后其他访客都能看到图片和你的用户名。')) return
-        const published = await publishPhoto({
-          id: active.id, frameName: active.frameName, imageBlob: active.imageBlob,
-        })
-        setPublishedPhoto(published)
-        setPublishStatus('已公开到公共返图墙 ♡')
+        const missing = originals.length - alreadyPublished.length
+        if (!window.confirm(`将 ${missing} 张无边框原图独立公开到返图墙？访客可以看到每张原图和你的用户名。`)) return
+        const published = [...alreadyPublished]
+        for (let index = 0; index < originals.length; index++) {
+          const id = publicSlotPhotoId(active.id, index)
+          if (published.some(photo => photo.clientPhotoId === id)) continue
+          const result = await publishPhoto({
+            id, frameName: `原图 ${index + 1}/${originals.length}`, imageBlob: originals[index],
+          })
+          published.push(result)
+          setPublishedPhotos([...published])
+        }
+        setPublishedPhotos(published)
+        setPublishStatus(`已将 ${published.length} 张无边框原图独立公开 ♡`)
       }
     } catch (error) {
-      setPublishStatus(error instanceof Error ? error.message : '公开状态更新失败')
-    } finally {
-      setPublishBusy(false)
-    }
+      setPublishStatus(`${error instanceof Error ? error.message : '公开失败'}。已成功发布的原图不会重复上传，可重试。`)
+    } finally { setPublishBusy(false) }
+  }
+
+  const revokeLegacy = async () => {
+    if (!legacyPublished || publishBusy) return
+    if (!window.confirm('撤回以前公开的带相纸边框照片吗？私人铁盒仍保留。')) return
+    setPublishBusy(true)
+    try {
+      await revokePublishedPhoto(legacyPublished.id)
+      setLegacyPublished(null)
+      setPublishStatus('已撤回旧版带框返图')
+    } catch (error) {
+      setPublishStatus(error instanceof Error ? error.message : '撤回失败')
+    } finally { setPublishBusy(false) }
   }
 
   const stacked = views.slice(0, 4).reverse()
@@ -335,17 +405,20 @@ export default function InstaxTinBox({
   }
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    pointerStart.current = event.clientX
-    event.currentTarget.setPointerCapture(event.pointerId)
+    if (!mobile || event.pointerType !== 'touch') return
+    swipeHandled.current = false
+    pointerStart.current = { x: event.clientX, y: event.clientY }
   }
 
   const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     const start = pointerStart.current
     pointerStart.current = null
-    if (start === null) return
-    const delta = event.clientX - start
-    if (Math.abs(delta) < 35) return
-    move(delta < 0 ? 1 : -1)
+    if (!mobile || !start) return
+    const dx = event.clientX - start.x
+    const dy = event.clientY - start.y
+    if (Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.2) return
+    swipeHandled.current = true
+    move(dx < 0 ? 1 : -1)
   }
 
   if (expanded) {
@@ -400,8 +473,15 @@ export default function InstaxTinBox({
                   <button
                     key={photo.id}
                     type="button"
-                    onClick={() => setActiveIndex(index)}
-                    aria-label={`第 ${index + 1} 张拍立得`}
+                    onClick={() => {
+                      if (swipeHandled.current) {
+                        swipeHandled.current = false
+                        return
+                      }
+                      if (index === activeIndex) void openUnframedOriginal(photo)
+                      else setActiveIndex(index)
+                    }}
+                    aria-label={`第 ${index + 1} 张拍立得，${index === activeIndex ? '点击查看无边框原图' : '点击选中'}`}
                     style={{
                       position: 'absolute',
                       left: '50%',
@@ -457,6 +537,7 @@ export default function InstaxTinBox({
                 {activeIndex + 1} / {views.length}
                 {active ? ` · ${new Date(active.createdAt).toLocaleDateString('zh-CN')}` : ''}
                 {active ? (active.cloudSynced ? ' · 私有云端已保存' : ' · 尚待云端同步') : ''}
+                {sourceSlots.length ? ` · ${sourceSlots.length} 张原图` : ''}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
@@ -478,10 +559,14 @@ export default function InstaxTinBox({
                 <button type="button" onClick={() => void togglePublished()} disabled={publishBusy} style={{
                   ...themedButton,
                   opacity: publishBusy ? .55 : 1,
-                  borderColor: publishedPhoto ? '#e0a9b5' : panelBorder,
+                  borderColor: sourceSlots.length > 0 && publishedPhotos.length === sourceSlots.length ? '#e0a9b5' : panelBorder,
                 }}>
-                  {publishBusy ? '请稍候…' : publishedPhoto ? '撤回公开' : '公开到返图墙'}
+                  {publishBusy ? '请稍候…' : sourceSlots.length > 0 && publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开无边框原图'}
                 </button>
+                {legacyPublished && (
+                  <button type="button" disabled={publishBusy} onClick={() => void revokeLegacy()}
+                    style={{ ...themedButton, fontSize: 12 }}>撤回旧版带框返图</button>
+                )}
                 <button
                   type="button"
                   disabled={activeIndex >= views.length - 1}
@@ -491,6 +576,7 @@ export default function InstaxTinBox({
                   →
                 </button>
               </div>
+              {mobile && <div style={{ marginTop: 8, fontSize: 12, opacity: .7, textAlign: 'center', color: textColor }}>在照片上左右滑动切换 · 点击居中的照片查看无边框原图</div>}
               {publishStatus && (
                 <div role="status" style={{ color: textColor, textAlign: 'center', fontSize: 13, marginTop: 10 }}>
                   {publishStatus}
@@ -501,6 +587,32 @@ export default function InstaxTinBox({
         ) : (
           <div style={{ padding: 40, textAlign: 'center', color: textColor }}>
             盒子还是空空的，先做一张拍立得吧 ♡
+          </div>
+        )}
+        {originalBusy && <div role="status" style={{ textAlign: 'center', color: textColor, fontSize: 13 }}>正在读取无边框原图…</div>}
+        {originalUrls.length > 0 && (
+          <div role="dialog" aria-modal="true" aria-label="无边框原图"
+            onClick={() => setOriginalUrls([])}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(21,19,26,.93)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'column', zIndex: 320, padding: 18, gap: 12,
+            }}>
+            <button type="button" aria-label="关闭原图" onClick={() => setOriginalUrls([])}
+              style={{ position: 'absolute', top: 20, right: 22, fontSize: 27,
+                background: 'transparent', color: 'white', border: 0, cursor: 'pointer' }}>×</button>
+            <img src={originalUrls[originalIndex]} alt={`原始照片 ${originalIndex + 1}`}
+              onClick={(event) => event.stopPropagation()}
+              style={{ maxWidth: '100%', maxHeight: '78dvh', objectFit: 'contain', border: 0 }} />
+            {originalUrls.length > 1 && (
+              <div onClick={(event) => event.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 20, color: 'white' }}>
+                <button type="button" onClick={() => setOriginalIndex((i) => (i + originalUrls.length - 1) % originalUrls.length)}
+                  style={{ color: 'white', background: 'transparent', border: '1px solid #777', borderRadius: 12, padding: '7px 18px' }}>←</button>
+                {originalIndex + 1} / {originalUrls.length}
+                <button type="button" onClick={() => setOriginalIndex((i) => (i + 1) % originalUrls.length)}
+                  style={{ color: 'white', background: 'transparent', border: '1px solid #777', borderRadius: 12, padding: '7px 18px' }}>→</button>
+              </div>
+            )}
           </div>
         )}
       </div>
