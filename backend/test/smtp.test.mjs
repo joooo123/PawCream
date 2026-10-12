@@ -5,7 +5,10 @@ import net from 'node:net'
 test('OTP mail is sent over SMTP to the supplied address, never returned in HTTP', async () => {
   let mail = ''
   let receiver = ''
+  const sockets = new Set()
   const smtp = net.createServer(socket => {
+    sockets.add(socket)
+    socket.on('close', () => sockets.delete(socket))
     socket.write('220 localhost ESMTP PawCream-test\r\n')
     let buffer = ''
     let inData = false
@@ -41,7 +44,7 @@ test('OTP mail is sent over SMTP to the supplied address, never returned in HTTP
     assert.match(receiver, /newuser@example\.test/)
     assert.match(mail, /654321/)
   } finally {
-    smtp.closeAllConnections()
+    for (const socket of sockets) socket.destroy()
     await new Promise(resolve => smtp.close(resolve))
   }
 })
