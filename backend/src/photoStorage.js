@@ -94,6 +94,14 @@ export function newPublicPhotoKey(userId, mimeType) {
   return 'public/' + userId + '/' + randomUUID() + '.' + suffix
 }
 
+export function newPrivatePhotoKey(userId, mimeType) {
+  const suffix = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[mimeType]
+  if (!suffix || !/^[a-f0-9-]{36}$/i.test(userId)) {
+    throw new Error('Invalid private photo owner or content type')
+  }
+  return 'private/' + userId + '/' + randomUUID() + '.' + suffix
+}
+
 export async function putPublicPhoto(key, bytes, mimeType) {
   const client = await getOssClient()
   await client.put(key, bytes, {
