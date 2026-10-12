@@ -144,6 +144,17 @@ test('admin moderation: role boundary, CSRF, ban sessions, hide content, audit t
     const noteId = note.body.note.id
 
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64')
+    // Real session middleware protects private-photo routes; without OSS configured in CI,
+    // private uploads must fail closed rather than silently writing photo bytes to PostgreSQL.
+    const privateAnonymous = await req('/api/private-photos')
+    assert.equal(privateAnonymous.status, 401)
+    const privateViewer = await req('/api/private-photos', { cookie: visitor.cookie })
+    assert.equal(privateViewer.status, 200)
+    assert.equal(privateViewer.body.total, 0)
+    const privateUnavailable = await req('/api/private-photos?clientPhotoId=photo-12345678&frameName=classic', {
+      method:'POST', cookie:visitor.cookie, body:png, headers:{'Content-Type':'image/png'},
+    })
+    assert.equal(privateUnavailable.status, 503)
     const photo = await req('/api/photos?clientPhotoId=photo-12345678&frameName=classic', {
       method:'POST', cookie:visitor.cookie, body:png, headers:{'Content-Type':'image/png'},
     })
