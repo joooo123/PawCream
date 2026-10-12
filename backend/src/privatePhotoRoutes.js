@@ -129,6 +129,89 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth, storage = {
     },
   )
 
+  // Original source pixels are distinct private objects: never expose OSS keys
+  // and never include sources in the public wall unless the owner publishes them.
+  app.get('/api/private-photos/:clientId/sources', requireAuth, async (req, res, next) => {
+    if (!validClientId(req.params.clientId)) return res.status(404).end()
+    try {
+      const result = await pool.query(
+        'SELECT s.slot_index FROM private_photo_sources s ' +
+        'JOIN private_photos p ON p.id=s.private_photo_id ' +
+        'WHERE p.user_id=$1 AND p.client_photo_id=$2 ORDER BY s.slot_index',
+        [req.session.user.id, req.params.clientId],
+      )
+      res.set('Cache-Control', 'private, no-store').json({ slots: result.rows.map(row => row.slot_index) })
+    } catch (error) { next(error) }
+  })
+
+  app.get('/api/private-photos/:clientId/sources/:slot', requireAuth, async (req, res, next) => {
+    const slot = Number(req.params.slot)
+    if (!validClientId(req.params.clientId) || !Number.isInteger(slot) || slot < 0 || slot > 3) {
+      return res.status(404).end()
+    }
+    try {
+      const result = await pool.query(
+        'SELECT s.image_type,s.oss_key FROM private_photo_sources s ' +
+        'JOIN private_photos p ON p.id=s.private_photo_id ' +
+        'WHERE p.user_id=$1 AND p.client_photo_id=$2 AND s.slot_index=$3',
+        [req.session.user.id, req.params.clientId, slot],
+      )
+      if (!result.rows.length) return res.status(404).end()
+      const bytes = await storage.read(result.rows[0].oss_key)
+      return res.set('Cache-Control', 'private, no-store')
+        .set('Cross-Origin-Resource-Policy', 'same-origin')
+        .set('X-Content-Type-Options', 'nosniff')
+        .type(result.rows[0].image_type).send(bytes)
+    } catch (error) {
+      if (error?.status === 404) return res.status(404).end()
+      next(error)
+    }
+  })
+
+  app.post('/api/private-photos/:clientId/sources/:slot', requireAuth, privateUploadLimiter,
+    express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: MAX_PRIVATE_BYTES }),
+    async (req, res, next) => {
+      const slot = Number(req.params.slot)
+      if (!validClientId(req.params.clientId) || !Number.isInteger(slot) || slot < 0 || slot > 3) {
+        return res.status(400).json({ error: '无效的照片格子' })
+      }
+      if (!storage.enabled) return res.status(503).json({ error: '请先配置 OSS 私人照片存储' })
+      const type = String(req.get('content-type') || '').split(';')[0].toLowerCase()
+      if (!validPhotoBytes(req.body, type, MAX_PRIVATE_BYTES)) {
+        return res.status(415).json({ error: '原图须为不超过 12MB 的 PNG、JPEG 或 WebP' })
+      }
+      let uploadedKey
+      try {
+        const ownerId = req.session.user.id
+        const parent = await pool.query(
+          'SELECT id FROM private_photos WHERE user_id=$1 AND client_photo_id=$2',
+          [ownerId, req.params.clientId],
+        )
+        if (!parent.rows.length) return res.status(404).json({ error: '私人拍立得不存在' })
+        const parentId = parent.rows[0].id
+        const existing = await pool.query(
+          'SELECT 1 FROM private_photo_sources WHERE private_photo_id=$1 AND slot_index=$2',
+          [parentId, slot],
+        )
+        if (existing.rows.length) return res.set('Cache-Control', 'no-store').json({ ok: true })
+        uploadedKey = storage.newKey(ownerId, type)
+        await storage.put(uploadedKey, req.body, type)
+        const inserted = await pool.query(
+          'INSERT INTO private_photo_sources(private_photo_id,slot_index,image_type,oss_key) ' +
+          'VALUES($1,$2,$3,$4) ON CONFLICT(private_photo_id,slot_index) DO NOTHING RETURNING slot_index',
+          [parentId, slot, type, uploadedKey],
+        )
+        if (inserted.rowCount) uploadedKey = null
+        res.status(201).set('Cache-Control', 'no-store').json({ ok: true })
+      } catch (error) { next(error) }
+      finally {
+        if (uploadedKey) await storage.remove(uploadedKey).catch(error => {
+          console.error('Unable to clean up source upload', error?.message)
+        })
+      }
+    },
+  )
+
   app.delete('/api/private-photos/:clientId', requireAuth, async (req, res, next) => {
     if (!validClientId(req.params.clientId)) return res.status(404).json({ error: '照片不存在' })
     let client
@@ -143,8 +226,14 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth, storage = {
         await client.query('ROLLBACK')
         return res.status(404).json({ error: '照片不存在' })
       }
-      // Never report success before OSS confirms deletion; a failure keeps the DB row
-      // for a safe retry, instead of silently leaving an orphaned private object.
+      // Remove source objects too; all source rows are cascade-deleted with parent.
+      const sources = await client.query(
+        'SELECT s.oss_key FROM private_photo_sources s JOIN private_photos p ON p.id=s.private_photo_id ' +
+        'WHERE p.user_id=$1 AND p.client_photo_id=$2 ORDER BY s.slot_index',
+        [req.session.user.id, req.params.clientId],
+      )
+      for (const source of sources.rows) await storage.remove(source.oss_key)
+      // Only acknowledge removal once the composite object is also deleted.
       await storage.remove(found.rows[0].oss_key)
       await client.query(
         'DELETE FROM private_photos WHERE user_id=$1 AND client_photo_id=$2',
