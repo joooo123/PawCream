@@ -414,7 +414,6 @@ export default function AtelierPlaceholder({
         notePrompt: '留下你想对 PawCream 说的话吧',
         messageHint: '拖动这封信',
         noteHint: '打开留言板',
-        lightHint: '打开工具栏',
         toolbarHint: '提示',
         toolbarHome: '返回 Home',
         toolbarLogin: '登入',
@@ -433,7 +432,6 @@ export default function AtelierPlaceholder({
         notePrompt: 'Leave a little note for PawCream',
         messageHint: 'Drag this letter',
         noteHint: 'Open message board',
-        lightHint: 'Open toolbar',
         toolbarHint: 'Hints',
         toolbarHome: 'Home',
         toolbarLogin: 'Sign in',
@@ -726,7 +724,6 @@ export default function AtelierPlaceholder({
     if (!hintMode || tuneMode) return null
     if (key === 'message') return copy.messageHint
     if (key === 'note') return copy.noteHint
-    if (key === 'light') return copy.lightHint
     return null
   }
 

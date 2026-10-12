@@ -256,7 +256,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const copy = language === 'zh'
     ? {
         notePrompt: '留下你想对 PawCream 说的话吧',
-        lightHint: '打开工具栏',
         toolbarHome: '返回 Home', toolbarLogin: '登入', toolbarClose: '收起',
         boardTitle: 'PawCream 留言板', boardSubtitle: '写下一句话，留在这间小小的工作室里。',
         boardPlaceholder: '想对 PawCream 说点什么？', boardSubmit: '贴上留言', boardEmpty: '这里还没有留言。',
@@ -265,7 +264,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       }
     : {
         notePrompt: 'Leave a little note for PawCream',
-        lightHint: 'Open toolbar',
         toolbarHome: 'Home', toolbarLogin: 'Sign in', toolbarClose: 'Hide',
         boardTitle: 'PawCream Message Board', boardSubtitle: 'Leave a small thought in this tiny atelier.',
         boardPlaceholder: 'What would you like to tell PawCream?', boardSubmit: 'Leave note', boardEmpty: 'No notes here yet.',
@@ -572,12 +570,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
     const noteIsPassive = !tuneMode && key === 'note'
     const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people')
     const movingMessage = !tuneMode && key === 'message' && messageMoveMode
-    const hintText = tuneMode
-      ? null
-      : key === 'light'
-        ? copy.lightHint
-        : null
-
     return (
       <div
         key={key}
@@ -621,12 +613,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         {selectedAsset && (
           <span style={{ position: 'absolute', left: '50%', top: -27, transform: `translateX(-50%) rotate(${-layout.rotation}deg)`, padding: '3px 7px', borderRadius: 999, background: 'rgba(255, 249, 252, 0.96)', color: '#a4687f', fontSize: 10, fontFamily: uiFont, boxShadow: '0 4px 14px rgba(113,81,91,.1)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
             {asset.label}
-          </span>
-        )}
-
-        {hintText && (
-          <span style={{ position: 'absolute', left: '50%', top: -34, transform: `translateX(-50%) rotate(${-layout.rotation}deg)`, padding: '6px 10px', borderRadius: 999, border: '1px solid rgba(213,141,168,.2)', background: 'rgba(255,251,253,.94)', color: '#986d7d', fontFamily: uiFont, fontSize: mobile ? 9 : 11, lineHeight: 1, boxShadow: '0 6px 20px rgba(114,82,93,.1)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-            {hintText}
           </span>
         )}
 
