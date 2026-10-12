@@ -547,7 +547,7 @@ export default function InstaxTinBox({
               borderRadius: 999, padding: '5px 12px', background: panelBg, color: textColor, cursor: 'pointer' }}>
             {syncBusy ? '同步中…' : '重试同步到 OSS'}
           </button>
-        )
+        )}
       </div>
 
       <div
