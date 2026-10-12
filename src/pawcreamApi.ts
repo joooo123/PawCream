@@ -198,10 +198,17 @@ export async function signInPawCream(email: string, password: string) {
   })
 }
 
-export async function registerPawCream(email: string, password: string, inviteCode: string) {
-  return request<{ user: PawCreamUser }>('/auth/register', {
+export async function registerPawCream(email: string, password: string, inviteCode: string, emailCode: string) {
+  return request<{ user: PawCreamUser; sessionReady: boolean }>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, inviteCode }),
+    body: JSON.stringify({ email, password, inviteCode, emailCode }),
+  })
+}
+
+export async function requestPawCreamEmailCode(email: string, inviteCode: string) {
+  return request<{ ok: true; expiresInSeconds: number }>('/auth/email-code', {
+    method: 'POST',
+    body: JSON.stringify({ email, inviteCode }),
   })
 }
 

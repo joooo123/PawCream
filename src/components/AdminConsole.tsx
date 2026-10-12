@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { getCurrentUser, isPawCreamApiEnabled, signInPawCream, signOutPawCream, type PawCreamUser } from '../pawcreamApi'
 import '../admin.css'
 
-type Section = 'overview' | 'users' | 'notes' | 'photos' | 'audit'
+type Section = 'overview' | 'users' | 'invites' | 'notes' | 'photos' | 'audit'
 type Overview = {
   users: { total: number; disabled: number }
   notes: { total: number; hidden: number }
@@ -15,6 +15,8 @@ type AdminUser = {
 }
 type AdminNote = { id: string; text: string; authorName: string; hidden: boolean; createdAt: string; ownerEmail: string; ownerDisabled: boolean }
 type AdminPhoto = { id: string; frameName: string; authorName: string; hidden: boolean; createdAt: string; ownerEmail: string; ownerDisabled: boolean }
+type Invite = { id:string; lastFour:string; createdAt:string; usedAt:string|null; revokedAt:string|null; usedBy:string|null }
+type NewlyCreatedInvite = { id:string; code:string }
 type Audit = { id: number; actorEmail: string; action: string; targetType: string; targetId: string; details: { reason?: string | null }; createdAt: string }
 type Page<T> = { items: T[]; total: number; offset: number; limit: number }
 
@@ -22,6 +24,7 @@ const PAGE_SIZE = 20
 const menu: { key: Section; name: string; hint: string }[] = [
   { key: 'overview', name: '总览', hint: 'Overview' },
   { key: 'users', name: '用户', hint: 'Accounts' },
+  { key: 'invites', name: '邀请码', hint: 'Invitations' },
   { key: 'notes', name: '留言', hint: 'Notes' },
   { key: 'photos', name: '返图', hint: 'Photos' },
   { key: 'audit', name: '审计', hint: 'Audit log' },
@@ -62,6 +65,9 @@ export default function AdminConsole() {
   const [error, setError] = useState('')
   const [overview, setOverview] = useState<Overview | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [invites, setInvites] = useState<Invite[]>([])
+  const [newCodes, setNewCodes] = useState<NewlyCreatedInvite[]>([])
+  const [inviteCount, setInviteCount] = useState(1)
   const [notes, setNotes] = useState<AdminNote[]>([])
   const [photos, setPhotos] = useState<AdminPhoto[]>([])
   const [audits, setAudits] = useState<Audit[]>([])
@@ -86,6 +92,9 @@ export default function AdminConsole() {
       } else if (section === 'users') {
         const response = await adminRequest<Page<AdminUser>>(`/users?offset=${offset}&q=${encodeURIComponent(query)}`)
         if (alive) { setUsers(response.items); setTotal(response.total) }
+      } else if (section === 'invites') {
+        const response = await adminRequest<Page<Invite>>(`/invites?offset=${offset}`)
+        if (alive) { setInvites(response.items); setTotal(response.total) }
       } else if (section === 'notes') {
         const response = await adminRequest<Page<AdminNote>>(`/notes?offset=${offset}${f}`)
         if (alive) { setNotes(response.items); setTotal(response.total) }
@@ -110,6 +119,7 @@ export default function AdminConsole() {
 
   const changeSection = (next: Section) => {
     setSection(next)
+    setNewCodes([])
     setPage(0)
     setFilter('all')
     setError('')
@@ -146,6 +156,33 @@ export default function AdminConsole() {
       await adminRequest(path, { method: 'PATCH', body: JSON.stringify(payload) })
       setRefresh(v => v + 1)
     } catch (e) { setError(e instanceof Error ? e.message : '操作失败') }
+    finally { setWorking(false) }
+  }
+
+  const generateInvites = async () => {
+    if (!window.confirm(`生成 ${inviteCount} 个一次性邀请码？注册码只会在本次生成后完整显示。`)) return
+    setWorking(true)
+    setError('')
+    setNewCodes([])
+    try {
+      const result = await adminRequest<{ codes: NewlyCreatedInvite[] }>('/invites', {
+        method: 'POST', body: JSON.stringify({ count: inviteCount }),
+      })
+      setNewCodes(result.codes)
+      setPage(0)
+      setRefresh(n => n + 1)
+    } catch (e) { setError(e instanceof Error ? e.message : '生成失败') }
+    finally { setWorking(false) }
+  }
+
+  const revokeInvite = async (item: Invite) => {
+    if (!window.confirm(`确认撤销尾号 ${item.lastFour} 的邀请码？撤销后无法用于注册。`)) return
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(`/invites/${item.id}/revoke`, { method: 'PATCH' })
+      setRefresh(n => n + 1)
+    } catch (e) { setError(e instanceof Error ? e.message : '撤销失败') }
     finally { setWorking(false) }
   }
 
@@ -235,6 +272,52 @@ export default function AdminConsole() {
                 </tbody></table></div>
                 {!users.length && !loading && <p className="pc-empty">没有符合条件的用户</p>}
               </section>
+            )}
+            {section === 'invites' && (
+              <>
+                <section className="pc-panel">
+                  <div className="pc-panel-head"><div><h2>一次性邀请码</h2>
+                    <p>统一格式 PC-XXXX-XXXX；随机生成，只有第一次创建时显示完整邀请码。每码仅限一个账号。</p>
+                  </div></div>
+                  <div className="pc-invite-actions">
+                    <label>生成数量{' '}
+                      <select value={inviteCount} onChange={e => setInviteCount(Number(e.target.value))}>
+                        {[1, 3, 5, 10, 20].map(n => <option key={n} value={n}>{n} 个</option>)}
+                      </select>
+                    </label>
+                    <button className="pc-primary" style={{ width:'auto', margin:0 }} type="button" disabled={working} onClick={() => void generateInvites()}>
+                      {working ? '正在处理…' : '生成邀请码'}
+                    </button>
+                  </div>
+                  {!!newCodes.length && <div className="pc-codes-created">
+                    <strong>新邀请码（仅本次显示，请立即安全保存）</strong>
+                    <div className="pc-invite-tags">
+                      {newCodes.map(entry => <div key={entry.id} className="pc-invite-tag">
+                        <code>{entry.code}</code>
+                        <button type="button" onClick={() => void navigator.clipboard.writeText(entry.code).catch(() => setError('复制失败，请手动选中邀请码'))}>复制</button>
+                      </div>)}
+                    </div>
+                    <button type="button" className="pc-table-action" onClick={() => setNewCodes([])}>已保存，清除屏幕上的邀请码</button>
+                  </div>}
+                </section>
+                <section className="pc-panel" style={{marginTop:18}}>
+                  <div className="pc-panel-head"><div><h2>邀请码记录</h2><p>为保护邀请码安全，此处只显示后四位。已使用和已撤销的码均不能再次注册。</p></div></div>
+                  <div className="pc-table-wrap"><table>
+                    <thead><tr><th>编号</th><th>创建时间</th><th>状态</th><th>关联用户</th><th>操作</th></tr></thead>
+                    <tbody>{invites.map(item => (
+                      <tr key={item.id}>
+                        <td><strong>PC-****-{item.lastFour}</strong></td>
+                        <td>{shortDate(item.createdAt)}</td>
+                        <td><span className={`pc-pill ${item.revokedAt ? 'danger':''}`}>{item.usedAt ? '已使用' : item.revokedAt ? '已撤销' : '可使用'}</span></td>
+                        <td>{item.usedBy || '—'}</td>
+                        <td><button type="button" className="pc-table-action" disabled={working || Boolean(item.usedAt || item.revokedAt)}
+                          onClick={() => void revokeInvite(item)}>撤销</button></td>
+                      </tr>
+                    ))}</tbody>
+                  </table></div>
+                  {!invites.length && !loading && <p className="pc-empty">暂时还没有邀请码，请先生成</p>}
+                </section>
+              </>
             )}
             {section === 'notes' && (
               <section className="pc-panel">

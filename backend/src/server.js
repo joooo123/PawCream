@@ -8,13 +8,14 @@ import helmet from 'helmet'
 import pg from 'pg'
 import { registerPhotoRoutes } from './publicPhotoRoutes.js'
 import { registerAdminRoutes } from './adminRoutes.js'
+import { registerSignupRoutes } from './registrationRoutes.js'
+import { registerInviteAdminRoutes } from './inviteAdminRoutes.js'
 
 const { Pool } = pg
 
 const PORT = Number(process.env.PORT || 8787)
 const DATABASE_URL = process.env.DATABASE_URL
 const SESSION_SECRET = process.env.SESSION_SECRET
-const INVITE_CODE = process.env.INVITE_CODE || ''
 const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE || 'lax').toLowerCase()
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== 'false'
 
@@ -191,55 +192,7 @@ app.get('/api/auth/me', (req, res) => {
   res.json({ user: publicUser(req.session.user || null) })
 })
 
-app.post('/api/auth/register', authLimiter, async (req, res, next) => {
-  const email = normalizeEmail(req.body?.email)
-  const password = String(req.body?.password || '')
-  const inviteCode = String(req.body?.inviteCode || '').trim()
-
-  if (!validEmail(email)) {
-    res.status(400).json({ error: '请输入正确的邮箱地址' })
-    return
-  }
-  if (password.length < 6 || password.length > 128) {
-    res.status(400).json({ error: '密码长度需要为 6–128 位' })
-    return
-  }
-  if (INVITE_CODE && inviteCode !== INVITE_CODE) {
-    res.status(403).json({ error: '邀请码不正确' })
-    return
-  }
-
-  try {
-    const passwordHash = await bcrypt.hash(password, 12)
-    const displayName = displayNameFromEmail(email)
-    const result = await pool.query(
-      `
-        INSERT INTO users (email, password_hash, display_name)
-        VALUES ($1, $2, $3)
-        RETURNING id, email, display_name, role
-      `,
-      [email, passwordHash, displayName],
-    )
-
-    const row = result.rows[0]
-    await new Promise((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()))
-    req.session.user = {
-      id: row.id,
-      email: row.email,
-      displayName: row.display_name,
-      role: row.role,
-    }
-    await new Promise((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()))
-
-    res.status(201).json({ user: publicUser(req.session.user) })
-  } catch (error) {
-    if (error?.code === '23505') {
-      res.status(409).json({ error: '这个邮箱已经注册过了' })
-      return
-    }
-    next(error)
-  }
-})
+registerSignupRoutes(app, pool, bcrypt, SESSION_SECRET, publicUser)
 
 app.post('/api/auth/login', authLimiter, async (req, res, next) => {
   const email = normalizeEmail(req.body?.email)
@@ -511,6 +464,7 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
 
 registerPhotoRoutes(app, pool, requireAuth)
 registerAdminRoutes(app, pool)
+registerInviteAdminRoutes(app, pool)
 
 app.use((error, _req, res, _next) => {
   if (error?.status === 403) {

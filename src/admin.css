@@ -128,3 +128,13 @@
   .pc-auth-card .pc-logo { font-size: 25px; }
   .pc-photo-body small { font-size: 12px; }
 }
+
+/* Invitation management: readable, copy-friendly one-time codes. */
+.pc-invite-actions {display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0 0;font-size:14px}
+.pc-invite-actions select {padding:9px 12px;margin-left:6px;border-radius:9px;border:1px solid #d8e5ed;background:#fff;color:#4b687a}
+.pc-codes-created {border:1px solid #beded2;background:#f2faf7;border-radius:13px;padding:17px;margin-top:19px}
+.pc-codes-created strong {display:block;font-size:14px;margin-bottom:13px;color:#4b7a6e}
+.pc-invite-tags {display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 16px}
+.pc-invite-tag {display:flex;align-items:center;border:1px solid #d0e7df;background:white;border-radius:9px;overflow:hidden}
+.pc-invite-tag code {font-family:ui-monospace,'Consolas',monospace!important;font-size:15px!important;letter-spacing:.065em;padding:10px 12px;color:#3b7169}
+.pc-invite-tag button {border:0;border-left:1px solid #d0e7df;background:#f6fbf9;color:#467e71;font-size:13px;padding:10px}

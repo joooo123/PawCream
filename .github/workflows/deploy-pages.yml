@@ -59,8 +59,8 @@ jobs:
       - name: Install backend dependencies
         run: npm install --prefix backend --no-audit --no-fund
 
-      - name: Test admin permission guards
-        run: node --test backend/test/adminRoutes.test.mjs
+      - name: Test admin permission guards and invitation format
+        run: node --test backend/test/adminRoutes.test.mjs backend/test/invitation.test.mjs
 
       - name: Test OSS storage helpers
         run: node --test backend/test/photoStorage.test.mjs
@@ -71,6 +71,9 @@ jobs:
           node --check backend/src/publicPhotoRoutes.js
           node --check backend/src/photoStorage.js
           node --check backend/src/adminRoutes.js
+          node --check backend/src/registrationMail.js
+          node --check backend/src/registrationRoutes.js
+          node --check backend/src/inviteAdminRoutes.js
 
       - name: Build
         env:
@@ -128,11 +131,11 @@ jobs:
           node-version: 22
       - name: Install backend dependencies
         run: npm install --prefix backend --no-audit --no-fund
-      - name: Apply migrations 001–004
+      - name: Apply migrations 001–005
         env:
           PGPASSWORD: ci-test-only
         run: |
-          for sql in backend/sql/001_init.sql backend/sql/002_public_photos.sql backend/sql/003_oss_photos.sql backend/sql/004_admin_console.sql; do
+          for sql in backend/sql/001_init.sql backend/sql/002_public_photos.sql backend/sql/003_oss_photos.sql backend/sql/004_admin_console.sql backend/sql/005_signup_verification.sql; do
             psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55432 -U pawcream -d pawcream -f "$sql"
           done
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55432 -U pawcream -d pawcream -f backend/sql/004_admin_console.sql

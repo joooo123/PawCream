@@ -4,6 +4,7 @@ import {
   OPEN_SIGNIN_EVENT,
   isPawCreamApiEnabled,
   registerPawCream,
+  requestPawCreamEmailCode,
   signInPawCream,
 } from '../pawcreamApi'
 import AtelierWithCollection from './AtelierWithCollection'
@@ -90,6 +91,9 @@ export default function AtelierWithSignin(props: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
+  const [emailCode, setEmailCode] = useState('')
+  const [registerStage, setRegisterStage] = useState<'details'|'verify'>('details')
+  const [sendingEmail, setSendingEmail] = useState(false)
   const [status, setStatus] = useState('')
   const [tuneByDevice, setTuneByDevice] = useState<SigninTuneByDevice>(readTuneByDevice)
   const [copied, setCopied] = useState(false)
@@ -104,6 +108,13 @@ export default function AtelierWithSignin(props: Props) {
         email: '邮箱',
         password: '密码',
         invite: '邀请码',
+        emailCode: '邮箱验证码',
+        sendCode: '发送邮箱验证码',
+        resendCode: '重新发送验证码',
+        completeRegister: '验证并注册',
+        editRegistration: '返回修改信息',
+        codeSent: '验证码已发送，请查看邮箱（10 分钟有效）',
+        invalidCode: '请输入收到的 6 位验证码',
         login: '登入',
         register: '注册',
         close: '关闭登入',
@@ -120,6 +131,13 @@ export default function AtelierWithSignin(props: Props) {
         email: 'Email',
         password: 'Password',
         invite: 'Invite code',
+        emailCode: 'Email verification code',
+        sendCode: 'Email me a code',
+        resendCode: 'Resend verification',
+        completeRegister: 'Verify & register',
+        editRegistration: 'Edit registration',
+        codeSent: 'Check your inbox (valid for 10 minutes)',
+        invalidCode: 'Enter your 6-digit email code',
         login: 'Sign in',
         register: 'Register',
         close: 'Close sign in',
@@ -251,7 +269,26 @@ export default function AtelierWithSignin(props: Props) {
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
+    setRegisterStage('details')
+    setEmailCode('')
     setStatus('')
+  }
+
+  const sendEmailCode = async () => {
+    const normalizedEmail = email.trim()
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) { setStatus(copy.badEmail); return }
+    if (password.length < 6) { setStatus(copy.badPassword); return }
+    if (!inviteCode.trim()) { setStatus(copy.badInvite); return }
+    if (!isPawCreamApiEnabled()) { setStatus(copy.preview); return }
+    setSendingEmail(true)
+    setStatus(copy.working)
+    try {
+      await requestPawCreamEmailCode(normalizedEmail, inviteCode.trim())
+      setRegisterStage('verify')
+      setStatus(copy.codeSent)
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : copy.failed)
+    } finally { setSendingEmail(false) }
   }
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -276,20 +313,29 @@ export default function AtelierWithSignin(props: Props) {
       return
     }
 
+    if (mode === 'register' && registerStage === 'details') {
+      await sendEmailCode()
+      return
+    }
+    if (mode === 'register' && !/^[0-9]{6}$/.test(emailCode.trim())) {
+      setStatus(copy.invalidCode)
+      return
+    }
     setStatus(copy.working)
     try {
       if (mode === 'login') {
         await signInPawCream(normalizedEmail, password)
       } else {
-        await registerPawCream(normalizedEmail, password, inviteCode.trim())
+        await registerPawCream(normalizedEmail, password, inviteCode.trim(), emailCode.trim())
       }
-
       setStatus(copy.success)
       window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
       window.setTimeout(() => {
         setOpen(false)
         setPassword('')
         setInviteCode('')
+        setEmailCode('')
+        setRegisterStage('details')
       }, 420)
     } catch (error) {
       setStatus(error instanceof Error && error.message ? error.message : copy.failed)
@@ -450,6 +496,12 @@ export default function AtelierWithSignin(props: Props) {
             </header>
 
             <form onSubmit={submit}>
+              {mode === 'register' && registerStage === 'verify' && (
+                <div style={{ fontSize: (mobile ? 8 : 10) + tune.fontBoost, color:'#627f93', marginBottom: mobile ? 6 : 10, lineHeight:1.55 }}>
+                  {email.trim()}
+                </div>
+              )}
+              {(mode === 'login' || registerStage === 'details') && (
               <label style={labelStyle}>
                 <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.email}</span>
                 <input
@@ -488,19 +540,48 @@ export default function AtelierWithSignin(props: Props) {
                 </label>
               )}
 
+              )}
+              {mode === 'register' && registerStage === 'verify' && (
+                <label style={labelStyle}>
+                  <span style={{ display:'block', marginBottom: mobile ? 3 : 4 }}>{copy.emailCode}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text" inputMode="numeric" autoComplete="one-time-code"
+                    maxLength={6} pattern="[0-9]{6}" required
+                    value={emailCode}
+                    onChange={e => { setEmailCode(e.currentTarget.value.replace(/\\D/g,'').slice(0,6)); setStatus('') }}
+                    style={inputStyle}
+                    placeholder="123456"
+                  />
+                </label>
+              )}
+
               <div style={{ display: 'flex', gap: mobile ? 7 : 9, marginTop: mobile ? 8 : 10 }}>
                 {mode === 'login' ? (
                   <>
                     <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.login}</button>
                     <button type="button" className="pawcream-signin-action" onClick={() => switchMode('register')} style={actionStyle}>{copy.register}</button>
                   </>
-                ) : (
+                ) : registerStage === 'details' ? (
                   <>
                     <button type="button" className="pawcream-signin-action" onClick={() => switchMode('login')} style={actionStyle}>{copy.login}</button>
-                    <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.register}</button>
+                    <button type="submit" disabled={sendingEmail} className="pawcream-signin-action" style={primaryActionStyle}>{sendingEmail ? copy.working : copy.sendCode}</button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="pawcream-signin-action" style={actionStyle} onClick={() => {setRegisterStage('details');setStatus('')}}>{copy.editRegistration}</button>
+                    <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.completeRegister}</button>
                   </>
                 )}
               </div>
+              {mode === 'register' && registerStage === 'verify' && (
+                <button type="button" disabled={sendingEmail}
+                  onClick={() => void sendEmailCode()}
+                  style={{ display:'block', marginTop: mobile ? 4 : 7, padding:'2px 0', border:0,
+                    background:'transparent', color:'#5f849f', fontSize:(mobile ? 7 : 9) + tune.fontBoost, cursor:'pointer' }}>
+                  {sendingEmail ? copy.working : copy.resendCode}
+                </button>
+              )}
 
               <div
                 aria-live="polite"

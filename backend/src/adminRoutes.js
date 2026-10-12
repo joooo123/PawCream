@@ -32,7 +32,7 @@ function requireAdmin(req, res, next) {
   next()
 }
 
-function requireSameOrigin(req, res, next) {
+export function requireSameOrigin(req, res, next) {
   if (!sameOrigin(req)) return res.status(403).json({ error: '跨站请求被拒绝' })
   next()
 }
