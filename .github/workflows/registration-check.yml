@@ -1,0 +1,29 @@
+name: Registration checks
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'src/pawcreamApi.ts'
+      - 'src/components/AtelierWithSignin.tsx'
+      - '.github/workflows/registration-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test registration and photo helpers
+        run: node --test backend/test/*.test.mjs
+      - name: Verify backend JavaScript syntax
+        run: node --check backend/src/server.js
+      - name: Typecheck frontend
+        run: |
+          npm install
+          npx tsc -b --pretty false
