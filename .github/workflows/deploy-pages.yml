@@ -132,11 +132,11 @@ jobs:
           node-version: 22
       - name: Install backend dependencies
         run: npm install --prefix backend --no-audit --no-fund
-      - name: Apply migrations 001–006
+      - name: Apply migrations 001–007
         env:
           PGPASSWORD: ci-test-only
         run: |
-          for sql in backend/sql/001_init.sql backend/sql/002_public_photos.sql backend/sql/003_oss_photos.sql backend/sql/004_admin_console.sql backend/sql/005_signup_verification.sql backend/sql/006_private_tin_photos.sql; do
+          for sql in backend/sql/001_init.sql backend/sql/002_public_photos.sql backend/sql/003_oss_photos.sql backend/sql/004_admin_console.sql backend/sql/005_signup_verification.sql backend/sql/006_private_tin_photos.sql backend/sql/007_private_photo_sources.sql; do
             psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55432 -U pawcream -d pawcream -f "$sql"
           done
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55432 -U pawcream -d pawcream -f backend/sql/004_admin_console.sql
