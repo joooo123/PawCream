@@ -10,7 +10,7 @@
 - 静态 React/Vite 页面：轻量服务器上的系统 Nginx，根目录 `/opt/pawcream/dist`
 - API：Docker 中的 Node.js，主机仅监听 `127.0.0.1:8787`
 - 数据库：Docker 中的 PostgreSQL 16，**不对公网暴露 5432**
-- 公开返图墙图片：**私有 OSS Bucket `pawcream-photo`**，轻量服务器通过同地域内网 Endpoint 访问
+- 公开返图墙与私人铁盒图片：**私有 OSS Bucket `pawcream-photo`**，轻量服务器通过同地域内网 Endpoint 访问
 - 用户的私人铁盒：目前仍属于浏览器端本地存储，**不是云端同步功能**
 
 前端维持同源 `/api`，浏览器不接触 OSS 凭据。**轻量服务器使用专用 RAM 程序用户的最小权限 AccessKey**，密钥只存服务器端 `backend/.env`（权限 600，不提交 GitHub）。ECS 实例 RAM 角色只适用于单独使用 ECS 的环境。用户撤回公开返图时，会删除相应 OSS 对象；关闭了 OSS 版本控制的 Bucket 不会保留该对象的历史版本。
@@ -95,7 +95,7 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 -U pawcream -d pawcream < back
 
 1. 打开**身份管理 → 用户 → 创建用户**，创建专用用户 `PawCreamOSSUploader`，仅启用 OpenAPI / AccessKey 方式，不授予控制台登录权限。
 2. 将**自定义策略** `PawCreamOSSAccess` 授予这个 **RAM 用户**（不是只授予之前创建的 ECS RAM 角色）。
-3. 检查策略 JSON 是否精确限定为以下 `public/*` 对象路径，不授予 `AliyunOSSFullAccess` 或 AdministratorAccess。
+3. 检查策略 JSON 是否精确限定为 `public/*`（公共返图）和 `private/*`（私人铁盒）两类对象路径，不授予 `AliyunOSSFullAccess` 或 AdministratorAccess。
 4. 为该 RAM 用户创建 AccessKey，**只在轻量服务器的 `backend/.env` 中保存**。不要把 AccessKey 发给聊天助手、放到 GitHub 或放到前端 Vite 环境变量中。建议定期轮换，并注意阿里云控制台的密钥下载/显示机会。
 
 ```json
@@ -105,13 +105,16 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 -U pawcream -d pawcream < back
     {
       "Effect": "Allow",
       "Action": ["oss:PutObject", "oss:GetObject", "oss:DeleteObject"],
-      "Resource": ["acs:oss:*:*:pawcream-photo/public/*"]
+      "Resource": [
+        "acs:oss:*:*:pawcream-photo/public/*",
+        "acs:oss:*:*:pawcream-photo/private/*"
+      ]
     }
   ]
 }
 ```
 
-这套策略只允许对 `pawcream-photo/public/*` 中的对象进行写入、读取、删除，不需要 `oss:ListObjects`。Bucket 保持私有读写。无需绑定实例 RAM 角色，也不需要修改你的轻量服务器套餐。
+这套策略只允许对 `pawcream-photo/public/*` 和 `pawcream-photo/private/*` 中的对象进行写入、读取、删除，不需要 `oss:ListObjects`。Bucket 保持私有读写。无需绑定实例 RAM 角色，也不需要修改你的轻量服务器套餐。**如果此前只授权了 `public/*`，上线私人铁盒前必须先在 RAM 中为同一策略增加 `private/*`；不需要更换 AccessKey。**
 
 在 `backend/.env` 中手动配置：
 
