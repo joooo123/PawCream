@@ -313,7 +313,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         display: 'grid',
         placeItems: 'center',
         padding: mobile ? 12 : 28,
-        background: 'rgba(255,249,251,.64)',
+        background: 'rgba(57,45,56,.35)',
         backdropFilter: 'blur(13px)',
         WebkitBackdropFilter: 'blur(13px)',
         fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -334,14 +334,14 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       <section
         className="pawcream-notes-card"
         style={{
-          width: mobile ? '100%' : 'min(760px, 100%)',
-          maxHeight: mobile ? 'calc(100% - 12px)' : 'min(760px, calc(100% - 30px))',
+          width: mobile ? '100%' : 'min(1100px, 100%)',
+          maxHeight: mobile ? 'calc(100% - 12px)' : 'calc(100% - 30px)',
           overflow: 'auto',
           boxSizing: 'border-box',
           padding: mobile ? 17 : 24,
           border: '1px solid rgba(205,148,168,.23)',
           borderRadius: mobile ? 23 : 30,
-          background: 'rgba(255,253,253,.965)',
+          background: 'linear-gradient(145deg, #fffafa, #f9f3f8 55%, #eef4f1)',
           boxShadow: '0 24px 70px rgba(101,74,84,.17)',
           color: '#765d66',
         }}
