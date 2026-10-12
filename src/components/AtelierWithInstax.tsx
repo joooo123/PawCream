@@ -738,11 +738,11 @@ export default function AtelierWithInstax(props: Props) {
   }
 
   const onSlotPointerDown = (index: number, event: ReactPointerEvent<HTMLDivElement>) => {
+    slotDragMovedRef.current = false
+    setActiveSlot(index)
     const placement = photos[index]
     if (!placement) return
     const rect = event.currentTarget.getBoundingClientRect()
-    setActiveSlot(index)
-    slotDragMovedRef.current = false
     dragRef.current = {
       index,
       startX: event.clientX,
