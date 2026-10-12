@@ -75,7 +75,11 @@ export function registerSignupRoutes(app, pool, bcrypt, secret, publicUser) {
     const password = typeof req.body?.password === 'string' ? req.body.password : ''
     const invite = normalizeInviteCode(req.body?.inviteCode)
     const otp = req.body?.emailCode
+    const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : ''
     if (!validEmail(email)) return res.status(400).json({ error: '请输入正确的邮箱地址' })
+    if (!displayName || displayName.length > 40 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+      return res.status(400).json({ error: '昵称需要为 1–40 个字符，不能包含控制字符' })
+    }
     if (password.length < 6 || password.length > 128) return res.status(400).json({ error: '密码长度需要为 6–128 位' })
     if (!invite) return badInvitation(res)
     if (!validOtp(otp)) return res.status(400).json({ error: '请输入收到的 6 位邮箱验证码' })
@@ -103,7 +107,6 @@ export function registerSignupRoutes(app, pool, bcrypt, secret, publicUser) {
         await db.query('COMMIT')
         return res.status(400).json({ error: '邮箱验证码不正确' })
       }
-      const displayName = email.split('@')[0].replace(/[^\p{L}\p{N}_.-]/gu, '').slice(0, 40) || 'PawCream'
       const created = await db.query(
         'INSERT INTO users (email,password_hash,display_name,email_verified_at) VALUES ($1,$2,$3,now()) RETURNING id,email,display_name,role',
         [email,hash,displayName],
