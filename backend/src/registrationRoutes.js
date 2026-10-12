@@ -105,7 +105,7 @@ export function registerSignupRoutes(app, pool, bcrypt, secret, publicUser) {
       }
       const displayName = email.split('@')[0].replace(/[^\p{L}\p{N}_.-]/gu, '').slice(0, 40) || 'PawCream'
       const created = await db.query(
-        'INSERT INTO users (email,password_hash,display_name) VALUES ($1,$2,$3) RETURNING id,email,display_name,role',
+        'INSERT INTO users (email,password_hash,display_name,email_verified_at) VALUES ($1,$2,$3,now()) RETURNING id,email,display_name,role',
         [email,hash,displayName],
       )
       const user = created.rows[0]

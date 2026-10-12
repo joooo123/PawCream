@@ -89,6 +89,7 @@ export function registerAdminRoutes(app, pool) {
         pool.query(
           `SELECT u.id,u.email,u.display_name AS "displayName",u.role,u.created_at AS "createdAt",
                   u.is_disabled AS "disabled",u.disabled_at AS "disabledAt",u.disabled_reason AS "disabledReason",
+                  u.email_verified_at AS "emailVerifiedAt",
                   (SELECT count(*)::int FROM notes n WHERE n.user_id=u.id) AS "noteCount",
                   (SELECT count(*)::int FROM public_photos p WHERE p.user_id=u.id) AS "photoCount"
              FROM users u

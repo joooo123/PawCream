@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS registration_invites (
 CREATE INDEX IF NOT EXISTS registration_invites_recent_idx
   ON registration_invites (created_at DESC, id DESC);
 
+-- Keep legacy account verification state unknown; only new OTP registrations are verified.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz;
+
 -- Emails and code hashes are used only for pending signup; passwords are never stored here.
 CREATE TABLE IF NOT EXISTS registration_email_codes (
   email citext PRIMARY KEY,

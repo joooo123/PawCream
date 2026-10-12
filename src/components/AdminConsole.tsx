@@ -10,7 +10,7 @@ type Overview = {
 }
 type AdminUser = {
   id: string; email: string; displayName: string; role: 'user' | 'admin'
-  createdAt: string; disabled: boolean; disabledAt: string | null; disabledReason: string | null
+  createdAt: string; disabled: boolean; disabledAt: string | null; disabledReason: string | null; emailVerifiedAt: string | null
   noteCount: number; photoCount: number
 }
 type AdminNote = { id: string; text: string; authorName: string; hidden: boolean; createdAt: string; ownerEmail: string; ownerDisabled: boolean }
@@ -263,7 +263,7 @@ export default function AdminConsole() {
                 </div>
                 <div className="pc-table-wrap"><table><thead><tr><th>用户</th><th>角色 / 状态</th><th>内容</th><th>加入日期</th><th>管理</th></tr></thead><tbody>
                   {users.map(item => <tr key={item.id}>
-                    <td><strong>{item.displayName}</strong><small>{item.email}</small></td>
+                    <td><strong>{item.displayName}</strong><small>{item.email}</small><small>{item.emailVerifiedAt ? '邮箱已验证' : '旧账号·尚无邮箱验证记录'}</small></td>
                     <td><span className={`pc-pill ${item.disabled ? 'danger' : ''}`}>{item.disabled ? '已封禁' : item.role === 'admin' ? '管理员' : '正常'}</span>{item.disabledReason && <small title={item.disabledReason}>{item.disabledReason}</small>}</td>
                     <td>留言 {item.noteCount}<small>返图 {item.photoCount}</small></td>
                     <td>{shortDate(item.createdAt)}</td>
