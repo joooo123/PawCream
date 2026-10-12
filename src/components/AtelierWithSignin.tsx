@@ -92,6 +92,7 @@ export default function AtelierWithSignin(props: Props) {
   const [password, setPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [emailCode, setEmailCode] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [registerStage, setRegisterStage] = useState<'details'|'verify'>('details')
   const [sendingEmail, setSendingEmail] = useState(false)
   const [status, setStatus] = useState('')
@@ -109,6 +110,9 @@ export default function AtelierWithSignin(props: Props) {
         password: '密码',
         invite: '邀请码',
         emailCode: '邮箱验证码',
+        displayName: '昵称',
+        displayNamePlaceholder: '给自己取个昵称 ♡',
+        badDisplayName: '请输入 1–40 个字符的昵称',
         sendCode: '发送验证码',
         resendCode: '重新发送验证码',
         completeRegister: '验证并注册',
@@ -132,6 +136,9 @@ export default function AtelierWithSignin(props: Props) {
         password: 'Password',
         invite: 'Invite code',
         emailCode: 'Email verification code',
+        displayName: 'Nickname',
+        displayNamePlaceholder: 'Choose your nickname ♡',
+        badDisplayName: 'Enter a nickname of 1–40 characters',
         sendCode: 'Send code',
         resendCode: 'Resend verification',
         completeRegister: 'Register',
@@ -317,6 +324,10 @@ export default function AtelierWithSignin(props: Props) {
       await sendEmailCode()
       return
     }
+    if (mode === 'register' && (!displayName.trim() || displayName.trim().length > 40)) {
+      setStatus(copy.badDisplayName)
+      return
+    }
     if (mode === 'register' && !/^[0-9]{6}$/.test(emailCode.trim())) {
       setStatus(copy.invalidCode)
       return
@@ -326,7 +337,7 @@ export default function AtelierWithSignin(props: Props) {
       if (mode === 'login') {
         await signInPawCream(normalizedEmail, password)
       } else {
-        await registerPawCream(normalizedEmail, password, inviteCode.trim(), emailCode.trim())
+        await registerPawCream(normalizedEmail, password, inviteCode.trim(), emailCode.trim(), displayName.trim())
       }
       setStatus(copy.success)
       window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
@@ -335,6 +346,7 @@ export default function AtelierWithSignin(props: Props) {
         setPassword('')
         setInviteCode('')
         setEmailCode('')
+        setDisplayName('')
         setRegisterStage('details')
       }, 420)
     } catch (error) {
@@ -541,6 +553,20 @@ export default function AtelierWithSignin(props: Props) {
                 </label>
               )}
               </>
+              )}
+              {mode === 'register' && registerStage === 'verify' && (
+                <label style={labelStyle}>
+                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.displayName}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text" autoComplete="nickname"
+                    maxLength={40} required
+                    value={displayName}
+                    onChange={e => { setDisplayName(e.currentTarget.value); setStatus('') }}
+                    style={inputStyle}
+                    placeholder={copy.displayNamePlaceholder}
+                  />
+                </label>
               )}
               {mode === 'register' && registerStage === 'verify' && (
                 <label style={labelStyle}>
