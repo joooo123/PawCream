@@ -179,10 +179,12 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           filter: drop-shadow(0 16px 22px rgba(86,63,77,.18));
           transition: transform 190ms ease-out, opacity 180ms ease-out;
         }
-        .pawcream-public-wall-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 9px; }
+        .pawcream-public-wall-grid { display: block; columns: 5; column-gap: 10px; }
         .pawcream-public-wall-tile {
           border: 1px solid rgba(194,170,181,.36); border-radius: 10px; overflow: hidden;
-          padding: 0; background: #fff; aspect-ratio: 4/5;
+          display: block; width: 100%; height: auto; margin-bottom: 10px;
+          break-inside: avoid; -webkit-column-break-inside: avoid;
+          padding: 0; background: #fff; aspect-ratio: auto;
           transform: translate3d(var(--magnet-x,0px),var(--magnet-y,0px),0) rotate(var(--magnet-rotate,0deg)) scale(1);
           transition: transform 340ms cubic-bezier(.2,1.25,.32,1), box-shadow 240ms ease, border-color 240ms ease;
           will-change: transform;
@@ -197,7 +199,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         .pawcream-public-wall-tile.is-selected {
           border-color: #be9db6; box-shadow: 0 7px 20px rgba(126,93,113,.18);
         }
-        .pawcream-public-wall-tile img { width: 100%; height: 100%; display: block; object-fit: contain; }
+        .pawcream-public-wall-tile img { width: 100%; height: auto; display: block; object-fit: contain; }
         .pawcream-public-wall-grid.is-demo {
           display: block; columns: 5; column-gap: 10px;
         }
@@ -268,13 +270,13 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           .pawcream-public-wall { max-height: calc(100dvh - 12px); border-radius: 22px; padding: 17px; }
           .pawcream-public-wall-layout { display: block; }
           .pawcream-public-wall-hero { display: none; }
-          .pawcream-public-wall-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
+          .pawcream-public-wall-grid { columns: 2; column-gap: 11px; }
           .pawcream-public-wall-grid.is-demo { columns: 2; column-gap: 11px; }
         }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-layout { display: block; }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-hero { display: none; }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-grid {
-          grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px;
+          columns: 2; column-gap: 11px;
         }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-grid.is-demo {
           columns: 2; column-gap: 11px;
@@ -291,7 +293,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
             <div style={{ fontSize: 24, fontWeight: 650, letterSpacing: '.09em' }}>our little gallery ♡</div>
             <div style={{ fontSize: 13, marginTop: 5 }}>公共返图墙 · 分享每一张温柔瞬间</div>
             <div style={{ fontSize: 12, marginTop: 5, opacity: .72 }}>
-              {mobile ? '轻点相纸预览，左右滑动切换' : '将鼠标移近相纸，感受磁吸和弹性回弹'}
+              {mobile ? '轻点照片预览，左右滑动切换' : '将鼠标移近照片，感受磁吸和弹性回弹'}
             </div>
             <div style={{ fontSize: 12, marginTop: 6, opacity: .65 }}>
               {demoMode ? `交互演示 · ${displayedTotal} 张虚拟空白相纸（非真实返图）` : `${displayedTotal} 张公开返图`}
