@@ -3,6 +3,8 @@ import {
   AUTH_CHANGED_EVENT,
   OPEN_SIGNIN_EVENT,
   isPawCreamApiEnabled,
+  getCurrentUser,
+  updatePawCreamNickname,
   registerPawCream,
   requestPawCreamEmailCode,
   signInPawCream,
@@ -11,7 +13,7 @@ import AtelierWithCollection from './AtelierWithCollection'
 
 type DeviceProfile = 'desktop' | 'mobile'
 type Language = 'zh' | 'en'
-type AuthMode = 'login' | 'register'
+type AuthMode = 'login' | 'register' | 'profile'
 type SigninTune = {
   printerScale: number
   fontBoost: number
@@ -96,6 +98,8 @@ export default function AtelierWithSignin(props: Props) {
   const [inviteCode, setInviteCode] = useState('')
   const [emailCode, setEmailCode] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [profileName, setProfileName] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
   const [registerStage, setRegisterStage] = useState<'details'|'verify'>('details')
   const [sendingEmail, setSendingEmail] = useState(false)
   const [status, setStatus] = useState('')
@@ -119,6 +123,9 @@ export default function AtelierWithSignin(props: Props) {
         emailCode: '邮箱验证码',
         displayName: '昵称',
         displayNamePlaceholder: '给自己取个昵称 ♡',
+        profileTitle: '修改昵称 ♡',
+        saveNickname: '保存昵称',
+        cancelNickname: '再想想',
         badDisplayName: '请输入 1–40 个字符的昵称',
         sendCode: '发送验证码',
         resendCode: '重新发送验证码',
@@ -149,6 +156,9 @@ export default function AtelierWithSignin(props: Props) {
         emailCode: 'Email verification code',
         displayName: 'Nickname',
         displayNamePlaceholder: 'Choose your nickname ♡',
+        profileTitle: 'Edit nickname ♡',
+        saveNickname: 'Save nickname',
+        cancelNickname: 'Cancel',
         badDisplayName: 'Enter a nickname of 1–40 characters',
         sendCode: 'Send code',
         resendCode: 'Resend verification',
@@ -186,10 +196,22 @@ export default function AtelierWithSignin(props: Props) {
   useEffect(() => {
     const onOpenSignin = (event: Event) => {
       const detail = (event as CustomEvent<{ mode?: AuthMode }>).detail
-      setMode(detail?.mode === 'register' ? 'register' : 'login')
+      const nextMode = detail?.mode === 'profile'
+        ? 'profile' : detail?.mode === 'register' ? 'register' : 'login'
+      setMode(nextMode)
       setLanguage(readLanguage())
       setStatus('')
       setOpen(true)
+      if (nextMode === 'profile') {
+        void getCurrentUser().then(user => {
+          if (!user) {
+            setMode('login')
+            setStatus('请先登录 PawCream 账号')
+          } else {
+            setProfileName(user.displayName)
+          }
+        }).catch(error => setStatus(error instanceof Error ? error.message : '无法读取账号昵称'))
+      }
     }
 
     window.addEventListener(OPEN_SIGNIN_EVENT, onOpenSignin)
@@ -300,6 +322,10 @@ export default function AtelierWithSignin(props: Props) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { setStatus(copy.badEmail); return }
     if (password.length < 6) { setStatus(copy.badPassword); return }
     if (!inviteCode.trim()) { setStatus(copy.badInvite); return }
+    if (!displayName.trim() || displayName.trim().length > 40 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+      setStatus(copy.badDisplayName)
+      return
+    }
     if (!isPawCreamApiEnabled()) { setStatus(copy.preview); return }
     setSendingEmail(true)
     setStatus(copy.working)
@@ -310,6 +336,30 @@ export default function AtelierWithSignin(props: Props) {
     } catch (error) {
       setStatus(error instanceof Error ? error.message : copy.failed)
     } finally { setSendingEmail(false) }
+  }
+
+  const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const nickname = profileName.trim()
+    if (!nickname || nickname.length > 40 || /[\u0000-\u001f\u007f]/.test(nickname)) {
+      setStatus(copy.badDisplayName)
+      return
+    }
+    if (savingProfile) return
+    setSavingProfile(true)
+    setStatus(copy.working)
+    try {
+      await updatePawCreamNickname(nickname)
+      setStatus(copy.success)
+      window.setTimeout(() => {
+        setOpen(false)
+        setStatus('')
+      }, 350)
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : copy.failed)
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -528,6 +578,37 @@ export default function AtelierWithSignin(props: Props) {
               <div style={{ marginTop: 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
             </header>
 
+            {mode === 'profile' ? (
+              <form onSubmit={saveProfile}>
+                <div style={{ color: '#64849a', fontSize: (mobile ? 9 : 12) + tune.fontBoost, marginBottom: 11 }}>
+                  {copy.profileTitle}
+                </div>
+                <label style={labelStyle}>
+                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.displayName}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text"
+                    autoComplete="nickname"
+                    maxLength={40}
+                    required
+                    value={profileName}
+                    onChange={(event) => { setProfileName(event.currentTarget.value); setStatus('') }}
+                    placeholder={copy.displayNamePlaceholder}
+                    style={inputStyle}
+                  />
+                </label>
+                <div style={{ display: 'flex', gap: mobile ? 7 : 9, marginTop: 10 }}>
+                  <button type="button" className="pawcream-signin-action" style={actionStyle}
+                    onClick={() => setOpen(false)} disabled={savingProfile}>{copy.cancelNickname}</button>
+                  <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}
+                    disabled={savingProfile}>{savingProfile ? copy.working : copy.saveNickname}</button>
+                </div>
+                <div aria-live="polite" style={{
+                  minHeight: mobile ? 22 : 27, marginTop: mobile ? 6 : 8,
+                  fontSize: (mobile ? 7.5 : 9) + tune.fontBoost, color: '#7894a7',
+                }}>{status}</div>
+              </form>
+            ) : (
             <form onSubmit={submit}>
               {mode === 'register' && registerStage === 'verify' && (
                 <div style={{ fontSize: (mobile ? 8 : 10) + tune.fontBoost, color:'#627f93', marginBottom: mobile ? 6 : 10, lineHeight:1.55 }}>
@@ -583,6 +664,20 @@ export default function AtelierWithSignin(props: Props) {
                 </div>
               </div>
 
+              {mode === 'register' && registerStage === 'details' && (
+                <label style={labelStyle}>
+                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.displayName}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text" autoComplete="nickname"
+                    maxLength={40} required
+                    value={displayName}
+                    onChange={e => { setDisplayName(e.currentTarget.value); setStatus('') }}
+                    style={inputStyle}
+                    placeholder={copy.displayNamePlaceholder}
+                  />
+                </label>
+              )}
               {mode === 'register' && (
                 <label style={labelStyle}>
                   <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.invite}</span>
@@ -634,20 +729,6 @@ export default function AtelierWithSignin(props: Props) {
                     </button>
                   </div>
                 </div>
-              )}
-              {mode === 'register' && registerStage === 'verify' && (
-                <label style={labelStyle}>
-                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.displayName}</span>
-                  <input
-                    className="pawcream-signin-input"
-                    type="text" autoComplete="nickname"
-                    maxLength={40} required
-                    value={displayName}
-                    onChange={e => { setDisplayName(e.currentTarget.value); setStatus('') }}
-                    style={inputStyle}
-                    placeholder={copy.displayNamePlaceholder}
-                  />
-                </label>
               )}
               {mode === 'register' && registerStage === 'verify' && (
                 <label style={labelStyle}>
@@ -709,6 +790,7 @@ export default function AtelierWithSignin(props: Props) {
                 {status}
               </div>
             </form>
+            )}
           </div>
         </div>
       )}
