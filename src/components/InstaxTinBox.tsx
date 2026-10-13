@@ -680,7 +680,22 @@ export default function InstaxTinBox({
             textAlign: 'center',
             color: textColor,
           }}>
-            盒子还是空空的，先做一张拍立得吧 ♡
+            <button
+              type="button"
+              onClick={onMakeAnother}
+              aria-label="盒子是空的，点击开始制作拍立得"
+              style={{
+                ...themedButton,
+                maxWidth: '100%',
+                background: panelBg,
+                borderColor: panelBorder,
+                padding: '14px 20px',
+                fontSize: mobile ? 15 : 17,
+                lineHeight: 1.65,
+              }}
+            >
+              盒子还是空空的，先做一张拍立得吧 ♡
+            </button>
           </div>
         )}
         {pendingPublication && (
