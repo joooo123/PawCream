@@ -218,29 +218,51 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth, storage = {
     try {
       client = await pool.connect()
       await client.query('BEGIN')
+      const ownerId = req.session.user.id
+      const photoId = req.params.clientId
       const found = await client.query(
-        'SELECT oss_key FROM private_photos WHERE user_id=$1 AND client_photo_id=$2 FOR UPDATE',
-        [req.session.user.id, req.params.clientId],
+        'SELECT id,oss_key FROM private_photos WHERE user_id=$1 AND client_photo_id=$2 FOR UPDATE',
+        [ownerId, photoId],
       )
       if (!found.rows.length) {
         await client.query('ROLLBACK')
         return res.status(404).json({ error: '照片不存在' })
       }
-      // Remove source objects too; all source rows are cascade-deleted with parent.
       const sources = await client.query(
-        'SELECT s.oss_key FROM private_photo_sources s JOIN private_photos p ON p.id=s.private_photo_id ' +
-        'WHERE p.user_id=$1 AND p.client_photo_id=$2 ORDER BY s.slot_index',
-        [req.session.user.id, req.params.clientId],
+        'SELECT oss_key FROM private_photo_sources WHERE private_photo_id=$1 ORDER BY slot_index',
+        [found.rows[0].id],
       )
-      for (const source of sources.rows) await storage.remove(source.oss_key)
-      // Only acknowledge removal once the composite object is also deleted.
-      await storage.remove(found.rows[0].oss_key)
+      // A public wall publication may be the old framed composite or any of
+      // the four independently published originals. Match exact client IDs and
+      // the current owner; never revoke an unrelated photo or another user's.
+      const publishedIds = [
+        photoId, ...Array.from({ length: 4 }, (_, index) => `${photoId}-slot-${index}`),
+      ]
+      const published = await client.query(
+        'DELETE FROM public_photos WHERE user_id=$1 AND client_photo_id=ANY($2::varchar[]) RETURNING oss_key',
+        [ownerId, publishedIds],
+      )
       await client.query(
-        'DELETE FROM private_photos WHERE user_id=$1 AND client_photo_id=$2',
-        [req.session.user.id, req.params.clientId],
+        'DELETE FROM private_photos WHERE id=$1 AND user_id=$2',
+        [found.rows[0].id, ownerId],
       )
+      // Commit database removals together. A transient OSS deletion failure
+      // must never leave the deleted photo visible in the public gallery.
       await client.query('COMMIT')
-      res.set('Cache-Control', 'no-store').json({ ok: true })
+
+      const keys = [
+        ...published.rows.map(row => row.oss_key),
+        ...sources.rows.map(row => row.oss_key),
+        found.rows[0].oss_key,
+      ].filter(Boolean)
+      for (const key of keys) {
+        await storage.remove(key).catch(error => {
+          // This is now an orphaned private-bucket object, inaccessible via API.
+          // Log it for later cleanup; do not resurrect committed DB rows.
+          console.error('Unable to remove deleted PawCream OSS photo object', error?.message)
+        })
+      }
+      return res.set('Cache-Control', 'no-store').json({ ok: true })
     } catch (error) {
       if (client) await client.query('ROLLBACK').catch(() => {})
       next(error)
