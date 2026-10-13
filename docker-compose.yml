@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
     restart: unless-stopped
     environment:
       POSTGRES_DB: pawcream
@@ -20,6 +20,9 @@ services:
   api:
     build:
       context: ./backend
+      args:
+        NODE_BASE_IMAGE: ${NODE_BASE_IMAGE:-node:22-alpine}
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
     restart: unless-stopped
     env_file:
       - ./backend/.env

@@ -24,6 +24,18 @@ export type PawCreamPublicPhoto = {
   clientPhotoId?: string
 }
 
+export type PawCreamPrivatePhoto = {
+  id: string
+  clientPhotoId: string
+  frameName: string
+  createdAt: string
+}
+
+export type PawCreamPrivatePhotoBatch = {
+  photos: PawCreamPrivatePhoto[]
+  total: number
+}
+
 export type PawCreamPublicPhotoBatch = {
   photos: PawCreamPublicPhoto[]
   total: number
@@ -95,7 +107,7 @@ export function isPawCreamApiEnabled() {
   return Boolean(API_BASE)
 }
 
-export function openPawCreamSignin(mode: 'login' | 'register' = 'login') {
+export function openPawCreamSignin(mode: 'login' | 'register' | 'profile' = 'login') {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent(OPEN_SIGNIN_EVENT, { detail: { mode } }))
 }
@@ -191,6 +203,16 @@ export async function getCurrentUser(): Promise<PawCreamUser | null> {
   return result.user
 }
 
+export async function updatePawCreamNickname(displayName: string) {
+  if (!API_BASE) throw new Error('请在正式 PawCream 站点修改昵称')
+  const result = await request<{ user: PawCreamUser }>('/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify({ displayName: displayName.trim() }),
+  })
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
+  return result.user
+}
+
 export async function signInPawCream(email: string, password: string) {
   return request<{ user: PawCreamUser }>('/auth/login', {
     method: 'POST',
@@ -198,10 +220,17 @@ export async function signInPawCream(email: string, password: string) {
   })
 }
 
-export async function registerPawCream(email: string, password: string, inviteCode: string) {
-  return request<{ user: PawCreamUser }>('/auth/register', {
+export async function registerPawCream(email: string, password: string, inviteCode: string, emailCode: string, displayName: string) {
+  return request<{ user: PawCreamUser; sessionReady: boolean }>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, inviteCode }),
+    body: JSON.stringify({ email, password, inviteCode, emailCode, displayName }),
+  })
+}
+
+export async function requestPawCreamEmailCode(email: string, inviteCode: string) {
+  return request<{ ok: true; expiresInSeconds: number }>('/auth/email-code', {
+    method: 'POST',
+    body: JSON.stringify({ email, inviteCode }),
   })
 }
 
@@ -211,6 +240,93 @@ export async function signOutPawCream() {
     return
   }
   await request<{ ok: true }>('/auth/logout', { method: 'POST' })
+}
+
+export function listPrivatePhotos(offset = 0, limit = 100) {
+  return request<PawCreamPrivatePhotoBatch>(
+    `/private-photos?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}`,
+  )
+}
+
+export async function uploadPrivatePhoto(input: {
+  id: string; frameName: string; imageBlob: Blob; createdAt: string
+}) {
+  if (!API_BASE) throw new Error('私人云端铁盒仅支持正式站点')
+  const params = new URLSearchParams({
+    clientPhotoId: input.id,
+    frameName: input.frameName,
+    createdAt: input.createdAt,
+  })
+  const response = await fetch(`${API_BASE}/private-photos?${params}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': input.imageBlob.type || 'image/png' },
+    body: input.imageBlob,
+  })
+  const payload = await response.json().catch(() => ({})) as {
+    photo?: PawCreamPrivatePhoto
+    error?: string
+  }
+  if (!response.ok || !payload.photo) throw new Error(payload.error || '私人照片上传失败')
+  return payload.photo
+}
+
+export async function getPrivatePhotoImage(clientPhotoId: string) {
+  if (!API_BASE) throw new Error('未连接私人云端铁盒')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}/image`,
+    { credentials: 'include', cache: 'no-store' },
+  )
+  if (!response.ok) throw new Error(`读取云端私人照片失败 (${response.status})`)
+  return response.blob()
+}
+
+export async function deletePrivatePhoto(clientPhotoId: string) {
+  if (!API_BASE) throw new Error('未连接私人云端铁盒')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}`,
+    { method: 'DELETE', credentials: 'include' },
+  )
+  // Deleting a never-uploaded local photo or repeating a completed delete is safe.
+  if (response.status === 404) return
+  const payload = await response.json().catch(() => ({})) as { error?: string }
+  if (!response.ok) throw new Error(payload.error || '删除云端私人照片失败')
+}
+
+export async function listPrivatePhotoSourceSlots(clientPhotoId: string): Promise<number[]> {
+  const data = await request<{ slots: number[] }>(
+    `/private-photos/${encodeURIComponent(clientPhotoId)}/sources`,
+  )
+  return data.slots
+}
+
+export async function downloadPrivatePhotoSource(clientPhotoId: string, slot: number): Promise<Blob> {
+  if (!API_BASE) throw new Error('私人照片需要正式站点')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}/sources/${slot}`,
+    { credentials: 'include', cache: 'no-store' },
+  )
+  if (!response.ok) throw new Error(`原图读取失败 (${response.status})`)
+  return response.blob()
+}
+
+export async function uploadPrivatePhotoSource(clientPhotoId: string, slot: number, imageBlob: Blob) {
+  if (!API_BASE) throw new Error('私人照片需要正式站点')
+  const response = await fetch(
+    `${API_BASE}/private-photos/${encodeURIComponent(clientPhotoId)}/sources/${slot}`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': imageBlob.type || 'image/png' },
+      body: imageBlob,
+    },
+  )
+  const payload = await response.json().catch(() => ({})) as { error?: string }
+  if (!response.ok) throw new Error(payload.error || `第 ${slot + 1} 张原图备份失败`)
+}
+
+export function publicSlotPhotoId(parentId: string, index: number) {
+  return `${parentId}-slot-${index + 1}`
 }
 
 export function publicPhotoImageUrl(id: string) {

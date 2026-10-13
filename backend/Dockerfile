@@ -1,9 +1,11 @@
-FROM node:22-alpine
+ARG NODE_BASE_IMAGE=node:22-alpine
+FROM ${NODE_BASE_IMAGE}
 
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install --omit=dev
+ARG NPM_REGISTRY=https://registry.npmjs.org
+RUN npm install --omit=dev --no-audit --no-fund --registry="$NPM_REGISTRY"
 
 COPY src ./src
 

@@ -6,14 +6,17 @@ import { rateLimit } from 'express-rate-limit'
 import session from 'express-session'
 import helmet from 'helmet'
 import pg from 'pg'
-import { validPhotoBytes } from './photoValidation.js'
+import { registerPhotoRoutes } from './publicPhotoRoutes.js'
+import { registerPrivatePhotoRoutes } from './privatePhotoRoutes.js'
+import { registerAdminRoutes } from './adminRoutes.js'
+import { registerSignupRoutes } from './registrationRoutes.js'
+import { registerInviteAdminRoutes } from './inviteAdminRoutes.js'
 
 const { Pool } = pg
 
 const PORT = Number(process.env.PORT || 8787)
 const DATABASE_URL = process.env.DATABASE_URL
 const SESSION_SECRET = process.env.SESSION_SECRET
-const INVITE_CODE = process.env.INVITE_CODE || ''
 const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE || 'lax').toLowerCase()
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== 'false'
 
@@ -44,7 +47,7 @@ if (allowedOrigins.length) {
         callback(null, true)
         return
       }
-      callback(new Error('Origin is not allowed'))
+      callback(Object.assign(new Error('Origin is not allowed'), { status: 403 }))
     },
   }))
 }
@@ -73,6 +76,30 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24 * 30,
   },
 }))
+
+// Refresh authorization from PostgreSQL for every existing session.
+ // This revokes disabled/deleted accounts and stale admin roles immediately,
+ // including sessions that were created before the moderation console existed.
+app.use(async (req, res, next) => {
+  if (!req.session?.user?.id) return next()
+  try {
+    const result = await pool.query(
+      'SELECT id,email,display_name,role,is_disabled FROM users WHERE id=$1',
+      [req.session.user.id],
+    )
+    const row = result.rows[0]
+    if (!row || row.is_disabled) {
+      await new Promise((resolve) => req.session.destroy(() => resolve()))
+      res.clearCookie('pawcream.sid')
+      if (req.path === '/api/auth/me') return res.json({ user: null })
+      return res.status(401).json({ error: '账号已停用或会话失效，请重新登录' })
+    }
+    req.session.user = {
+      id: row.id, email: row.email, displayName: row.display_name, role: row.role,
+    }
+    next()
+  } catch (error) { next(error) }
+})
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -143,8 +170,9 @@ async function fetchOneNote(noteId, viewerId) {
         COALESCE(BOOL_OR(l.user_id = $2::uuid), false) AS liked_by_me,
         COALESCE(n.user_id = $2::uuid, false) AS is_mine
       FROM notes n
+      JOIN users u ON u.id=n.user_id
       LEFT JOIN note_likes l ON l.note_id = n.id
-      WHERE n.id = $1::uuid AND n.is_hidden = false
+      WHERE n.id = $1::uuid AND n.is_hidden = false AND NOT u.is_disabled
       GROUP BY n.id
     `,
     [noteId, viewerId || null],
@@ -165,55 +193,44 @@ app.get('/api/auth/me', (req, res) => {
   res.json({ user: publicUser(req.session.user || null) })
 })
 
-app.post('/api/auth/register', authLimiter, async (req, res, next) => {
-  const email = normalizeEmail(req.body?.email)
-  const password = String(req.body?.password || '')
-  const inviteCode = String(req.body?.inviteCode || '').trim()
-
-  if (!validEmail(email)) {
-    res.status(400).json({ error: '请输入正确的邮箱地址' })
-    return
+// The account's display name is the single source of truth for box labels,
+// notes and public-gallery bylines. Existing posts keep their content and IDs.
+app.patch('/api/auth/profile', requireAuth, authLimiter, async (req, res, next) => {
+  const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : ''
+  if (!displayName || displayName.length > 40 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+    return res.status(400).json({ error: '昵称需要为 1–40 个字符，不能包含控制字符' })
   }
-  if (password.length < 6 || password.length > 128) {
-    res.status(400).json({ error: '密码长度需要为 6–128 位' })
-    return
-  }
-  if (INVITE_CODE && inviteCode !== INVITE_CODE) {
-    res.status(403).json({ error: '邀请码不正确' })
-    return
-  }
-
+  let db
   try {
-    const passwordHash = await bcrypt.hash(password, 12)
-    const displayName = displayNameFromEmail(email)
-    const result = await pool.query(
-      `
-        INSERT INTO users (email, password_hash, display_name)
-        VALUES ($1, $2, $3)
-        RETURNING id, email, display_name, role
-      `,
-      [email, passwordHash, displayName],
+    db = await pool.connect()
+    await db.query('BEGIN')
+    const updated = await db.query(
+      'UPDATE users SET display_name=$2 WHERE id=$1 RETURNING id,email,display_name,role',
+      [req.session.user.id, displayName],
     )
-
-    const row = result.rows[0]
-    await new Promise((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()))
+    if (!updated.rows.length) {
+      await db.query('ROLLBACK')
+      return res.status(401).json({ error: '请先登录 PawCream 账号' })
+    }
+    // These author columns are historical snapshots used by wall APIs.
+    // Keep existing posts linked to their owner and update their bylines too.
+    await db.query('UPDATE notes SET author_name=$2 WHERE user_id=$1', [req.session.user.id, displayName])
+    await db.query('UPDATE public_photos SET author_name=$2 WHERE user_id=$1', [req.session.user.id, displayName])
+    await db.query('COMMIT')
     req.session.user = {
-      id: row.id,
-      email: row.email,
-      displayName: row.display_name,
-      role: row.role,
+      ...req.session.user,
+      displayName,
     }
-    await new Promise((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()))
-
-    res.status(201).json({ user: publicUser(req.session.user) })
+    res.set('Cache-Control', 'no-store').json({ user: publicUser(req.session.user) })
   } catch (error) {
-    if (error?.code === '23505') {
-      res.status(409).json({ error: '这个邮箱已经注册过了' })
-      return
-    }
+    if (db) await db.query('ROLLBACK').catch(() => {})
     next(error)
+  } finally {
+    db?.release()
   }
 })
+
+registerSignupRoutes(app, pool, bcrypt, SESSION_SECRET, publicUser)
 
 app.post('/api/auth/login', authLimiter, async (req, res, next) => {
   const email = normalizeEmail(req.body?.email)
@@ -221,11 +238,11 @@ app.post('/api/auth/login', authLimiter, async (req, res, next) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, email, password_hash, display_name, role FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, display_name, role, is_disabled FROM users WHERE email = $1',
       [email],
     )
     const row = result.rows[0]
-    if (!row || !(await bcrypt.compare(password, row.password_hash))) {
+    if (!row || row.is_disabled || !(await bcrypt.compare(password, row.password_hash))) {
       res.status(401).json({ error: '邮箱或密码不正确' })
       return
     }
@@ -288,8 +305,9 @@ app.get('/api/notes', async (req, res, next) => {
               COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
               true AS is_mine
             FROM notes n
+            JOIN users u ON u.id=n.user_id
             LEFT JOIN note_likes l ON l.note_id = n.id
-            WHERE n.is_hidden = false
+            WHERE n.is_hidden = false AND NOT u.is_disabled
               AND n.user_id = $1::uuid
             GROUP BY n.id
             ORDER BY n.created_at DESC
@@ -298,7 +316,7 @@ app.get('/api/notes', async (req, res, next) => {
           [viewerId],
         ),
         pool.query(
-          'SELECT COUNT(*)::int AS total FROM notes WHERE is_hidden = false AND user_id = $1::uuid',
+          'SELECT COUNT(*)::int AS total FROM notes n JOIN users u ON u.id=n.user_id WHERE NOT n.is_hidden AND NOT u.is_disabled AND n.user_id = $1::uuid',
           [viewerId],
         ),
       ])
@@ -324,8 +342,9 @@ app.get('/api/notes', async (req, res, next) => {
             COALESCE(BOOL_OR(l.user_id = $1::uuid), false) AS liked_by_me,
             COALESCE(n.user_id = $1::uuid, false) AS is_mine
           FROM notes n
+          JOIN users u ON u.id=n.user_id
           LEFT JOIN note_likes l ON l.note_id = n.id
-          WHERE n.is_hidden = false
+          WHERE n.is_hidden = false AND NOT u.is_disabled
           GROUP BY n.id
           ORDER BY
             CASE WHEN $2::text = 'random' THEN md5(n.id::text || $3::text) END ASC,
@@ -336,7 +355,7 @@ app.get('/api/notes', async (req, res, next) => {
         `,
         [viewerId, order, seed, limit, offset],
       ),
-      pool.query('SELECT COUNT(*)::int AS total FROM notes WHERE is_hidden = false'),
+      pool.query('SELECT COUNT(*)::int AS total FROM notes n JOIN users u ON u.id=n.user_id WHERE NOT n.is_hidden AND NOT u.is_disabled'),
     ])
 
     res.json({
@@ -387,7 +406,7 @@ app.patch('/api/notes/:id', requireAuth, async (req, res, next) => {
     }
 
     const user = req.session.user
-    if (owner.rows[0].user_id !== user.id && user.role !== 'admin') {
+    if (owner.rows[0].user_id !== user.id) {
       res.status(403).json({ error: '只能编辑自己的便签' })
       return
     }
@@ -416,7 +435,7 @@ app.delete('/api/notes/:id', requireAuth, async (req, res, next) => {
     }
 
     const user = req.session.user
-    if (owner.rows[0].user_id !== user.id && user.role !== 'admin') {
+    if (owner.rows[0].user_id !== user.id) {
       res.status(403).json({ error: '只能删除自己的便签' })
       return
     }
@@ -437,7 +456,7 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
   try {
     await client.query('BEGIN')
     const note = await client.query(
-      'SELECT id FROM notes WHERE id = $1::uuid AND is_hidden = false FOR UPDATE',
+      'SELECT n.id FROM notes n JOIN users u ON u.id=n.user_id WHERE n.id = $1::uuid AND NOT n.is_hidden AND NOT u.is_disabled FOR UPDATE OF n',
       [req.params.id],
     )
     if (!note.rows[0]) {
@@ -481,112 +500,15 @@ app.post('/api/notes/:id/like', requireAuth, async (req, res, next) => {
 })
 
 
-const photoUploadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-});
-
-function publicPhoto(row, mine = false) {
-  return {
-    id: row.id,
-    authorName: row.author_name,
-    frameName: row.frame_name,
-    createdAt: row.created_at,
-    ...(mine ? { clientPhotoId: row.client_photo_id } : {}),
-  };
-}
-
-// Public: cross-account gallery metadata only. Private browser photos never enter this table.
-app.get('/api/photos', async (req, res, next) => {
-  const mine = req.query.scope === 'mine';
-  if (mine && !req.session.user) return res.status(401).json({ error: '请先登录 PawCream 账号' });
-  const limit = Math.min(40, Math.max(1, Number.parseInt(String(req.query.limit || '24'), 10) || 24));
-  const offset = Math.max(0, Number.parseInt(String(req.query.offset || '0'), 10) || 0);
-  const where = mine ? 'WHERE user_id = $3::uuid' : '';
-  const args = mine ? [limit, offset, req.session.user.id] : [limit, offset];
-  try {
-    const [result, count] = await Promise.all([
-      pool.query(`SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos ${where}
-                  ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`, args),
-      pool.query(`SELECT COUNT(*)::int AS total FROM public_photos ${mine ? 'WHERE user_id = $1::uuid' : ''}`,
-        mine ? [req.session.user.id] : []),
-    ]);
-    res.set('Cache-Control', 'no-store').json({
-      photos: result.rows.map((row) => publicPhoto(row, mine)),
-      total: count.rows[0].total,
-    });
-  } catch (error) { next(error); }
-});
-
-app.get('/api/photos/mine/:clientId', requireAuth, async (req, res, next) => {
-  try {
-    const result = await pool.query(
-      'SELECT id, author_name, frame_name, client_photo_id, created_at FROM public_photos WHERE user_id = $1 AND client_photo_id = $2',
-      [req.session.user.id, req.params.clientId],
-    );
-    res.set('Cache-Control', 'no-store').json({
-      photo: result.rows[0] ? publicPhoto(result.rows[0], true) : null,
-    });
-  } catch (error) { next(error); }
-});
-
-app.get('/api/photos/:id/image', async (req, res, next) => {
-  try {
-    const result = await pool.query('SELECT image_type, image_data FROM public_photos WHERE id = $1::uuid', [req.params.id]);
-    if (!result.rows[0]) return res.status(404).end();
-    res.set('Cache-Control', 'no-store');
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.type(result.rows[0].image_type).send(result.rows[0].image_data);
-  } catch (error) {
-    if (error?.code === '22P02') return res.status(404).end();
-    next(error);
-  }
-});
-
-app.post('/api/photos', requireAuth, photoUploadLimiter,
-  express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: '3mb' }),
-  async (req, res, next) => {
-    const type = String(req.get('content-type') || '').split(';')[0].toLowerCase();
-    const clientId = String(req.query.clientPhotoId || '');
-    const frameName = String(req.query.frameName || '').trim();
-    if (!validPhotoBytes(req.body, type)) {
-      return res.status(415).json({ error: '只允许上传不超过 3MB 的 PNG、JPEG 或 WebP 图片' });
-    }
-    if (!/^photo-[A-Za-z0-9-]{8,85}$/.test(clientId) || !frameName || frameName.length > 80) {
-      return res.status(400).json({ error: '照片标识或相纸类型无效' });
-    }
-    try {
-      const result = await pool.query(
-        `INSERT INTO public_photos (user_id, client_photo_id, author_name, frame_name, image_type, image_data)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (user_id, client_photo_id) DO UPDATE
-         SET image_type = EXCLUDED.image_type, image_data = EXCLUDED.image_data,
-             frame_name = EXCLUDED.frame_name, author_name = EXCLUDED.author_name
-         RETURNING id, author_name, frame_name, client_photo_id, created_at`,
-        [req.session.user.id, clientId, req.session.user.displayName, frameName, type, req.body],
-      );
-      res.status(201).json({ photo: publicPhoto(result.rows[0], true) });
-    } catch (error) { next(error); }
-  },
-);
-
-app.delete('/api/photos/:id', requireAuth, async (req, res, next) => {
-  try {
-    const deleted = await pool.query(
-      'DELETE FROM public_photos WHERE id = $1::uuid AND user_id = $2 RETURNING id',
-      [req.params.id, req.session.user.id],
-    );
-    if (!deleted.rowCount) return res.status(404).json({ error: '没有找到可撤回的返图' });
-    res.json({ ok: true });
-  } catch (error) {
-    if (error?.code === '22P02') return res.status(404).json({ error: '没有找到可撤回的返图' });
-    next(error);
-  }
-});
+registerPhotoRoutes(app, pool, requireAuth)
+registerPrivatePhotoRoutes(app, pool, requireAuth)
+registerAdminRoutes(app, pool)
+registerInviteAdminRoutes(app, pool)
 
 app.use((error, _req, res, _next) => {
+  if (error?.status === 403) {
+    return res.status(403).json({ error: '请求来源不被允许' })
+  }
   console.error(error)
   res.status(500).json({ error: 'PawCream 服务暂时出了点问题，请稍后再试' })
 })

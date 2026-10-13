@@ -3,14 +3,17 @@ import {
   AUTH_CHANGED_EVENT,
   OPEN_SIGNIN_EVENT,
   isPawCreamApiEnabled,
+  getCurrentUser,
+  updatePawCreamNickname,
   registerPawCream,
+  requestPawCreamEmailCode,
   signInPawCream,
 } from '../pawcreamApi'
 import AtelierWithCollection from './AtelierWithCollection'
 
 type DeviceProfile = 'desktop' | 'mobile'
 type Language = 'zh' | 'en'
-type AuthMode = 'login' | 'register'
+type AuthMode = 'login' | 'register' | 'profile'
 type SigninTune = {
   printerScale: number
   fontBoost: number
@@ -27,7 +30,12 @@ type Props = {
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const LEGACY_SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v1'
 const SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v2'
-const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
+const TYPEWRITER_LOGIN_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
+const TYPEWRITER_REGISTER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打印机注册.png')}?v=718c91a0`
+// Both images fill the same-width, bottom-anchored frame. The registration
+// asset has more paper above the carriage, not a differently placed base.
+const TYPEWRITER_LOGIN_RATIO = '1199 / 1312'
+const TYPEWRITER_REGISTER_RATIO = '1122 / 1402'
 const DEFAULT_TUNE: SigninTune = { printerScale: 116, fontBoost: 11 }
 const DEFAULT_TUNE_BY_DEVICE: SigninTuneByDevice = {
   desktop: { ...DEFAULT_TUNE },
@@ -89,7 +97,16 @@ export default function AtelierWithSignin(props: Props) {
   const [language, setLanguage] = useState<Language>(readLanguage)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
+  const [emailCode, setEmailCode] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [profileName, setProfileName] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [registerStage, setRegisterStage] = useState<'details'|'verify'>('details')
+  const [sendingEmail, setSendingEmail] = useState(false)
   const [status, setStatus] = useState('')
   const [tuneByDevice, setTuneByDevice] = useState<SigninTuneByDevice>(readTuneByDevice)
   const [copied, setCopied] = useState(false)
@@ -98,12 +115,35 @@ export default function AtelierWithSignin(props: Props) {
   const mobile = props.deviceProfile === 'mobile'
   const tune = tuneByDevice[props.deviceProfile]
   const printerScale = tune.printerScale / 100
+  const registerPaper = mode === 'register'
+  const typewriterUrl = registerPaper ? TYPEWRITER_REGISTER_URL : TYPEWRITER_LOGIN_URL
+  const typewriterAspectRatio = registerPaper ? TYPEWRITER_REGISTER_RATIO : TYPEWRITER_LOGIN_RATIO
+  // Use the taller image as the viewport-fit limit in BOTH modes. This way
+  // switching modes never moves or rescales the typewriter's bottom hardware.
+  const longPaperWidthPerHeight = (1122 / 1402 / printerScale).toFixed(4)
   const copy = language === 'zh'
     ? {
         title: 'PawCream 账号',
         email: '邮箱',
         password: '密码',
+        confirmPassword: '确认密码',
+        passwordMismatch: '两次输入的密码不一致',
+        showPassword: '显示密码',
+        hidePassword: '隐藏密码',
         invite: '邀请码',
+        emailCode: '邮箱验证码',
+        displayName: '昵称',
+        displayNamePlaceholder: '给自己取个昵称 ♡',
+        profileTitle: '修改昵称 ♡',
+        saveNickname: '保存昵称',
+        cancelNickname: '再想想',
+        badDisplayName: '请输入 1–40 个字符的昵称',
+        sendCode: '发送验证码',
+        resendCode: '重新发送验证码',
+        completeRegister: '验证并注册',
+        editRegistration: '返回修改',
+        codeSent: '验证码已发送，请查看邮箱（10 分钟有效）',
+        invalidCode: '请输入收到的 6 位验证码',
         login: '登入',
         register: '注册',
         close: '关闭登入',
@@ -119,7 +159,24 @@ export default function AtelierWithSignin(props: Props) {
         title: 'PawCream Account',
         email: 'Email',
         password: 'Password',
+        confirmPassword: 'Confirm password',
+        passwordMismatch: 'Passwords do not match',
+        showPassword: 'Show password',
+        hidePassword: 'Hide password',
         invite: 'Invite code',
+        emailCode: 'Email verification code',
+        displayName: 'Nickname',
+        displayNamePlaceholder: 'Choose your nickname ♡',
+        profileTitle: 'Edit nickname ♡',
+        saveNickname: 'Save nickname',
+        cancelNickname: 'Cancel',
+        badDisplayName: 'Enter a nickname of 1–40 characters',
+        sendCode: 'Send code',
+        resendCode: 'Resend verification',
+        completeRegister: 'Register',
+        editRegistration: 'Edit',
+        codeSent: 'Check your inbox (valid for 10 minutes)',
+        invalidCode: 'Enter your 6-digit email code',
         login: 'Sign in',
         register: 'Register',
         close: 'Close sign in',
@@ -133,9 +190,12 @@ export default function AtelierWithSignin(props: Props) {
       }
 
   useEffect(() => {
-    const image = new Image()
-    image.decoding = 'async'
-    image.src = TYPEWRITER_URL
+    // Avoid the old short-paper image flashing when switching to registration.
+    for (const src of [TYPEWRITER_LOGIN_URL, TYPEWRITER_REGISTER_URL]) {
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = src
+    }
   }, [])
 
   useEffect(() => {
@@ -150,10 +210,22 @@ export default function AtelierWithSignin(props: Props) {
   useEffect(() => {
     const onOpenSignin = (event: Event) => {
       const detail = (event as CustomEvent<{ mode?: AuthMode }>).detail
-      setMode(detail?.mode === 'register' ? 'register' : 'login')
+      const nextMode = detail?.mode === 'profile'
+        ? 'profile' : detail?.mode === 'register' ? 'register' : 'login'
+      setMode(nextMode)
       setLanguage(readLanguage())
       setStatus('')
       setOpen(true)
+      if (nextMode === 'profile') {
+        void getCurrentUser().then(user => {
+          if (!user) {
+            setMode('login')
+            setStatus('请先登录 PawCream 账号')
+          } else {
+            setProfileName(user.displayName)
+          }
+        }).catch(error => setStatus(error instanceof Error ? error.message : '无法读取账号昵称'))
+      }
     }
 
     window.addEventListener(OPEN_SIGNIN_EVENT, onOpenSignin)
@@ -251,7 +323,57 @@ export default function AtelierWithSignin(props: Props) {
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
+    setRegisterStage('details')
+    setEmailCode('')
+    setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
     setStatus('')
+  }
+
+  const sendEmailCode = async () => {
+    const normalizedEmail = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { setStatus(copy.badEmail); return }
+    if (password.length < 6) { setStatus(copy.badPassword); return }
+    if (!inviteCode.trim()) { setStatus(copy.badInvite); return }
+    if (!displayName.trim() || displayName.trim().length > 40 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+      setStatus(copy.badDisplayName)
+      return
+    }
+    if (!isPawCreamApiEnabled()) { setStatus(copy.preview); return }
+    setSendingEmail(true)
+    setStatus(copy.working)
+    try {
+      await requestPawCreamEmailCode(normalizedEmail, inviteCode.trim())
+      setRegisterStage('verify')
+      setStatus(copy.codeSent)
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : copy.failed)
+    } finally { setSendingEmail(false) }
+  }
+
+  const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const nickname = profileName.trim()
+    if (!nickname || nickname.length > 40 || /[\u0000-\u001f\u007f]/.test(nickname)) {
+      setStatus(copy.badDisplayName)
+      return
+    }
+    if (savingProfile) return
+    setSavingProfile(true)
+    setStatus(copy.working)
+    try {
+      await updatePawCreamNickname(nickname)
+      setStatus(copy.success)
+      window.setTimeout(() => {
+        setOpen(false)
+        setStatus('')
+      }, 350)
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : copy.failed)
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -276,20 +398,41 @@ export default function AtelierWithSignin(props: Props) {
       return
     }
 
+    if (mode === 'register' && registerStage === 'details') {
+      await sendEmailCode()
+      return
+    }
+    if (mode === 'register' && confirmPassword !== password) {
+      setStatus(copy.passwordMismatch)
+      return
+    }
+    if (mode === 'register' && (!displayName.trim() || displayName.trim().length > 40)) {
+      setStatus(copy.badDisplayName)
+      return
+    }
+    if (mode === 'register' && !/^[0-9]{6}$/.test(emailCode.trim())) {
+      setStatus(copy.invalidCode)
+      return
+    }
     setStatus(copy.working)
     try {
       if (mode === 'login') {
         await signInPawCream(normalizedEmail, password)
       } else {
-        await registerPawCream(normalizedEmail, password, inviteCode.trim())
+        await registerPawCream(normalizedEmail, password, inviteCode.trim(), emailCode.trim(), displayName.trim())
       }
-
       setStatus(copy.success)
       window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
       window.setTimeout(() => {
         setOpen(false)
         setPassword('')
+        setConfirmPassword('')
+        setShowPassword(false)
+        setShowConfirmPassword(false)
         setInviteCode('')
+        setEmailCode('')
+        setDisplayName('')
+        setRegisterStage('details')
       }, 420)
     } catch (error) {
       setStatus(error instanceof Error && error.message ? error.message : copy.failed)
@@ -328,7 +471,7 @@ export default function AtelierWithSignin(props: Props) {
 
   const labelStyle = {
     display: 'block',
-    marginBottom: mobile ? 7 : 9,
+    marginBottom: registerPaper ? (mobile ? 4 : 6) : (mobile ? 7 : 9),
     color: '#6f8da2',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     fontSize: (mobile ? 8 : 10) + tune.fontBoost,
@@ -359,9 +502,12 @@ export default function AtelierWithSignin(props: Props) {
             bottom: mobile ? 62 : 82,
             zIndex: 210,
             width: mobile
-              ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
-              : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
-            aspectRatio: '1199 / 1312',
+              ? `min(370px, calc(100vw - 14px), calc((100svh - 82px) * ${longPaperWidthPerHeight}))`
+              : `min(520px, calc(100vw - 34px), calc((100svh - 104px) * ${longPaperWidthPerHeight}))`,
+            // Keep a shared width, bottom and transform origin between modes.
+            // Switching aspect ratio grows the *paper upward*, with the base
+            // remaining fixed above the same screen-bottom coordinate.
+            aspectRatio: typewriterAspectRatio,
             transform: `translateX(-50%) scale(${printerScale})`,
             transformOrigin: 'bottom center',
             filter: 'drop-shadow(0 24px 32px rgba(7, 18, 25, .24))',
@@ -391,7 +537,7 @@ export default function AtelierWithSignin(props: Props) {
           `}</style>
 
           <img
-            src={TYPEWRITER_URL}
+            src={typewriterUrl}
             alt=""
             aria-hidden="true"
             draggable={false}
@@ -410,9 +556,19 @@ export default function AtelierWithSignin(props: Props) {
           <div
             style={{
               position: 'absolute',
-              left: '25.8%',
-              top: mobile ? '10.1%' : '10.5%',
-              width: '48.4%',
+              // The long registration sheet gains space above the carriage.
+              // Its content starts higher; the login/profile typography and
+              // positions are left untouched.
+              left: registerPaper ? '25%' : '25.8%',
+              top: registerPaper ? (mobile ? '4.4%' : '5.4%') : (mobile ? '10.1%' : '10.5%'),
+              width: registerPaper ? '50%' : '48.4%',
+              // Small laptop/mobile screens can still type into every field:
+              // scroll *within the paper*, never push the typewriter base away.
+              maxHeight: registerPaper ? '68%' : undefined,
+              overflowY: registerPaper ? 'auto' : 'visible',
+              scrollbarWidth: 'thin',
+              overscrollBehavior: 'contain',
+              paddingBottom: registerPaper ? 4 : undefined,
               color: '#66859a',
               fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             }}
@@ -442,14 +598,55 @@ export default function AtelierWithSignin(props: Props) {
               ×
             </button>
 
-            <header style={{ paddingRight: mobile ? 30 : 36, marginBottom: mobile ? 9 : 11 }}>
+            <header style={{
+              paddingRight: mobile ? 30 : 36,
+              marginBottom: registerPaper ? (mobile ? 5 : 7) : (mobile ? 9 : 11),
+            }}>
               <div style={{ fontSize: (mobile ? 11 : 14) + tune.fontBoost, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
                 {copy.title}
               </div>
-              <div style={{ marginTop: 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
+              <div style={{ marginTop: registerPaper ? 4 : 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
             </header>
 
+            {mode === 'profile' ? (
+              <form onSubmit={saveProfile}>
+                <div style={{ color: '#64849a', fontSize: (mobile ? 9 : 12) + tune.fontBoost, marginBottom: 11 }}>
+                  {copy.profileTitle}
+                </div>
+                <label style={labelStyle}>
+                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.displayName}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text"
+                    autoComplete="nickname"
+                    maxLength={40}
+                    required
+                    value={profileName}
+                    onChange={(event) => { setProfileName(event.currentTarget.value); setStatus('') }}
+                    placeholder={copy.displayNamePlaceholder}
+                    style={inputStyle}
+                  />
+                </label>
+                <div style={{ display: 'flex', gap: mobile ? 7 : 9, marginTop: 10 }}>
+                  <button type="button" className="pawcream-signin-action" style={actionStyle}
+                    onClick={() => setOpen(false)} disabled={savingProfile}>{copy.cancelNickname}</button>
+                  <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}
+                    disabled={savingProfile}>{savingProfile ? copy.working : copy.saveNickname}</button>
+                </div>
+                <div aria-live="polite" style={{
+                  minHeight: mobile ? 22 : 27, marginTop: mobile ? 6 : 8,
+                  fontSize: (mobile ? 7.5 : 9) + tune.fontBoost, color: '#7894a7',
+                }}>{status}</div>
+              </form>
+            ) : (
             <form onSubmit={submit}>
+              {mode === 'register' && registerStage === 'verify' && (
+                <div style={{ fontSize: (mobile ? 8 : 10) + tune.fontBoost, color:'#627f93', marginBottom: mobile ? 6 : 10, lineHeight:1.55 }}>
+                  {email.trim()}
+                </div>
+              )}
+              {(mode === 'login' || registerStage === 'details') && (
+              <>
               <label style={labelStyle}>
                 <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.email}</span>
                 <input
@@ -462,18 +659,55 @@ export default function AtelierWithSignin(props: Props) {
                 />
               </label>
 
-              <label style={labelStyle}>
-                <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.password}</span>
-                <input
-                  className="pawcream-signin-input"
-                  type="password"
-                  value={password}
-                  onChange={(event) => { setPassword(event.currentTarget.value); setStatus('') }}
-                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                  style={inputStyle}
-                />
-              </label>
+              <div style={labelStyle}>
+                <label htmlFor="pawcream-password" style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.password}</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="pawcream-password"
+                    className="pawcream-signin-input"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => { setPassword(event.currentTarget.value); setStatus('') }}
+                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                    style={{ ...inputStyle, paddingRight: 36 }}
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword(value => !value)}
+                    style={{
+                      position: 'absolute', right: 3, top: 0, height: '100%', width: 30,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 0, border: 0, background: 'transparent',
+                      color: '#66859c', cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                      aria-hidden="true">
+                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                      <circle cx="12" cy="12" r="3" />
+                      {showPassword && <path d="M3 3l18 18" />}
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
+              {mode === 'register' && registerStage === 'details' && (
+                <label style={labelStyle}>
+                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.displayName}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text" autoComplete="nickname"
+                    maxLength={40} required
+                    value={displayName}
+                    onChange={e => { setDisplayName(e.currentTarget.value); setStatus('') }}
+                    style={inputStyle}
+                    placeholder={copy.displayNamePlaceholder}
+                  />
+                </label>
+              )}
               {mode === 'register' && (
                 <label style={labelStyle}>
                   <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.invite}</span>
@@ -487,6 +721,59 @@ export default function AtelierWithSignin(props: Props) {
                   />
                 </label>
               )}
+              </>
+              )}
+              {mode === 'register' && registerStage === 'verify' && (
+                <div style={labelStyle}>
+                  <label htmlFor="pawcream-confirm-password" style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.confirmPassword}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      id="pawcream-confirm-password"
+                      className="pawcream-signin-input"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={e => { setConfirmPassword(e.currentTarget.value); setStatus('') }}
+                      autoComplete="new-password"
+                      required
+                      style={{ ...inputStyle, paddingRight: 36 }}
+                    />
+                    <button
+                      type="button"
+                      aria-label={showConfirmPassword ? copy.hidePassword : copy.showPassword}
+                      aria-pressed={showConfirmPassword}
+                      onClick={() => setShowConfirmPassword(value => !value)}
+                      style={{
+                        position: 'absolute', right: 3, top: 0, height: '100%', width: 30,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: 0, border: 0, background: 'transparent',
+                        color: '#66859c', cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                        aria-hidden="true">
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                        {showConfirmPassword && <path d="M3 3l18 18" />}
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+              {mode === 'register' && registerStage === 'verify' && (
+                <label style={labelStyle}>
+                  <span style={{ display:'block', marginBottom: mobile ? 3 : 4 }}>{copy.emailCode}</span>
+                  <input
+                    className="pawcream-signin-input"
+                    type="text" inputMode="numeric" autoComplete="one-time-code"
+                    maxLength={6} pattern="[0-9]{6}" required
+                    value={emailCode}
+                    onChange={e => { setEmailCode(e.currentTarget.value.replace(/\D/g,'').slice(0,6)); setStatus('') }}
+                    style={inputStyle}
+                    placeholder="123456"
+                  />
+                </label>
+              )}
 
               <div style={{ display: 'flex', gap: mobile ? 7 : 9, marginTop: mobile ? 8 : 10 }}>
                 {mode === 'login' ? (
@@ -494,13 +781,26 @@ export default function AtelierWithSignin(props: Props) {
                     <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.login}</button>
                     <button type="button" className="pawcream-signin-action" onClick={() => switchMode('register')} style={actionStyle}>{copy.register}</button>
                   </>
-                ) : (
+                ) : registerStage === 'details' ? (
                   <>
                     <button type="button" className="pawcream-signin-action" onClick={() => switchMode('login')} style={actionStyle}>{copy.login}</button>
-                    <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.register}</button>
+                    <button type="submit" disabled={sendingEmail} className="pawcream-signin-action" style={primaryActionStyle}>{sendingEmail ? copy.working : copy.sendCode}</button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="pawcream-signin-action" style={actionStyle} onClick={() => {setRegisterStage('details');setStatus('')}}>{copy.editRegistration}</button>
+                    <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}>{copy.completeRegister}</button>
                   </>
                 )}
               </div>
+              {mode === 'register' && registerStage === 'verify' && (
+                <button type="button" disabled={sendingEmail}
+                  onClick={() => void sendEmailCode()}
+                  style={{ display:'block', marginTop: mobile ? 4 : 7, padding:'2px 0', border:0,
+                    background:'transparent', color:'#5f849f', fontSize:(mobile ? 7 : 9) + tune.fontBoost, cursor:'pointer' }}>
+                  {sendingEmail ? copy.working : copy.resendCode}
+                </button>
+              )}
 
               <div
                 aria-live="polite"
@@ -520,6 +820,7 @@ export default function AtelierWithSignin(props: Props) {
                 {status}
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

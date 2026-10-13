@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import HomeScene from './components/HomeScene'
 import AtelierPlaceholder from './components/AtelierWithMusicAudio'
 import { ASSETS } from './sceneConfig'
+import AdminConsole from './components/AdminConsole'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
@@ -111,6 +112,10 @@ export default function App() {
 
   const mobile = deviceProfile === 'mobile'
   const mobilePreview = tuneMode && mobile && detectedDevice === 'desktop'
+
+  if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+    return <AdminConsole />
+  }
 
   return (
     <div className={`pawcream-app pawcream-app--${scene}`}>

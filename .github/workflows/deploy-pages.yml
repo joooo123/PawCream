@@ -3,6 +3,7 @@ name: Deploy PawCream Preview
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -26,10 +27,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install WebP tools
+      - name: Install WebP and Nginx tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y webp
+          sudo apt-get install -y webp nginx openssl
 
       - name: Install font tools
         run: python3 -m pip install --disable-pip-version-check fonttools brotli
@@ -49,8 +50,31 @@ jobs:
       - name: Test photo upload validation
         run: node --test backend/test/photoValidation.test.mjs
 
+      - name: Validate local-only deployment configuration
+        run: |
+          bash -n scripts/deploy-local-preview.sh
+          bash -n scripts/setup-local-https-preview.sh
+          sudo bash scripts/setup-local-https-preview.sh --check-only
+
+      - name: Install backend dependencies
+        run: npm install --prefix backend --no-audit --no-fund
+
+      - name: Test admin permission guards and invitation format
+        run: node --test backend/test/adminRoutes.test.mjs backend/test/invitation.test.mjs backend/test/smtp.test.mjs
+
+      - name: Test OSS storage helpers
+        run: node --test backend/test/photoStorage.test.mjs
+
       - name: Check backend syntax
-        run: node --check backend/src/server.js
+        run: |
+          node --check backend/src/server.js
+          node --check backend/src/publicPhotoRoutes.js
+          node --check backend/src/privatePhotoRoutes.js
+          node --check backend/src/photoStorage.js
+          node --check backend/src/adminRoutes.js
+          node --check backend/src/registrationMail.js
+          node --check backend/src/registrationRoutes.js
+          node --check backend/src/inviteAdminRoutes.js
 
       - name: Build
         env:
@@ -67,7 +91,62 @@ jobs:
         with:
           path: ./dist
 
+      - name: Build and verify standalone PawCream domain
+        env:
+          VITE_API_BASE_URL: /api
+        run: |
+          npm run build:server:webp
+          test -s dist/index.html
+          test -s dist/assets/font/pawcream-cn.woff2
+          test -s dist/assets/font/pawcream-en.woff2
+          test -s dist/assets/home/Home_mobile.webp
+          if grep -R -q '/PawCream/assets/font/' dist; then
+            echo "ERROR: GitHub Pages font path leaked into standalone build"
+            exit 1
+          fi
+          if grep -q '/PawCream/' dist/index.html; then
+            echo "ERROR: GitHub Pages base path leaked into standalone index.html"
+            exit 1
+          fi
+
+  admin-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pawcream
+          POSTGRES_PASSWORD: ci-test-only
+          POSTGRES_DB: pawcream
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U pawcream -d pawcream"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install backend dependencies
+        run: npm install --prefix backend --no-audit --no-fund
+      - name: Apply migrations 001–007
+        env:
+          PGPASSWORD: ci-test-only
+        run: |
+          for sql in backend/sql/001_init.sql backend/sql/002_public_photos.sql backend/sql/003_oss_photos.sql backend/sql/004_admin_console.sql backend/sql/005_signup_verification.sql backend/sql/006_private_tin_photos.sql backend/sql/007_private_photo_sources.sql; do
+            psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55432 -U pawcream -d pawcream -f "$sql"
+          done
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 55432 -U pawcream -d pawcream -f backend/sql/004_admin_console.sql
+      - name: Test admin moderation API and security boundaries
+        env:
+          TEST_DATABASE_URL: postgres://pawcream:ci-test-only@127.0.0.1:55432/pawcream
+        run: node --test backend/test/admin.integration.test.mjs backend/test/privatePhotos.integration.test.mjs
+
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -395,6 +395,17 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           <section style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginTop: 15, padding: '11px 13px', borderRadius: 17, background: 'rgba(251,241,245,.58)', border: '1px solid rgba(209,156,176,.13)' }}>
             <div style={{ minWidth: 0 }}>
               <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#8e6c79', fontSize: uiSize(mobile ? 11.5 : 12.5) }}>{viewer.displayName}</strong>
+              {apiEnabled && (
+                <button type="button" onClick={() => openPawCreamSignin('profile')}
+                  style={{
+                    display: 'block', marginTop: 5, padding: 0,
+                    border: 0, background: 'none', cursor: 'pointer',
+                    color: '#a38b99', textDecoration: 'underline',
+                    textUnderlineOffset: 3, fontSize: uiSize(mobile ? 9.5 : 10.5),
+                  }}>
+                  {language === 'zh' ? '修改昵称' : 'Edit nickname'}
+                </button>
+              )}
               {!apiEnabled && <span style={{ display: 'block', marginTop: 3, color: '#aa8e99', fontSize: uiSize(mobile ? 9.5 : 10.5) }}>{copy.previewUser}</span>}
             </div>
             <button type="button" onClick={startWrite} style={pill(true)}>{copy.write}</button>

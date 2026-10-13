@@ -113,6 +113,14 @@ restart_web() {
     return 1
   fi
 
+  # The repository's Compose currently contains db + api, not a web service.
+  # Support system Nginx serving /opt/pawcream/dist as the production front-end.
+  if command -v nginx >/dev/null 2>&1 && command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet nginx; then
+    log "检测到系统 Nginx，验证配置并重新加载"
+    nginx -t && systemctl reload nginx
+    return $?
+  fi
+
   mapfile -t web_containers < <(
     docker ps -q --filter "label=com.docker.compose.service=web"
   )

@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "check": "node --check src/server.js && node --check src/adminRoutes.js && node --check src/inviteAdminRoutes.js && node --check src/registrationMail.js && node --check src/registrationRoutes.js && node --check src/publicPhotoRoutes.js && node --check src/privatePhotoRoutes.js && node --check src/photoStorage.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -14,6 +15,9 @@
     "express-rate-limit": "^8.1.0",
     "express-session": "^1.18.2",
     "helmet": "^8.1.0",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "@alicloud/credentials": "^2.4.4",
+    "ali-oss": "^6.23.0",
+    "nodemailer": "^7.0.9"
   }
 }
