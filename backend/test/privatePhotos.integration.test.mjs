@@ -131,18 +131,14 @@ test('private tin photos: uploads are idempotent and all reads/deletes are owner
     const ownedPublicKeys = await Promise.all(publishedClientIds.map(id => addPublic(owners.a, id)))
     const unrelatedKey = await addPublic(owners.a, 'photo-' + randomUUID())
     const otherOwnerKey = await addPublic(owners.b, publishedClientIds[1])
-    assert.equal((await call('b', `/api/private-photos/${clientId}`, 'DELETE')).status, 200,
-      'another owner may delete their own private photo with the same client ID')
-    assert.equal((await call('a', imagePath)).status, 200,
-      'other-owner deletion must not alter the original owner or its public photos')
     assert.ok(ownedPublicKeys.every(key => objects.has(key)))
-
     assert.equal((await call('a', `/api/private-photos/${clientId}`, 'DELETE')).status, 200)
     assert.equal((await call('a', imagePath)).status, 404)
-    assert.equal((await call('b', imagePath)).status, 404)
+    assert.equal((await call('b', imagePath)).status, 200,
+      'deleting one owner must not delete another owner\'s same-ID private photo')
     assert.equal((await (await call('a', slotsPath)).json()).slots.length, 0)
     assert.ok(ownedPublicKeys.every(key => !objects.has(key)), 'remove all matching public OSS originals')
-    assert.equal(objects.size, 2, 'leave unrelated and other-owner public OSS objects intact')
+    assert.equal(objects.size, 3, 'preserve unrelated public artwork and the other owner\'s private/public objects')
     assert.ok(objects.has(unrelatedKey))
     assert.ok(objects.has(otherOwnerKey))
     const remainingPublic = await pool.query(
