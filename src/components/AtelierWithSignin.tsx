@@ -30,7 +30,12 @@ type Props = {
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
 const LEGACY_SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v1'
 const SIGNIN_TUNE_STORAGE_KEY = 'pawcream-signin-tune-v2'
-const TYPEWRITER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
+const TYPEWRITER_LOGIN_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打字机.png')}?v=3b38e2c6`
+const TYPEWRITER_REGISTER_URL = `${import.meta.env.BASE_URL}assets/signin/${encodeURIComponent('打印机注册.png')}?v=718c91a0`
+// Both images fill the same-width, bottom-anchored frame. The registration
+// asset has more paper above the carriage, not a differently placed base.
+const TYPEWRITER_LOGIN_RATIO = '1199 / 1312'
+const TYPEWRITER_REGISTER_RATIO = '1122 / 1402'
 const DEFAULT_TUNE: SigninTune = { printerScale: 116, fontBoost: 11 }
 const DEFAULT_TUNE_BY_DEVICE: SigninTuneByDevice = {
   desktop: { ...DEFAULT_TUNE },
@@ -110,6 +115,12 @@ export default function AtelierWithSignin(props: Props) {
   const mobile = props.deviceProfile === 'mobile'
   const tune = tuneByDevice[props.deviceProfile]
   const printerScale = tune.printerScale / 100
+  const registerPaper = mode === 'register'
+  const typewriterUrl = registerPaper ? TYPEWRITER_REGISTER_URL : TYPEWRITER_LOGIN_URL
+  const typewriterAspectRatio = registerPaper ? TYPEWRITER_REGISTER_RATIO : TYPEWRITER_LOGIN_RATIO
+  // Use the taller image as the viewport-fit limit in BOTH modes. This way
+  // switching modes never moves or rescales the typewriter's bottom hardware.
+  const longPaperWidthPerHeight = (1122 / 1402 / printerScale).toFixed(4)
   const copy = language === 'zh'
     ? {
         title: 'PawCream 账号',
@@ -179,9 +190,12 @@ export default function AtelierWithSignin(props: Props) {
       }
 
   useEffect(() => {
-    const image = new Image()
-    image.decoding = 'async'
-    image.src = TYPEWRITER_URL
+    // Avoid the old short-paper image flashing when switching to registration.
+    for (const src of [TYPEWRITER_LOGIN_URL, TYPEWRITER_REGISTER_URL]) {
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = src
+    }
   }, [])
 
   useEffect(() => {
@@ -457,7 +471,7 @@ export default function AtelierWithSignin(props: Props) {
 
   const labelStyle = {
     display: 'block',
-    marginBottom: mobile ? 7 : 9,
+    marginBottom: registerPaper ? (mobile ? 4 : 6) : (mobile ? 7 : 9),
     color: '#6f8da2',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     fontSize: (mobile ? 8 : 10) + tune.fontBoost,
@@ -488,9 +502,12 @@ export default function AtelierWithSignin(props: Props) {
             bottom: mobile ? 62 : 82,
             zIndex: 210,
             width: mobile
-              ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
-              : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
-            aspectRatio: '1199 / 1312',
+              ? `min(370px, calc(100vw - 14px), calc((100svh - 82px) * ${longPaperWidthPerHeight}))`
+              : `min(520px, calc(100vw - 34px), calc((100svh - 104px) * ${longPaperWidthPerHeight}))`,
+            // Keep a shared width, bottom and transform origin between modes.
+            // Switching aspect ratio grows the *paper upward*, with the base
+            // remaining fixed above the same screen-bottom coordinate.
+            aspectRatio: typewriterAspectRatio,
             transform: `translateX(-50%) scale(${printerScale})`,
             transformOrigin: 'bottom center',
             filter: 'drop-shadow(0 24px 32px rgba(7, 18, 25, .24))',
@@ -520,7 +537,7 @@ export default function AtelierWithSignin(props: Props) {
           `}</style>
 
           <img
-            src={TYPEWRITER_URL}
+            src={typewriterUrl}
             alt=""
             aria-hidden="true"
             draggable={false}
@@ -539,9 +556,19 @@ export default function AtelierWithSignin(props: Props) {
           <div
             style={{
               position: 'absolute',
-              left: '25.8%',
-              top: mobile ? '10.1%' : '10.5%',
-              width: '48.4%',
+              // The long registration sheet gains space above the carriage.
+              // Its content starts higher; the login/profile typography and
+              // positions are left untouched.
+              left: registerPaper ? '25%' : '25.8%',
+              top: registerPaper ? (mobile ? '4.4%' : '5.4%') : (mobile ? '10.1%' : '10.5%'),
+              width: registerPaper ? '50%' : '48.4%',
+              // Small laptop/mobile screens can still type into every field:
+              // scroll *within the paper*, never push the typewriter base away.
+              maxHeight: registerPaper ? '68%' : undefined,
+              overflowY: registerPaper ? 'auto' : 'visible',
+              scrollbarWidth: 'thin',
+              overscrollBehavior: 'contain',
+              paddingBottom: registerPaper ? 4 : undefined,
               color: '#66859a',
               fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             }}
@@ -571,11 +598,14 @@ export default function AtelierWithSignin(props: Props) {
               ×
             </button>
 
-            <header style={{ paddingRight: mobile ? 30 : 36, marginBottom: mobile ? 9 : 11 }}>
+            <header style={{
+              paddingRight: mobile ? 30 : 36,
+              marginBottom: registerPaper ? (mobile ? 5 : 7) : (mobile ? 9 : 11),
+            }}>
               <div style={{ fontSize: (mobile ? 11 : 14) + tune.fontBoost, fontWeight: 600, letterSpacing: '.04em', color: '#64849a' }}>
                 {copy.title}
               </div>
-              <div style={{ marginTop: 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
+              <div style={{ marginTop: registerPaper ? 4 : 6, borderTop: '1px solid rgba(176, 204, 222, .72)' }} />
             </header>
 
             {mode === 'profile' ? (
