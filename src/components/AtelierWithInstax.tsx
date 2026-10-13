@@ -844,16 +844,21 @@ export default function AtelierWithInstax(props: Props) {
           touchAction: 'none',
         }}
       >
+        {/* The detected slot is the rectangular *core* of the transparent
+            opening. The wide frame's scalloped top/bottom extends well beyond
+            that bounding box. Overscan a white backing beneath the opaque frame
+            artwork to fill the entire wavy window without changing photo drag,
+            crop, or the frame's outside colors. */}
         {sizeKey === 'wide' && frameMeta.slots.map((slot, index) => (
           <div
             key={`white-backing-${index}`}
             aria-hidden="true"
             style={{
               position: 'absolute',
-              left: `${slot.left}%`,
-              top: `calc(${slot.top}% - 0.85%)`,
-              width: `${slot.width}%`,
-              height: `calc(${slot.height}% + 1.7%)`,
+              left: `calc(${slot.left}% - 4%)`,
+              top: `calc(${slot.top}% - 6%)`,
+              width: `calc(${slot.width}% + 8%)`,
+              height: `calc(${slot.height}% + 12%)`,
               background: '#fff',
               pointerEvents: 'none',
               zIndex: 0,
