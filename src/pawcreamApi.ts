@@ -107,7 +107,7 @@ export function isPawCreamApiEnabled() {
   return Boolean(API_BASE)
 }
 
-export function openPawCreamSignin(mode: 'login' | 'register' = 'login') {
+export function openPawCreamSignin(mode: 'login' | 'register' | 'profile' = 'login') {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent(OPEN_SIGNIN_EVENT, { detail: { mode } }))
 }
@@ -200,6 +200,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export async function getCurrentUser(): Promise<PawCreamUser | null> {
   if (!API_BASE) return isPawCreamPreviewSignedIn() ? PREVIEW_USER : null
   const result = await request<{ user: PawCreamUser | null }>('/auth/me')
+  return result.user
+}
+
+export async function updatePawCreamNickname(displayName: string) {
+  if (!API_BASE) throw new Error('请在正式 PawCream 站点修改昵称')
+  const result = await request<{ user: PawCreamUser }>('/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify({ displayName: displayName.trim() }),
+  })
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
   return result.user
 }
 
