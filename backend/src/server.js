@@ -197,7 +197,7 @@ app.get('/api/auth/me', (req, res) => {
 // notes and public-gallery bylines. Existing posts keep their content and IDs.
 app.patch('/api/auth/profile', requireAuth, authLimiter, async (req, res, next) => {
   const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : ''
-  if (!displayName || displayName.length > 40 || /[\\u0000-\\u001f\\u007f]/.test(displayName)) {
+  if (!displayName || displayName.length > 40 || /[\u0000-\u001f\u007f]/.test(displayName)) {
     return res.status(400).json({ error: '昵称需要为 1–40 个字符，不能包含控制字符' })
   }
   let db
