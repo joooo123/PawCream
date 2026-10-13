@@ -113,15 +113,44 @@ test('private tin photos: uploads are idempotent and all reads/deletes are owner
 
     assert.equal((await call('b', target, 'POST', tinyPng)).status, 201)
     assert.equal(objects.size, 4, 'sources and composites have separate OSS objects')
+
+    // One private composite may have a legacy framed publication and up to four
+    // independently publicized slot originals. They must all disappear when the
+    // owner deletes their tin photo; another user's or unrelated public art stays.
+    const publishedClientIds = [clientId, `${clientId}-slot-0`, `${clientId}-slot-3`]
+    const addPublic = async (ownerId, publicClientId) => {
+      const publicKey = `public/${ownerId}/${randomUUID()}.png`
+      objects.set(publicKey, tinyPng)
+      await pool.query(
+        'INSERT INTO public_photos(user_id,client_photo_id,author_name,frame_name,image_type,oss_key) ' +
+        'VALUES ($1,$2,$3,$4,$5,$6)',
+        [ownerId, publicClientId, 'Test', 'original', 'image/png', publicKey],
+      )
+      return publicKey
+    }
+    const ownedPublicKeys = await Promise.all(publishedClientIds.map(id => addPublic(owners.a, id)))
+    const unrelatedKey = await addPublic(owners.a, 'photo-' + randomUUID())
+    const otherOwnerKey = await addPublic(owners.b, publishedClientIds[1])
+    assert.ok(ownedPublicKeys.every(key => objects.has(key)))
     assert.equal((await call('a', `/api/private-photos/${clientId}`, 'DELETE')).status, 200)
     assert.equal((await call('a', imagePath)).status, 404)
-    assert.equal((await call('b', imagePath)).status, 200)
-    assert.equal(objects.size, 1, 'parent deletion removes the owned source objects')
-    const publics = await pool.query(
-      'SELECT COUNT(*)::int AS total FROM public_photos WHERE user_id = ANY($1::uuid[])',
+    assert.equal((await call('b', imagePath)).status, 200,
+      'deleting one owner must not delete another owner\'s same-ID private photo')
+    assert.equal((await (await call('a', slotsPath)).json()).slots.length, 0)
+    assert.ok(ownedPublicKeys.every(key => !objects.has(key)), 'remove all matching public OSS originals')
+    assert.equal(objects.size, 3, 'preserve unrelated public artwork and the other owner\'s private/public objects')
+    assert.ok(objects.has(unrelatedKey))
+    assert.ok(objects.has(otherOwnerKey))
+    const remainingPublic = await pool.query(
+      'SELECT user_id,client_photo_id FROM public_photos WHERE user_id = ANY($1::uuid[])',
       [[owners.a, owners.b]],
     )
-    assert.equal(publics.rows[0].total, 0, 'private uploads never enter the public wall')
+    assert.equal(remainingPublic.rows.length, 2)
+    assert.ok(remainingPublic.rows.some(row =>
+      row.user_id === owners.b && row.client_photo_id === publishedClientIds[1]))
+    assert.ok(remainingPublic.rows.some(row =>
+      row.user_id === owners.a && row.client_photo_id !== clientId))
+    assert.equal((await call('a', `/api/private-photos/${clientId}`, 'DELETE')).status, 404)
   } finally {
     await new Promise(resolve => server.close(resolve))
     await pool.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [[owners.a, owners.b]])

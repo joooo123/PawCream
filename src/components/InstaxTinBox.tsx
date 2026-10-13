@@ -195,6 +195,8 @@ export default function InstaxTinBox({
   const [originalBusy, setOriginalBusy] = useState(false)
   const [publishBusy, setPublishBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [publishStatus, setPublishStatus] = useState('')
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const swipeHandled = useRef(false)
@@ -268,11 +270,17 @@ export default function InstaxTinBox({
   }, [expanded, active?.id])
 
   const removePrivatePhoto = async () => {
-    if (!active || deleting || syncBusy) return
-    if (!window.confirm('确定从私人云端铁盒永久删除这张照片吗？此操作不可撤销。已公开到返图墙的副本不会自动撤回。')) return
+    if (!active || deleting || syncBusy || publishBusy) return
     setDeleting(true)
-    try { await onDeletePhoto(active) }
-    finally { setDeleting(false) }
+    setDeleteError('')
+    try {
+      await onDeletePhoto(active)
+      setConfirmDeleteOpen(false)
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : '删除失败，请稍后重试')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const openUnframedOriginal = async (photo: PawCreamStoredPhoto) => {
@@ -539,44 +547,66 @@ export default function InstaxTinBox({
               <div style={{ fontSize: mobile ? 14 : 16, color: textColor, opacity: .72 }}>
                 {activeIndex + 1} / {views.length}
                 {active ? ` · ${new Date(active.createdAt).toLocaleDateString('zh-CN')}` : ''}
-                {active ? (active.cloudSynced ? ' · 私有云端已保存' : ' · 尚待云端同步') : ''}
+                {active && !active.cloudSynced ? ' · 尚待云端同步' : ''}
                 {sourceSlots.length ? ` · ${sourceSlots.length} 张原图` : ''}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+                alignItems: 'center',
+                gap: mobile ? 6 : 10,
+                marginTop: 10,
+                width: '100%',
+              }}>
                 <button
                   type="button"
+                  aria-label="上一张拍立得"
                   disabled={activeIndex <= 0}
                   onClick={() => move(-1)}
-                  style={{ ...themedButton, opacity: activeIndex <= 0 ? .35 : 1 }}
+                  style={{ ...themedButton, minWidth: 40, minHeight: 40, padding: '8px 10px', opacity: activeIndex <= 0 ? .35 : 1 }}
                 >
                   ←
                 </button>
-                <button type="button" onClick={() => setExpanded(false)} style={themedButton}>
-                  收回盒子里
-                </button>
-                <button type="button" disabled={deleting || syncBusy}
-                  onClick={() => void removePrivatePhoto()} style={{ ...themedButton, fontSize: 13 }}>
-                  {deleting ? '删除中…' : '删除私人照片'}
-                </button>
-                {sourceSlotsReady && sourceSlots.length > 0 && (
-                  <button type="button" onClick={() => void togglePublished()} disabled={publishBusy} style={{
-                    ...themedButton,
-                    opacity: publishBusy ? .55 : 1,
-                    borderColor: publishedPhotos.length === sourceSlots.length ? '#e0a9b5' : panelBorder,
-                  }}>
-                    {publishBusy ? '请稍候…' : publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开无边框原图'}
+                <div style={{
+                  minWidth: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                }}>
+                  <button type="button" onClick={() => setExpanded(false)} style={themedButton}>
+                    收回盒子里
                   </button>
-                )}
-                {legacyPublished && (
-                  <button type="button" disabled={publishBusy} onClick={() => void revokeLegacy()}
-                    style={{ ...themedButton, fontSize: 12 }}>撤回旧版带框返图</button>
-                )}
+                  <button
+                    type="button"
+                    disabled={deleting || syncBusy || publishBusy}
+                    onClick={() => { setDeleteError(''); setConfirmDeleteOpen(true) }}
+                    style={{ ...themedButton, fontSize: mobile ? 14 : 15 }}
+                  >
+                    删除这张
+                  </button>
+                  {sourceSlotsReady && sourceSlots.length > 0 && (
+                    <button type="button" onClick={() => void togglePublished()} disabled={publishBusy || deleting} style={{
+                      ...themedButton,
+                      opacity: publishBusy ? .55 : 1,
+                      borderColor: publishedPhotos.length === sourceSlots.length ? '#e0a9b5' : panelBorder,
+                    }}>
+                      {publishBusy ? '请稍候…' : publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开无边框原图'}
+                    </button>
+                  )}
+                  {legacyPublished && (
+                    <button type="button" disabled={publishBusy || deleting} onClick={() => void revokeLegacy()}
+                      style={{ ...themedButton, fontSize: 12 }}>撤回旧版带框返图</button>
+                  )}
+                </div>
                 <button
                   type="button"
+                  aria-label="下一张拍立得"
                   disabled={activeIndex >= views.length - 1}
                   onClick={() => move(1)}
-                  style={{ ...themedButton, opacity: activeIndex >= views.length - 1 ? .35 : 1 }}
+                  style={{ ...themedButton, minWidth: 40, minHeight: 40, padding: '8px 10px', opacity: activeIndex >= views.length - 1 ? .35 : 1 }}
                 >
                   →
                 </button>
@@ -591,6 +621,57 @@ export default function InstaxTinBox({
         ) : (
           <div style={{ padding: 40, textAlign: 'center', color: textColor }}>
             盒子还是空空的，先做一张拍立得吧 ♡
+          </div>
+        )}
+        {confirmDeleteOpen && (
+          <div
+            role="presentation"
+            onClick={() => { if (!deleting) setConfirmDeleteOpen(false) }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 340,
+              display: 'grid',
+              placeItems: 'center',
+              padding: 20,
+              background: 'rgba(51,43,51,.38)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+            }}
+          >
+            <section
+              role="alertdialog"
+              aria-modal="true"
+              aria-label="确认删除拍立得"
+              aria-describedby="pawcream-tin-delete-message"
+              onClick={(event) => event.stopPropagation()}
+              style={{
+                width: 'min(360px,100%)',
+                padding: '26px 22px 22px',
+                boxSizing: 'border-box',
+                borderRadius: 24,
+                border: `1px solid ${panelBorder}`,
+                background: panelBg,
+                color: textColor,
+                boxShadow: '0 18px 55px rgba(56,45,53,.2)',
+                textAlign: 'center',
+              }}
+            >
+              <div id="pawcream-tin-delete-message" style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 650 }}>
+                确认删除这张拍立得吗？
+              </div>
+              {deleteError && <p role="alert" style={{ marginTop: 12, fontSize: 13 }}>{deleteError}</p>}
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 23 }}>
+                <button type="button" disabled={deleting} onClick={() => void removePrivatePhoto()}
+                  style={{ ...themedButton, minWidth: 112, fontSize: 16, fontWeight: 650 }}>
+                  {deleting ? '删除中…' : '确定'}
+                </button>
+                <button type="button" disabled={deleting} autoFocus onClick={() => setConfirmDeleteOpen(false)}
+                  style={{ ...themedButton, minWidth: 112, fontSize: 16 }}>
+                  再想想
+                </button>
+              </div>
+            </section>
           </div>
         )}
         {originalBusy && <div role="status" style={{ textAlign: 'center', color: textColor, fontSize: 13 }}>正在读取无边框原图…</div>}

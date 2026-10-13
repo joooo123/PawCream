@@ -228,8 +228,16 @@ export async function listPawCreamPhotos(scope: 'mine' | 'wall' = 'mine') {
 
   const cloud = new Map(remote.map(photo => [photo.clientPhotoId, photo]))
   const pending = new Map<string, string>()
-  // Migrate existing account-owned IndexedDB photos, and retry interrupted uploads.
+  const remotelyDeleted = new Set<string>()
+  // Previously synced photos absent from the cloud were deleted elsewhere.
+  // Never re-upload stale browser caches after a deletion on another device.
+  // Still retry never-synced local photos that may have failed their first upload.
   for (const photo of mine) {
+    if (photo.cloudSynced && !cloud.has(photo.id)) {
+      remotelyDeleted.add(photo.id)
+      await removeLocalPhoto(photo.id).catch(() => {})
+      continue
+    }
     try {
       if (!cloud.has(photo.id)) {
         const uploaded = await uploadPrivatePhoto(photo)
@@ -245,6 +253,7 @@ export async function listPawCreamPhotos(scope: 'mine' | 'wall' = 'mine') {
   const localById = new Map(mine.map(photo => [photo.id, photo]))
   const all = new Map<string, PawCreamStoredPhoto>()
   for (const photo of mine) {
+    if (remotelyDeleted.has(photo.id)) continue
     all.set(photo.id, {
       ...photo, cloudSynced: cloud.has(photo.id) && !pending.has(photo.id),
       syncError: pending.get(photo.id),
