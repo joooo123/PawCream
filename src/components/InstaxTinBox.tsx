@@ -21,6 +21,8 @@ import {
 
 type Props = {
   photos: PawCreamStoredPhoto[]
+  ownerNickname: string
+  onEditNickname: () => void
   newestPhotoId: string | null
   mobile: boolean
   textColor: string
@@ -167,6 +169,8 @@ function readStorePositionTune(): StorePositionTune {
 
 export default function InstaxTinBox({
   photos,
+  ownerNickname,
+  onEditNickname,
   newestPhotoId,
   mobile,
   textColor,
@@ -406,7 +410,7 @@ export default function InstaxTinBox({
   }
 
   const stacked = views.slice(0, 4).reverse()
-  const ownerName = views[0]?.ownerName || 'Creamy'
+  const ownerName = ownerNickname.trim() || views[0]?.ownerName || 'PawCream'
   const ownerFontSize = ownerName.length > 12
     ? (mobile ? 11 : 13)
     : ownerName.length > 8
@@ -911,7 +915,17 @@ export default function InstaxTinBox({
         />
 
         <div
-          aria-label={`${ownerName} 的姓名贴`}
+          aria-label={`${ownerName} 的姓名贴，点击修改昵称`}
+          title="点击修改昵称"
+          role="button"
+          tabIndex={0}
+          onClick={onEditNickname}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              onEditNickname()
+            }
+          }}
           style={{
             position: 'absolute',
             left: '23%',
@@ -924,7 +938,8 @@ export default function InstaxTinBox({
             justifyContent: 'center',
             overflow: 'hidden',
             clipPath: 'ellipse(50% 50% at 50% 50%)',
-            pointerEvents: 'none',
+            pointerEvents: 'auto',
+            cursor: 'pointer',
           }}
         >
           <div
