@@ -198,6 +198,12 @@ export default function InstaxTinBox({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [publishStatus, setPublishStatus] = useState('')
+  const [publicationError, setPublicationError] = useState('')
+  const [pendingPublication, setPendingPublication] = useState<{
+    mode: 'publish' | 'revoke' | 'legacy'
+    count: number
+    photoId: string
+  } | null>(null)
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const swipeHandled = useRef(false)
   const boxTuneMode = useMemo(
@@ -242,6 +248,10 @@ export default function InstaxTinBox({
   }, [newestPhotoId, views])
 
   const active = views[activeIndex] ?? null
+  useEffect(() => {
+    setPendingPublication(null)
+    setPublicationError('')
+  }, [active?.id])
   useEffect(() => {
     if (!expanded || !active || !isPawCreamApiEnabled()) return
     let cancelled = false
@@ -297,14 +307,18 @@ export default function InstaxTinBox({
     } finally { setOriginalBusy(false) }
   }
 
+  // Inspect the current wall state before asking for consent. Native
+  // window.confirm cannot be themed, so present the same choices in our
+  // photo-paper dialog, then execute only after the user clicks 确定.
   const togglePublished = async () => {
-    if (!active || publishBusy) return
+    if (!active || publishBusy || pendingPublication) return
     if (!isPawCreamApiEnabled()) {
       setPublishStatus('当前预览站未连接照片共享后端')
       return
     }
     setPublishBusy(true)
     setPublishStatus('')
+    setPublicationError('')
     try {
       const user = await getCurrentUser()
       if (!user) {
@@ -323,43 +337,72 @@ export default function InstaxTinBox({
       const alreadyPublished = (await Promise.all(originals.map((_, index) =>
         getMyPublishedPhoto(publicSlotPhotoId(active.id, index))
       ))).filter((photo): photo is PawCreamPublicPhoto => Boolean(photo))
-      if (alreadyPublished.length === originals.length) {
-        if (!window.confirm(`要撤回这 ${alreadyPublished.length} 张原图吗？私人铁盒照片保留。`)) return
-        for (const photo of alreadyPublished) await revokePublishedPhoto(photo.id)
-        setPublishedPhotos([])
-        setPublishStatus('已从返图墙撤回全部原图，私人铁盒仍保留 ♡')
-      } else {
-        const missing = originals.length - alreadyPublished.length
-        if (!window.confirm(`将 ${missing} 张无边框原图独立公开到返图墙？访客可以看到每张原图和你的用户名。`)) return
-        const published = [...alreadyPublished]
-        for (let index = 0; index < originals.length; index++) {
-          const id = publicSlotPhotoId(active.id, index)
-          if (published.some(photo => photo.clientPhotoId === id)) continue
-          const result = await publishPhoto({
-            id, frameName: `原图 ${index + 1}/${originals.length}`, imageBlob: originals[index],
-          })
-          published.push(result)
-          setPublishedPhotos([...published])
-        }
-        setPublishedPhotos(published)
-        setPublishStatus(`已将 ${published.length} 张无边框原图独立公开 ♡`)
-      }
+      const allPublished = alreadyPublished.length === originals.length
+      setPendingPublication({
+        mode: allPublished ? 'revoke' : 'publish',
+        count: allPublished ? alreadyPublished.length : originals.length - alreadyPublished.length,
+        photoId: active.id,
+      })
     } catch (error) {
-      setPublishStatus(`${error instanceof Error ? error.message : '公开失败'}。已成功发布的原图不会重复上传，可重试。`)
-    } finally { setPublishBusy(false) }
+      setPublishStatus(error instanceof Error ? error.message : '无法检查返图状态')
+    } finally {
+      setPublishBusy(false)
+    }
   }
 
-  const revokeLegacy = async () => {
-    if (!legacyPublished || publishBusy) return
-    if (!window.confirm('撤回以前公开的带相纸边框照片吗？私人铁盒仍保留。')) return
+  const revokeLegacy = () => {
+    if (!active || !legacyPublished || publishBusy || pendingPublication) return
+    setPublicationError('')
+    setPendingPublication({ mode: 'legacy', count: 1, photoId: active.id })
+  }
+
+  const confirmPublication = async () => {
+    const pending = pendingPublication
+    if (!pending || !active || pending.photoId !== active.id || publishBusy || deleting) return
     setPublishBusy(true)
+    setPublicationError('')
+    setPublishStatus('')
     try {
-      await revokePublishedPhoto(legacyPublished.id)
-      setLegacyPublished(null)
-      setPublishStatus('已撤回旧版带框返图')
+      if (pending.mode === 'legacy') {
+        if (!legacyPublished) throw new Error('这张旧版返图已经撤回')
+        await revokePublishedPhoto(legacyPublished.id)
+        setLegacyPublished(null)
+        setPublishStatus('已撤回旧版带框返图')
+      } else {
+        // Re-check when applying the request: actions remain safe after a
+        // different device has published or revoked the same original.
+        const originals = await loadPawCreamOriginals(active)
+        if (!originals.length) throw new Error('没有可公开的独立原图')
+        const alreadyPublished = (await Promise.all(originals.map((_, index) =>
+          getMyPublishedPhoto(publicSlotPhotoId(active.id, index))
+        ))).filter((photo): photo is PawCreamPublicPhoto => Boolean(photo))
+        if (pending.mode === 'revoke') {
+          for (const photo of alreadyPublished) await revokePublishedPhoto(photo.id)
+          setPublishedPhotos([])
+          setPublishStatus('已从返图墙撤回全部原图，私人铁盒仍保留 ♡')
+        } else {
+          const published = [...alreadyPublished]
+          for (let index = 0; index < originals.length; index++) {
+            const id = publicSlotPhotoId(active.id, index)
+            if (published.some(photo => photo.clientPhotoId === id)) continue
+            const result = await publishPhoto({
+              id, frameName: `原图 ${index + 1}/${originals.length}`, imageBlob: originals[index],
+            })
+            published.push(result)
+            setPublishedPhotos([...published])
+          }
+          setPublishedPhotos(published)
+          setPublishStatus(`已将 ${published.length} 张无边框原图独立公开 ♡`)
+        }
+      }
+      setPendingPublication(null)
     } catch (error) {
-      setPublishStatus(error instanceof Error ? error.message : '撤回失败')
-    } finally { setPublishBusy(false) }
+      const message = error instanceof Error ? error.message : '操作失败'
+      setPublicationError(message)
+      setPublishStatus(message)
+    } finally {
+      setPublishBusy(false)
+    }
   }
 
   const stacked = views.slice(0, 4).reverse()
@@ -638,6 +681,68 @@ export default function InstaxTinBox({
             color: textColor,
           }}>
             盒子还是空空的，先做一张拍立得吧 ♡
+          </div>
+        )}
+        {pendingPublication && (
+          <div
+            role="presentation"
+            onClick={() => { if (!publishBusy) setPendingPublication(null) }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 341,
+              display: 'grid',
+              placeItems: 'center',
+              padding: 20,
+              background: 'rgba(51,43,51,.38)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+            }}
+          >
+            <section
+              role="alertdialog"
+              aria-modal="true"
+              aria-label="确认照片墙操作"
+              onClick={(event) => event.stopPropagation()}
+              style={{
+                width: 'min(380px,100%)',
+                padding: '26px 22px 22px',
+                boxSizing: 'border-box',
+                borderRadius: 24,
+                border: `1px solid ${panelBorder}`,
+                background: panelBg,
+                color: textColor,
+                boxShadow: '0 18px 55px rgba(56,45,53,.2)',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 650 }}>
+                {pendingPublication.mode === 'publish'
+                  ? `将 ${pendingPublication.count} 张无边框原图独立公开到返图墙？`
+                  : pendingPublication.mode === 'revoke'
+                    ? `要撤回这 ${pendingPublication.count} 张原图吗？`
+                    : '撤回以前公开的带相纸边框照片吗？'}
+              </div>
+              <div style={{ fontSize: 13, opacity: .75, marginTop: 8, lineHeight: 1.7 }}>
+                {pendingPublication.mode === 'publish'
+                  ? '访客可以看到每张原图和你的用户名。'
+                  : '私人铁盒照片会保留。'}
+              </div>
+              {publicationError && (
+                <p role="alert" style={{ marginTop: 12, fontSize: 13 }}>{publicationError}</p>
+              )}
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 23 }}>
+                <button type="button" disabled={publishBusy} onClick={() => void confirmPublication()}
+                  style={{ ...themedButton, minWidth: 112, fontSize: 16, fontWeight: 650 }}>
+                  {publishBusy ? '请稍候…' : '确定'}
+                </button>
+                <button type="button" disabled={publishBusy} autoFocus
+                  onClick={() => setPendingPublication(null)}
+                  style={{ ...themedButton, minWidth: 112, fontSize: 16 }}>
+                  再想想
+                </button>
+              </div>
+            </section>
           </div>
         )}
         {confirmDeleteOpen && (

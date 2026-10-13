@@ -35,7 +35,6 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
   const [detail, setDetail] = useState<string | null>(null)
   const [mobilePreviewId, setMobilePreviewId] = useState<string | null>(null)
   const touchStartX = useRef<number | null>(null)
-  const [drift, setDrift] = useState({ x: 0, y: 0 })
 
   const load = async (offset: number) => {
     if (loading || demoMode) return
@@ -140,7 +139,6 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
     tile.style.setProperty('--magnet-x', `${x}px`)
     tile.style.setProperty('--magnet-y', `${y}px`)
     tile.style.setProperty('--magnet-rotate', `${(dx * 3).toFixed(1)}deg`)
-    setDrift({ x: dx * 12, y: dy * 9 })
   }
 
   const releaseMagnet = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -150,7 +148,6 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
     tile.style.setProperty('--magnet-x', '0px')
     tile.style.setProperty('--magnet-y', '0px')
     tile.style.setProperty('--magnet-rotate', '0deg')
-    setDrift({ x: 0, y: 0 })
   }
 
   return (
@@ -177,7 +174,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         .pawcream-public-wall-hero-image {
           width: 100%; height: min(52vh, 490px); object-fit: contain;
           filter: drop-shadow(0 16px 22px rgba(86,63,77,.18));
-          transition: transform 190ms ease-out, opacity 180ms ease-out;
+          transition: opacity 180ms ease-out;
         }
         .pawcream-public-wall-grid { display: block; columns: 5; column-gap: 10px; }
         .pawcream-public-wall-tile {
@@ -220,7 +217,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         }
         .pawcream-public-wall-hero-stage {
           min-height: min(52vh, 490px); display: flex; align-items: center; justify-content: center;
-          transition: transform 190ms ease-out;
+          /* Left hero stays fixed while the right grid reacts magnetically. */
         }
         .pawcream-public-wall-sample-hero {
           width: auto; height: auto; max-height: min(52vh, 490px);
@@ -310,8 +307,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
                 <aside className="pawcream-public-wall-hero">
                   {selected && (
                     <>
-                      <div className="pawcream-public-wall-hero-stage"
-                        style={{ transform: `translate3d(${drift.x}px,${drift.y}px,0) rotate(${drift.x * .12}deg)` }}>
+                      <div className="pawcream-public-wall-hero-stage">
                         {artwork(selected, 'hero')}
                       </div>
                       <div style={{ textAlign: 'center', fontSize: 13, marginTop: 8 }}>

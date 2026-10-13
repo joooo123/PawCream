@@ -844,6 +844,22 @@ export default function AtelierWithInstax(props: Props) {
           touchAction: 'none',
         }}
       >
+        {sizeKey === 'wide' && frameMeta.slots.map((slot, index) => (
+          <div
+            key={`white-backing-${index}`}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: `${slot.left}%`,
+              top: `calc(${slot.top}% - 0.85%)`,
+              width: `${slot.width}%`,
+              height: `calc(${slot.height}% + 1.7%)`,
+              background: '#fff',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+        ))}
         {frameMeta.slots.map((slot, index) => {
           const photo = photos[index]
           const active = index === activeSlot
@@ -879,7 +895,7 @@ export default function AtelierWithInstax(props: Props) {
                 height: `${slot.height}%`,
                 overflow: 'hidden',
                 zIndex: 1,
-                background: theme.panelBg,
+                background: '#fff',
                 boxShadow: active ? `inset 0 0 0 3px ${theme.selectedBorder}` : undefined,
                 cursor: photo ? 'grab' : 'pointer',
               }}
@@ -909,7 +925,7 @@ export default function AtelierWithInstax(props: Props) {
                     placeItems: 'center',
                     color: theme.selectedText,
                     fontSize: 22,
-                    background: theme.panelBg,
+                    background: '#fff',
                   }}
                 >
                   {index + 1}
