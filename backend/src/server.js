@@ -193,6 +193,43 @@ app.get('/api/auth/me', (req, res) => {
   res.json({ user: publicUser(req.session.user || null) })
 })
 
+// The account's display name is the single source of truth for box labels,
+// notes and public-gallery bylines. Existing posts keep their content and IDs.
+app.patch('/api/auth/profile', requireAuth, authLimiter, async (req, res, next) => {
+  const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : ''
+  if (!displayName || displayName.length > 40 || /[\u0000-\u001f\u007f]/.test(displayName)) {
+    return res.status(400).json({ error: '昵称需要为 1–40 个字符，不能包含控制字符' })
+  }
+  let db
+  try {
+    db = await pool.connect()
+    await db.query('BEGIN')
+    const updated = await db.query(
+      'UPDATE users SET display_name=$2 WHERE id=$1 RETURNING id,email,display_name,role',
+      [req.session.user.id, displayName],
+    )
+    if (!updated.rows.length) {
+      await db.query('ROLLBACK')
+      return res.status(401).json({ error: '请先登录 PawCream 账号' })
+    }
+    // These author columns are historical snapshots used by wall APIs.
+    // Keep existing posts linked to their owner and update their bylines too.
+    await db.query('UPDATE notes SET author_name=$2 WHERE user_id=$1', [req.session.user.id, displayName])
+    await db.query('UPDATE public_photos SET author_name=$2 WHERE user_id=$1', [req.session.user.id, displayName])
+    await db.query('COMMIT')
+    req.session.user = {
+      ...req.session.user,
+      displayName,
+    }
+    res.set('Cache-Control', 'no-store').json({ user: publicUser(req.session.user) })
+  } catch (error) {
+    if (db) await db.query('ROLLBACK').catch(() => {})
+    next(error)
+  } finally {
+    db?.release()
+  }
+})
+
 registerSignupRoutes(app, pool, bcrypt, SESSION_SECRET, publicUser)
 
 app.post('/api/auth/login', authLimiter, async (req, res, next) => {

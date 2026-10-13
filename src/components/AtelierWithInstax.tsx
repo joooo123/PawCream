@@ -11,7 +11,7 @@ import {
   claimUnclaimedBrowserPhotos, countUnclaimedBrowserPhotos, deletePawCreamPhoto,
   listPawCreamPhotos, savePawCreamPhoto, type PawCreamStoredPhoto,
 } from '../pawcreamPhotoStore'
-import { getCurrentUser, openPawCreamSignin } from '../pawcreamApi'
+import { AUTH_CHANGED_EVENT, getCurrentUser, openPawCreamSignin } from '../pawcreamApi'
 import AtelierPlaceholderV2 from './AtelierPlaceholderV2'
 import InstaxTinBox from './InstaxTinBox'
 
@@ -468,6 +468,7 @@ export default function AtelierWithInstax(props: Props) {
   const [replaceTarget, setReplaceTarget] = useState<number | null>(null)
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false)
   const [boxPhotos, setBoxPhotos] = useState<PawCreamStoredPhoto[]>([])
+  const [boxOwnerName, setBoxOwnerName] = useState('')
   const [boxSyncStatus, setBoxSyncStatus] = useState('')
   const [newestPhotoId, setNewestPhotoId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -511,6 +512,7 @@ export default function AtelierWithInstax(props: Props) {
   const resetSession = () => {
     cleanupPhotos()
     setBoxPhotos([])
+    setBoxOwnerName('')
     setBoxSyncStatus('')
     setNewestPhotoId(null)
     setStep('select')
@@ -529,6 +531,8 @@ export default function AtelierWithInstax(props: Props) {
   }
 
   const reloadBoxPhotos = async () => {
+    const user = await getCurrentUser()
+    if (user) setBoxOwnerName(user.displayName)
     const mine = await listPawCreamPhotos('mine')
     setBoxPhotos(mine)
     setBoxSyncStatus(mine.some(photo => !photo.cloudSynced)
@@ -547,6 +551,7 @@ export default function AtelierWithInstax(props: Props) {
         openPawCreamSignin('login')
         throw new Error('请先登录账号，再打开私人云端铁盒')
       }
+      setBoxOwnerName(user.displayName)
       const legacyCount = await countUnclaimedBrowserPhotos()
       if (legacyCount && window.confirm(
         `检测到此浏览器在未登录时制作的 ${legacyCount} 张照片。是否将它们归入当前账号的私人铁盒并备份到 OSS？`,
@@ -592,6 +597,16 @@ export default function AtelierWithInstax(props: Props) {
       throw error
     } finally { setBusy(false) }
   }
+
+  useEffect(() => {
+    const refreshNickname = () => {
+      void getCurrentUser().then(user => {
+        if (user) setBoxOwnerName(user.displayName)
+      }).catch(() => {})
+    }
+    window.addEventListener(AUTH_CHANGED_EVENT, refreshNickname)
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, refreshNickname)
+  }, [])
 
   useEffect(() => {
     if (!frameName) {
@@ -805,6 +820,7 @@ export default function AtelierWithInstax(props: Props) {
         openPawCreamSignin('login')
         throw new Error('请先登录账号，再把照片放入私人云端铁盒')
       }
+      setBoxOwnerName(user.displayName)
       const blob = await composeFinishedPhoto(transparentFrameSrc, frameMeta, photos)
       const saved = await savePawCreamPhoto({
         imageBlob: blob,
@@ -1393,6 +1409,8 @@ export default function AtelierWithInstax(props: Props) {
             {step === 'boxing' && (
               <InstaxTinBox
                 photos={boxPhotos}
+                ownerNickname={boxOwnerName}
+                onEditNickname={() => openPawCreamSignin('profile')}
                 newestPhotoId={newestPhotoId}
                 mobile={mobile}
                 textColor={theme.selectedText}

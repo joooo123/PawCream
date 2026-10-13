@@ -216,7 +216,10 @@ export async function listPawCreamPhotos(scope: 'mine' | 'wall' = 'mine') {
   const user = await requiredUser()
   const local = await localPhotos().catch(() => [] as PawCreamStoredPhoto[])
   // Account boundary: never display other users' cached photos or anonymous photos.
+  // Browser caches can carry a previous nickname. Only the authenticated
+  // account profile determines the name on private tin-box labels.
   const mine = local.filter(photo => photo.ownerId === user.id)
+    .map(photo => ({ ...photo, ownerName: user.displayName }))
   let remote: PawCreamPrivatePhoto[]
   try {
     remote = await fetchAllCloudPhotos()

@@ -161,6 +161,36 @@ test('admin moderation: role boundary, CSRF, ban sessions, hide content, audit t
     assert.equal(photo.status, 201, JSON.stringify(photo.body))
     const photoId = photo.body.photo.id
 
+    // Existing accounts can set a real nickname without re-registering.
+    // Previous notes and public images must show that same name everywhere.
+    const unauthenticatedProfile = await req('/api/auth/profile', {
+      method: 'PATCH', body: { displayName: 'Not Allowed' },
+    })
+    assert.equal(unauthenticatedProfile.status, 401)
+    const emptyNickname = await req('/api/auth/profile', {
+      cookie: visitor.cookie, method: 'PATCH', body: { displayName: '   ' },
+    })
+    assert.equal(emptyNickname.status, 400)
+    const invalidNickname = await req('/api/auth/profile', {
+      cookie: visitor.cookie, method: 'PATCH', body: { displayName: 'abc\nxyz' },
+    })
+    assert.equal(invalidNickname.status, 400)
+    const renamed = await req('/api/auth/profile', {
+      cookie: visitor.cookie, method: 'PATCH', body: { displayName: '草莓软糖' },
+    })
+    assert.equal(renamed.status, 200, JSON.stringify(renamed.body))
+    assert.equal(renamed.body.user.displayName, '草莓软糖')
+    const changedMe = await req('/api/auth/me', { cookie: visitor.cookie })
+    assert.equal(changedMe.body.user.displayName, '草莓软糖')
+    const storedNickname = await pool.query('SELECT display_name FROM users WHERE id=$1', [visitor.body.user.id])
+    assert.equal(storedNickname.rows[0].display_name, '草莓软糖')
+    const pastNotes = await req('/api/notes', { cookie: visitor.cookie })
+    assert.equal(pastNotes.body.notes.find(item => item.id === noteId)?.authorName, '草莓软糖')
+    const pastPhotos = await req('/api/photos', { cookie: visitor.cookie })
+    assert.equal(pastPhotos.body.photos.find(item => item.id === photoId)?.authorName, '草莓软糖')
+    const otherOwner = await req('/api/auth/me', { cookie: admin.cookie })
+    assert.equal(otherOwner.body.user.displayName, 'Owner')
+
     const csrf = await req(`/api/admin/notes/${noteId}/visibility`, {
       cookie:admin.cookie, origin:'https://evil.example', method:'PATCH', body:{hidden:true,reason:'policy violation'},
     })
