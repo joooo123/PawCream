@@ -434,14 +434,21 @@ export default function InstaxTinBox({
 
   if (expanded) {
     return (
-      <div style={{ width: '100%', minHeight: mobile ? 500 : 560 }}>
+      <div style={{
+        width: '100%',
+        minHeight: mobile ? 500 : 560,
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
         <div style={{ textAlign: 'center', marginBottom: 12 }}>
           <div style={{ fontSize: mobile ? 25 : 29, fontWeight: 750, color: textColor }}>
             my little box
           </div>
-          <div style={{ marginTop: 4, fontSize: mobile ? 14 : 16, color: textColor, opacity: .68 }}>
-            左右滑一滑，翻翻收好的每一张 ♡
-          </div>
+          {views.length > 0 && (
+            <div style={{ marginTop: 4, fontSize: mobile ? 14 : 16, color: textColor, opacity: .68 }}>
+              左右滑一滑，翻翻收好的每一张 ♡
+            </div>
+          )}
           {syncStatus && <div role="status" style={{ fontSize: 12, color: textColor, marginTop: 6 }}>{syncStatus}</div>}
           {photos.some(photo => !photo.cloudSynced) && (
             <button type="button" disabled={syncBusy} onClick={() => void onRetrySync()}
@@ -593,7 +600,7 @@ export default function InstaxTinBox({
                       opacity: publishBusy ? .55 : 1,
                       borderColor: publishedPhotos.length === sourceSlots.length ? '#e0a9b5' : panelBorder,
                     }}>
-                      {publishBusy ? '请稍候…' : publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开无边框原图'}
+                      {publishBusy ? '请稍候…' : publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开原图到照片墙'}
                     </button>
                   )}
                   {legacyPublished && (
@@ -619,7 +626,17 @@ export default function InstaxTinBox({
             </div>
           </>
         ) : (
-          <div style={{ padding: 40, textAlign: 'center', color: textColor }}>
+          <div style={{
+            flex: 1,
+            minHeight: mobile ? 300 : 340,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px 16px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            color: textColor,
+          }}>
             盒子还是空空的，先做一张拍立得吧 ♡
           </div>
         )}
