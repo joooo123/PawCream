@@ -189,6 +189,7 @@ export default function InstaxTinBox({
   const [publishedPhotos, setPublishedPhotos] = useState<PawCreamPublicPhoto[]>([])
   const [legacyPublished, setLegacyPublished] = useState<PawCreamPublicPhoto | null>(null)
   const [sourceSlots, setSourceSlots] = useState<number[]>([])
+  const [sourceSlotsReady, setSourceSlotsReady] = useState(false)
   const [originalUrls, setOriginalUrls] = useState<string[]>([])
   const [originalIndex, setOriginalIndex] = useState(0)
   const [originalBusy, setOriginalBusy] = useState(false)
@@ -245,6 +246,7 @@ export default function InstaxTinBox({
     setPublishedPhotos([])
     setLegacyPublished(null)
     setSourceSlots([])
+    setSourceSlotsReady(false)
     setPublishStatus('')
     const loadPublished = async () => {
       const slots = active.sourceBlobs?.map((_, index) => index)
@@ -255,6 +257,7 @@ export default function InstaxTinBox({
       ])
       if (cancelled) return
       setSourceSlots(slots)
+      setSourceSlotsReady(true)
       setPublishedPhotos(published.filter((photo): photo is PawCreamPublicPhoto => Boolean(photo)))
       setLegacyPublished(legacy)
     }
@@ -278,10 +281,7 @@ export default function InstaxTinBox({
     setPublishStatus('')
     try {
       const sources = await loadPawCreamOriginals(photo)
-      if (!sources.length) {
-        setPublishStatus('这是旧版拍立得：只保存了带框成品，无法从中还原无边框原图。')
-        return
-      }
+      if (!sources.length) return
       setOriginalIndex(0)
       setOriginalUrls(sources.map(blob => URL.createObjectURL(blob)))
     } catch (error) {
@@ -305,10 +305,7 @@ export default function InstaxTinBox({
         return
       }
       const originals = await loadPawCreamOriginals(active)
-      if (!originals.length) {
-        setPublishStatus('历史拍立得没有保存原图，无法公开无边框照片。请用新版制作并保存。')
-        return
-      }
+      if (!originals.length) return
       const layout = storeLayoutKey(active.frameName)
       const expected = layout === 'four' ? 4 : layout === 'double' ? 2 : 1
       if (originals.length !== expected) {
@@ -562,13 +559,15 @@ export default function InstaxTinBox({
                   onClick={() => void removePrivatePhoto()} style={{ ...themedButton, fontSize: 13 }}>
                   {deleting ? '删除中…' : '删除私人照片'}
                 </button>
-                <button type="button" onClick={() => void togglePublished()} disabled={publishBusy} style={{
-                  ...themedButton,
-                  opacity: publishBusy ? .55 : 1,
-                  borderColor: sourceSlots.length > 0 && publishedPhotos.length === sourceSlots.length ? '#e0a9b5' : panelBorder,
-                }}>
-                  {publishBusy ? '请稍候…' : sourceSlots.length > 0 && publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开无边框原图'}
-                </button>
+                {sourceSlotsReady && sourceSlots.length > 0 && (
+                  <button type="button" onClick={() => void togglePublished()} disabled={publishBusy} style={{
+                    ...themedButton,
+                    opacity: publishBusy ? .55 : 1,
+                    borderColor: publishedPhotos.length === sourceSlots.length ? '#e0a9b5' : panelBorder,
+                  }}>
+                    {publishBusy ? '请稍候…' : publishedPhotos.length === sourceSlots.length ? '撤回全部原图' : '公开无边框原图'}
+                  </button>
+                )}
                 {legacyPublished && (
                   <button type="button" disabled={publishBusy} onClick={() => void revokeLegacy()}
                     style={{ ...themedButton, fontSize: 12 }}>撤回旧版带框返图</button>
@@ -582,7 +581,6 @@ export default function InstaxTinBox({
                   →
                 </button>
               </div>
-              {mobile && <div style={{ marginTop: 8, fontSize: 12, opacity: .7, textAlign: 'center', color: textColor }}>在照片上左右滑动切换 · 点击居中的照片查看无边框原图</div>}
               {publishStatus && (
                 <div role="status" style={{ color: textColor, textAlign: 'center', fontSize: 13, marginTop: 10 }}>
                   {publishStatus}
