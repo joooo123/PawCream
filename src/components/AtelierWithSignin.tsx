@@ -118,6 +118,9 @@ export default function AtelierWithSignin(props: Props) {
   const registerPaper = mode === 'register'
   const typewriterUrl = registerPaper ? TYPEWRITER_REGISTER_URL : TYPEWRITER_LOGIN_URL
   const typewriterAspectRatio = registerPaper ? TYPEWRITER_REGISTER_RATIO : TYPEWRITER_LOGIN_RATIO
+  // Use the taller image as the viewport-fit limit in BOTH modes. This way
+  // switching modes never moves or rescales the typewriter's bottom hardware.
+  const longPaperWidthPerHeight = (1122 / 1402 / printerScale).toFixed(4)
   const copy = language === 'zh'
     ? {
         title: 'PawCream 账号',
@@ -499,8 +502,8 @@ export default function AtelierWithSignin(props: Props) {
             bottom: mobile ? 62 : 82,
             zIndex: 210,
             width: mobile
-              ? 'min(370px, calc(100vw - 14px), calc((100svh - 64px) * .914))'
-              : 'min(520px, calc(100vw - 34px), calc((100svh - 78px) * .914))',
+              ? `min(370px, calc(100vw - 14px), calc((100svh - 82px) * ${longPaperWidthPerHeight}))`
+              : `min(520px, calc(100vw - 34px), calc((100svh - 104px) * ${longPaperWidthPerHeight}))`,
             // Keep a shared width, bottom and transform origin between modes.
             // Switching aspect ratio grows the *paper upward*, with the base
             // remaining fixed above the same screen-bottom coordinate.
@@ -559,6 +562,13 @@ export default function AtelierWithSignin(props: Props) {
               left: registerPaper ? '25%' : '25.8%',
               top: registerPaper ? (mobile ? '4.4%' : '5.4%') : (mobile ? '10.1%' : '10.5%'),
               width: registerPaper ? '50%' : '48.4%',
+              // Small laptop/mobile screens can still type into every field:
+              // scroll *within the paper*, never push the typewriter base away.
+              maxHeight: registerPaper ? '68%' : undefined,
+              overflowY: registerPaper ? 'auto' : 'visible',
+              scrollbarWidth: 'thin',
+              overscrollBehavior: 'contain',
+              paddingBottom: registerPaper ? 4 : undefined,
               color: '#66859a',
               fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             }}
