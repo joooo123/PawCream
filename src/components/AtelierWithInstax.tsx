@@ -533,7 +533,7 @@ export default function AtelierWithInstax(props: Props) {
     setBoxPhotos(mine)
     setBoxSyncStatus(mine.some(photo => !photo.cloudSynced)
       ? '部分照片尚未同步到 OSS，原图仍保存在此浏览器。请点击重试同步。'
-      : '所有照片已存入私人云端铁盒 ♡')
+      : '')
     return mine
   }
 
@@ -575,14 +575,21 @@ export default function AtelierWithInstax(props: Props) {
   }
 
   const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {
-    if (busy) return
+    if (busy) throw new Error('请等待上一项操作完成')
     setBusy(true)
     try {
       await deletePawCreamPhoto(photo)
-      await reloadBoxPhotos()
+      // Update UI immediately after the authoritative server deletion succeeds.
+      setBoxPhotos(current => current.filter(item => item.id !== photo.id))
       setNewestPhotoId(null)
+      try {
+        await reloadBoxPhotos()
+      } catch (error) {
+        setBoxSyncStatus(error instanceof Error ? error.message : '已删除照片，重新读取铁盒失败，请稍后刷新')
+      }
     } catch (error) {
       setBoxSyncStatus(error instanceof Error ? error.message : '私人照片删除失败')
+      throw error
     } finally { setBusy(false) }
   }
 
