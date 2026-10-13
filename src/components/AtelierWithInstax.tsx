@@ -983,9 +983,17 @@ export default function AtelierWithInstax(props: Props) {
               transform: translateY(-1px);
             }
             .pawcream-instax-dot:hover { transform: scale(1.12); }
+            /* Preserve the frosted maker backdrop while an account dialog is
+               open, but hide the maker card so both dialogs never overlap. */
+            html.pawcream-signin-open .pawcream-instax-maker-card {
+              opacity: 0 !important;
+              visibility: hidden !important;
+              pointer-events: none !important;
+            }
           `}</style>
 
           <section
+            className="pawcream-instax-maker-card"
             role="dialog"
             aria-modal="true"
             aria-label="PawCream Instax maker"
