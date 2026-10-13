@@ -172,7 +172,7 @@ test('admin moderation: role boundary, CSRF, ban sessions, hide content, audit t
     })
     assert.equal(emptyNickname.status, 400)
     const invalidNickname = await req('/api/auth/profile', {
-      cookie: visitor.cookie, method: 'PATCH', body: { displayName: 'abc\\nxyz' },
+      cookie: visitor.cookie, method: 'PATCH', body: { displayName: 'abc\nxyz' },
     })
     assert.equal(invalidNickname.status, 400)
     const renamed = await req('/api/auth/profile', {
