@@ -3,16 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>PawCream 拍立得小工具</title>
+  <title>PawCream 工作室 · 小红书小工具</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./studio-ui.css">
 </head>
 <body>
   <main class="app">
     <header class="hero">
       <span class="eyebrow">PAWCREAM · LITTLE MOMENTS</span>
-      <h1>把今天装进小相纸 ♡</h1>
-      <p>离线制作专属拍立得，留下喜欢的这一刻</p>
+      <h1>PawCream 工作室 ♡</h1>
+      <p>把喜欢的今天收藏起来，带一颗糖果走吧</p>
     </header>
+    <nav class="studio-nav" role="tablist" aria-label="PawCream 工作室功能">
+      <button id="tab-make" role="tab" type="button" aria-selected="true" aria-controls="makeView" class="studio-tab active" data-view="make">制作拍立得</button>
+      <button id="tab-account" role="tab" type="button" aria-selected="false" aria-controls="accountView" class="studio-tab" data-view="account">登录/注册</button>
+      <button id="tab-tin" role="tab" type="button" aria-selected="false" aria-controls="tinView" class="studio-tab" data-view="tin">私人铁盒</button>
+      <button id="tab-notes" role="tab" type="button" aria-selected="false" aria-controls="notesView" class="studio-tab" data-view="notes">留言墙</button>
+      <button id="tab-gallery" role="tab" type="button" aria-selected="false" aria-controls="galleryView" class="studio-tab" data-view="gallery">公共照片墙</button>
+    </nav>
+    <section id="makeView" role="tabpanel" aria-labelledby="tab-make" class="studio-view" data-panel="make">
     <section class="panel" aria-label="拍立得制作">
       <div class="section-head">
         <h2>选一张相纸</h2>
@@ -47,8 +56,125 @@
       <button type="button" id="shareButton" class="action-secondary" disabled>发小红书笔记</button>
       <p id="status" class="status" role="status" aria-live="polite">照片仅在当前设备内处理，不会上传 PawCream 服务器。</p>
     </section>
+    </section>
+    <section id="accountView" role="tabpanel" aria-labelledby="tab-account" class="studio-view" data-panel="account" hidden>
+      <div class="section-intro">
+        <span class="eyebrow">MEMBERSHIP · PAWCREAM</span>
+        <h2>一起写下喜欢的名字 ♡</h2>
+        <p>原站打字机登录与注册界面 · 离线展示</p>
+      </div>
+      <div class="account-switch" role="group" aria-label="切换登录或注册界面">
+        <button type="button" class="account-mode active" data-account-mode="login" aria-pressed="true">登录</button>
+        <button type="button" class="account-mode" data-account-mode="register" aria-pressed="false">注册</button>
+      </div>
+      <div class="typewriter-stage is-login" id="typewriterStage">
+        <img id="typewriterArt" class="typewriter-art" src="./assets/login-typewriter.webp" alt="PawCream 原站淡蓝波点打字机">
+        <div class="typewriter-paper" aria-label="登录与注册布局预览">
+          <span class="paper-eyebrow">PAWCREAM · HELLO</span>
+          <h3 id="typewriterTitle">欢迎回来 ♡</h3>
+          <div id="loginFields" class="paper-fields">
+            <div class="paper-field"><span>邮箱</span><div class="paper-input">your@email.com</div></div>
+            <div class="paper-field"><span>密码</span><div class="paper-input">••••••••</div></div>
+          </div>
+          <div id="registerFields" class="paper-fields" hidden>
+            <div class="paper-field"><span>邮箱</span><div class="paper-input">your@email.com</div></div>
+            <div class="paper-field"><span>密码</span><div class="paper-input">••••••••</div></div>
+            <div class="paper-field"><span>昵称</span><div class="paper-input">给自己取个昵称 ♡</div></div>
+            <div class="paper-field"><span>邀请码</span><div class="paper-input">填写邀请码</div></div>
+          </div>
+          <button type="button" class="paper-action" id="accountAction" data-show-website>前往工作室登录</button>
+        </div>
+      </div>
+      <p class="offline-explain">保留原站打字机视觉与字段布局。为了保护账号安全，离线小工具不接收密码，也不模拟云端登录。</p>
+      <button type="button" class="site-cta" data-show-website>更多功能见工作室网站 ↗</button>
+    </section>
+    <section id="tinView" role="tabpanel" aria-labelledby="tab-tin" class="studio-view" data-panel="tin" hidden>
+      <div class="section-intro">
+        <span class="eyebrow">MY LITTLE BOX</span>
+        <h2>我的私人云端铁盒 ♡</h2>
+        <p>保留铁盒与姓名贴外观 · 登录后可在网站同步收藏</p>
+      </div>
+      <div class="tin-stage">
+        <img class="tin-art" src="./assets/iron-box.webp" alt="PawCream 原站私人照片铁盒">
+        <div class="tin-name">
+          <img src="./assets/name-tag.webp" alt="">
+          <span>你的昵称</span>
+        </div>
+      </div>
+      <div class="tin-empty-note">盒子还是空空的，先做一张拍立得吧 ♡</div>
+      <div class="cloud-preview-hint">私人照片需要账号及云端服务，这里展示的是原站铁盒界面，不读取或上传个人照片。</div>
+      <div class="preview-actions">
+        <button type="button" class="site-cta" data-tab-target="make">制作一张拍立得</button>
+        <button type="button" class="site-cta secondary-cta" data-show-website>更多功能见工作室网站 ↗</button>
+      </div>
+    </section>
+    <section id="notesView" role="tabpanel" aria-labelledby="tab-notes" class="studio-view" data-panel="notes" hidden>
+      <div class="section-intro">
+        <span class="eyebrow">LEAVE A LITTLE NOTE</span>
+        <h2>留言贴 ♡</h2>
+        <p>把想说的话写在纸上，贴到 PawCream 留言墙</p>
+      </div>
+      <div class="notes-paper-shell">
+        <div class="notes-heading">
+          <div class="notes-tabs" role="group" aria-label="留言墙预览">
+            <button type="button" class="notes-tab active" data-notes-scope="all" aria-pressed="true">全部便签</button>
+            <button type="button" class="notes-tab" data-notes-scope="mine" aria-pressed="false">我的便签</button>
+          </div>
+          <button type="button" class="note-write" data-show-website>写一张便签 +</button>
+        </div>
+        <div id="notesSample" class="notes-sample">
+          <div class="notes-card notes-card-pink"><span>便签 01</span><p>给今天留一个小小的位置 ♡</p><small>界面示意 · 非真实留言</small></div>
+          <div class="notes-card notes-card-yellow"><span>便签 02</span><p>来这里，听听每个人的故事</p><small>界面示意 · 非真实留言</small></div>
+          <div class="notes-card notes-card-blue"><span>便签 03</span><p>把想说的话装进一张纸里</p><small>界面示意 · 非真实留言</small></div>
+        </div>
+        <div id="myNotesEmpty" class="my-notes-empty" hidden>登录后，你写下的留言贴会出现在这里 ♡</div>
+        <p class="cloud-preview-hint">真实留言、点赞和昵称都在工作室网站中同步。此处不显示其他用户的数据。</p>
+      </div>
+      <button type="button" class="site-cta" data-show-website>更多功能见工作室网站 ↗</button>
+    </section>
+    <section id="galleryView" role="tabpanel" aria-labelledby="tab-gallery" class="studio-view" data-panel="gallery" hidden>
+      <div class="section-intro">
+        <span class="eyebrow">OUR PHOTO WALL</span>
+        <h2>公共返图墙 ♡</h2>
+        <p>左侧大图预览 · 右侧相纸小图切换</p>
+      </div>
+      <div class="gallery-shell">
+        <div class="gallery-feature">
+          <div class="gallery-large">
+            <img id="galleryHero" src="./assets/pink-portrait.png" alt="粉白竖向空白相纸示意">
+          </div>
+          <span id="galleryCaption">粉白竖向相纸 · 界面示意</span>
+        </div>
+        <div class="gallery-tiles" role="group" aria-label="相纸款式预览">
+          <button type="button" class="gallery-tile active" data-gallery-src="./assets/pink-portrait.png" data-gallery-caption="粉白竖向相纸 · 界面示意" aria-pressed="true"><img src="./assets/pink-portrait.png" alt="粉白竖向相纸"></button>
+          <button type="button" class="gallery-tile" data-gallery-src="./assets/pink-wide.png" data-gallery-caption="粉白横向相纸 · 界面示意" aria-pressed="false"><img src="./assets/pink-wide.png" alt="粉白横向相纸"></button>
+          <button type="button" class="gallery-tile" data-gallery-src="./assets/pink-four.png" data-gallery-caption="粉白四格相纸 · 界面示意" aria-pressed="false"><img src="./assets/pink-four.png" alt="粉白四格相纸"></button>
+          <button type="button" class="gallery-tile" data-gallery-src="./assets/pink-wide.png" data-gallery-caption="横向相纸 · 界面示意" aria-pressed="false"><img src="./assets/pink-wide.png" alt="横向相纸预览"></button>
+          <button type="button" class="gallery-tile" data-gallery-src="./assets/pink-portrait.png" data-gallery-caption="竖向相纸 · 界面示意" aria-pressed="false"><img src="./assets/pink-portrait.png" alt="竖向相纸预览"></button>
+          <button type="button" class="gallery-tile" data-gallery-src="./assets/pink-four.png" data-gallery-caption="四格相纸 · 界面示意" aria-pressed="false"><img src="./assets/pink-four.png" alt="四格相纸预览"></button>
+        </div>
+      </div>
+      <p class="cloud-preview-hint">这里保留原站返图墙的视觉和切换交互。因为离线限制，不显示真实用户公开照片。</p>
+      <button type="button" class="site-cta" data-show-website>更多功能见工作室网站 ↗</button>
+    </section>
+    <aside class="studio-website" aria-label="工作室网站入口">
+      <strong>更多功能见工作室网站 ♡</strong>
+      <p>登录、私人云端铁盒、留言贴与公共返图墙，请到 PawCream 工作室网站使用。</p>
+      <div class="studio-address" tabindex="0">joooo123.github.io/PawCream/</div>
+      <small>离线容器无法打开外部网站，请在浏览器中访问上述地址。</small>
+    </aside>
+    <div id="websiteGuide" class="website-guide" role="presentation" hidden>
+      <section class="website-guide-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+        <h2 id="guideTitle">更多功能见工作室网站 ♡</h2>
+        <p>想登录账号、收藏私人照片、写便签或看真实返图，请在浏览器打开：</p>
+        <div class="studio-address" tabindex="0">joooo123.github.io/PawCream/</div>
+        <p class="guide-fine">这里是小红书离线版，不会获取你的 PawCream 登录密码。</p>
+        <button type="button" id="closeWebsiteGuide" class="site-cta">知道啦 ♡</button>
+      </section>
+    </div>
     <footer>PAWCREAM · 收藏今天的一点甜</footer>
   </main>
   <script src="./app.js"></script>
+  <script src="./studio-ui.js"></script>
 </body>
 </html>
