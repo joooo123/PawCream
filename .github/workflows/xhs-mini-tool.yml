@@ -58,10 +58,15 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq webp
           command -v cwebp
+      - name: Install original PawCream React build dependencies
+        run: |
+          npm install --no-audit --no-fund
+          python3 -m pip install --disable-pip-version-check fonttools brotli
+          python3 scripts/convert-fonts.py
       - name: Build, audit, and package mini-tool
         run: |
           set -euo pipefail
-          node xhs-mini-tool/build.mjs
+          node xhs-mini-tool/build-original-mobile.mjs
           unzip -t xhs-mini-tool/release/pawcream-xhs-mini-tool.zip | tail -3
           test -s xhs-mini-tool/release/validation-summary.json
       - name: Upload deliverable ZIP and validation summary
