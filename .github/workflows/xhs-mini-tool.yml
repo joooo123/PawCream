@@ -61,7 +61,7 @@ jobs:
       - name: Install original PawCream React build dependencies
         run: |
           npm install --no-audit --no-fund
-          npm install --no-save --no-audit --no-fund @babel/core @babel/preset-env
+          npm install --no-save --no-audit --no-fund @babel/core @babel/preset-env playwright
           python3 -m pip install --disable-pip-version-check fonttools brotli
           python3 scripts/convert-fonts.py
       - name: Build, audit, and package mini-tool
@@ -70,6 +70,12 @@ jobs:
           node xhs-mini-tool/build-original-mobile.mjs
           unzip -t xhs-mini-tool/release/pawcream-xhs-mini-tool.zip | tail -3
           test -s xhs-mini-tool/release/validation-summary.json
+      - name: Mobile Chrome screenshots and runtime smoke tests
+        run: |
+          set -euo pipefail
+          command -v google-chrome
+          node xhs-mini-tool/smoke-original.mjs
+          test -s xhs-mini-tool/release/browser-smoke.json
       - name: Upload deliverable ZIP and validation summary
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,5 +84,8 @@ jobs:
           path: |
             xhs-mini-tool/release/pawcream-xhs-mini-tool.zip
             xhs-mini-tool/release/validation-summary.json
+            xhs-mini-tool/release/browser-smoke.json
+            xhs-mini-tool/release/mobile-home.png
+            xhs-mini-tool/release/mobile-atelier.png
           if-no-files-found: warn
           retention-days: 30
