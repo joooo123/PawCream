@@ -6,14 +6,28 @@ import { rateLimit } from 'express-rate-limit'
 import session from 'express-session'
 import helmet from 'helmet'
 import pg from 'pg'
+import nodemailer from 'nodemailer'
 import { validPhotoBytes } from './photoValidation.js'
+import {
+  createEmailCode,
+  hashEmailCode,
+  matchesEmailCode,
+  normalizeInviteCode,
+  validEmailCode,
+  validInviteCode,
+} from './registrationSecurity.js'
 
 const { Pool } = pg
 
 const PORT = Number(process.env.PORT || 8787)
 const DATABASE_URL = process.env.DATABASE_URL
 const SESSION_SECRET = process.env.SESSION_SECRET
-const INVITE_CODE = process.env.INVITE_CODE || ''
+const SMTP_HOST = process.env.SMTP_HOST || ''
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465)
+const SMTP_SECURE = process.env.SMTP_SECURE !== 'false'
+const SMTP_USER = process.env.SMTP_USER || ''
+const SMTP_PASS = process.env.SMTP_PASS || ''
+const SMTP_FROM = process.env.SMTP_FROM || ''
 const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE || 'lax').toLowerCase()
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== 'false'
 
@@ -23,6 +37,15 @@ if (!SESSION_SECRET || SESSION_SECRET.length < 24) {
 }
 
 const pool = new Pool({ connectionString: DATABASE_URL })
+const mailer = SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM
+  ? nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      requireTLS: !SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+    })
+  : null
 const PgSession = connectPgSimple(session)
 const app = express()
 
@@ -77,6 +100,13 @@ app.use(session({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 30,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+})
+
+const verificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
 })
@@ -165,37 +195,143 @@ app.get('/api/auth/me', (req, res) => {
   res.json({ user: publicUser(req.session.user || null) })
 })
 
+app.post('/api/auth/send-email-code', verificationLimiter, async (req, res, next) => {
+  const email = normalizeEmail(req.body?.email)
+  const inviteCode = normalizeInviteCode(req.body?.inviteCode)
+
+  if (!validEmail(email)) return res.status(400).json({ error: '请输入正确的邮箱地址' })
+  if (!validInviteCode(inviteCode)) return res.status(400).json({ error: '邀请码格式不正确' })
+  if (!mailer) return res.status(503).json({ error: '邮箱验证码服务尚未配置，请联系管理员' })
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const invite = await client.query(
+      'SELECT code FROM invite_codes WHERE code = $1 AND used_at IS NULL',
+      [inviteCode],
+    )
+    if (!invite.rowCount) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ error: '邀请码不存在或已经使用' })
+    }
+
+    const registered = await client.query('SELECT id FROM users WHERE email = $1', [email])
+    if (registered.rowCount) {
+      await client.query('COMMIT')
+      return res.json({ ok: true })
+    }
+
+    await client.query(
+      `INSERT INTO email_verifications
+       (email, code_hash, expires_at, last_sent_at, window_started_at, sent_in_window)
+       VALUES ($1, repeat('0', 64), now(), now() - interval '1 hour',
+               now() - interval '1 hour', 0)
+       ON CONFLICT (email) DO NOTHING`,
+      [email],
+    )
+    const result = await client.query(
+      'SELECT last_sent_at, window_started_at, sent_in_window FROM email_verifications WHERE email = $1 FOR UPDATE',
+      [email],
+    )
+    const previous = result.rows[0]
+    const now = Date.now()
+    if (now - new Date(previous.last_sent_at).getTime() < 60_000) {
+      await client.query('ROLLBACK')
+      return res.status(429).json({ error: '请在 60 秒后重新发送验证码' })
+    }
+    const inWindow = now - new Date(previous.window_started_at).getTime() < 3_600_000
+    if (inWindow && previous.sent_in_window >= 5) {
+      await client.query('ROLLBACK')
+      return res.status(429).json({ error: '此邮箱一小时内发送过于频繁，请稍后再试' })
+    }
+
+    const code = createEmailCode()
+    await client.query(
+      `UPDATE email_verifications
+       SET code_hash = $2, expires_at = now() + interval '10 minutes',
+           attempts = 0, last_sent_at = now(),
+           window_started_at = CASE WHEN $3 THEN window_started_at ELSE now() END,
+           sent_in_window = CASE WHEN $3 THEN sent_in_window + 1 ELSE 1 END
+       WHERE email = $1`,
+      [email, hashEmailCode(email, code, SESSION_SECRET), inWindow],
+    )
+
+    await mailer.sendMail({
+      from: SMTP_FROM,
+      to: email,
+      subject: 'PawCream 注册邮箱验证码',
+      text: `欢迎来到 PawCream！\n\n你的注册验证码是：${code}\n10 分钟内有效，请不要转发给他人。\n\n如果不是你本人操作，请忽略这封邮件。`,
+    })
+    await client.query('COMMIT')
+    res.json({ ok: true })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    next(error)
+  } finally {
+    client.release()
+  }
+})
+
 app.post('/api/auth/register', authLimiter, async (req, res, next) => {
   const email = normalizeEmail(req.body?.email)
   const password = String(req.body?.password || '')
-  const inviteCode = String(req.body?.inviteCode || '').trim()
+  const inviteCode = normalizeInviteCode(req.body?.inviteCode)
+  const emailCode = String(req.body?.emailCode || '').trim()
 
-  if (!validEmail(email)) {
-    res.status(400).json({ error: '请输入正确的邮箱地址' })
-    return
-  }
+  if (!validEmail(email)) return res.status(400).json({ error: '请输入正确的邮箱地址' })
   if (password.length < 6 || password.length > 128) {
-    res.status(400).json({ error: '密码长度需要为 6–128 位' })
-    return
+    return res.status(400).json({ error: '密码长度需要为 6–128 位' })
   }
-  if (INVITE_CODE && inviteCode !== INVITE_CODE) {
-    res.status(403).json({ error: '邀请码不正确' })
-    return
-  }
+  if (!validInviteCode(inviteCode)) return res.status(400).json({ error: '请输入有效的邀请码' })
+  if (!validEmailCode(emailCode)) return res.status(400).json({ error: '请输入 6 位邮箱验证码' })
 
+  const passwordHash = await bcrypt.hash(password, 12)
+  const displayName = displayNameFromEmail(email)
+  const client = await pool.connect()
   try {
-    const passwordHash = await bcrypt.hash(password, 12)
-    const displayName = displayNameFromEmail(email)
-    const result = await pool.query(
-      `
-        INSERT INTO users (email, password_hash, display_name)
-        VALUES ($1, $2, $3)
-        RETURNING id, email, display_name, role
-      `,
+    await client.query('BEGIN')
+    // Lock the invitation so two parallel registrations cannot consume it.
+    const invite = await client.query(
+      'SELECT code FROM invite_codes WHERE code = $1 AND used_at IS NULL FOR UPDATE',
+      [inviteCode],
+    )
+    if (!invite.rowCount) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ error: '邀请码不存在或已经使用' })
+    }
+
+    const verification = await client.query(
+      'SELECT code_hash, expires_at, attempts FROM email_verifications WHERE email = $1 FOR UPDATE',
+      [email],
+    )
+    const record = verification.rows[0]
+    if (!record || Date.now() > new Date(record.expires_at).getTime() || record.attempts >= 5) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ error: '邮箱验证码已失效，请重新获取' })
+    }
+    if (!matchesEmailCode(email, emailCode, record.code_hash.trim(), SESSION_SECRET)) {
+      await client.query(
+        'UPDATE email_verifications SET attempts = attempts + 1 WHERE email = $1',
+        [email],
+      )
+      await client.query('COMMIT')
+      return res.status(400).json({ error: '邮箱验证码不正确' })
+    }
+
+    const created = await client.query(
+      `INSERT INTO users (email, password_hash, display_name)
+       VALUES ($1, $2, $3)
+       RETURNING id, email, display_name, role`,
       [email, passwordHash, displayName],
     )
+    const row = created.rows[0]
+    await client.query(
+      'UPDATE invite_codes SET used_at = now(), used_by = $2 WHERE code = $1',
+      [inviteCode, row.id],
+    )
+    await client.query('DELETE FROM email_verifications WHERE email = $1', [email])
+    await client.query('COMMIT')
 
-    const row = result.rows[0]
     await new Promise((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()))
     req.session.user = {
       id: row.id,
@@ -204,14 +340,15 @@ app.post('/api/auth/register', authLimiter, async (req, res, next) => {
       role: row.role,
     }
     await new Promise((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()))
-
     res.status(201).json({ user: publicUser(req.session.user) })
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
     if (error?.code === '23505') {
-      res.status(409).json({ error: '这个邮箱已经注册过了' })
-      return
+      return res.status(409).json({ error: '这个邮箱已经注册过了' })
     }
     next(error)
+  } finally {
+    client.release()
   }
 })
 

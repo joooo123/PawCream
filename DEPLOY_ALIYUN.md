@@ -21,7 +21,8 @@ cp backend/.env.example backend/.env
 修改 `backend/.env`，至少替换：
 
 - `SESSION_SECRET`：随机长字符串
-- `INVITE_CODE`：PawCream 注册邀请码
+- 一次性邀请码：从数据库生成，不再使用 `INVITE_CODE`；参见 `backend/REGISTRATION.md`
+- `SMTP_*`：邮箱验证码 SMTP 配置（注册必需）
 - `CORS_ORIGIN`：GitHub Pages 预览地址，正式同域后可删除
 - GitHub Pages 跨域预览时保持 `COOKIE_SECURE=true`、`COOKIE_SAME_SITE=none`
 
@@ -39,6 +40,18 @@ API 默认只绑定到服务器本机 `127.0.0.1:8787`，PostgreSQL 不开放公
 ```bash
 curl http://127.0.0.1:8787/api/health
 ```
+
+## 注册邀请码与邮箱验证码（已有数据库升级）
+
+请阅读 [backend/REGISTRATION.md](backend/REGISTRATION.md)。部署前对照现有服务器的管理后台代码合并改动，并执行：
+
+```bash
+docker compose exec -T db psql -U pawcream -d pawcream < backend/sql/004_invite_email_verification.sql
+docker compose up -d --build api
+docker compose exec -T api node scripts/create-invites.mjs 10
+```
+
+不要删除现有数据库卷；必须先配置 SMTP 才能发送邮箱验证码。
 
 ## 前端连接真实 API
 
