@@ -53,3 +53,19 @@ jobs:
             git commit -m "chore(xhs): install official minitool skill and record source hash"
             git push origin "HEAD:refs/heads/feat/xiaohongshu-mini-tool"
           fi
+      - name: Build, audit, and package mini-tool
+        run: |
+          set -euo pipefail
+          node xhs-mini-tool/build.mjs
+          unzip -t xhs-mini-tool/release/pawcream-xhs-mini-tool.zip | tail -3
+          test -s xhs-mini-tool/release/validation-summary.json
+      - name: Upload deliverable ZIP and validation summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pawcream-xhs-mini-tool
+          path: |
+            xhs-mini-tool/release/pawcream-xhs-mini-tool.zip
+            xhs-mini-tool/release/validation-summary.json
+          if-no-files-found: warn
+          retention-days: 30
