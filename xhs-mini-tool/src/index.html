@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PawCream 拍立得小工具</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <span class="eyebrow">PAWCREAM · LITTLE MOMENTS</span>
+      <h1>把今天装进小相纸 ♡</h1>
+      <p>离线制作专属拍立得，留下喜欢的这一刻</p>
+    </header>
+    <section class="panel" aria-label="拍立得制作">
+      <div class="section-head">
+        <h2>选一张相纸</h2>
+        <span class="step-mark">01 / 03</span>
+      </div>
+      <div class="choices" role="group" aria-label="相纸尺寸">
+        <button type="button" class="choice active" data-layout="portrait" aria-pressed="true">竖向 <small>1 张</small></button>
+        <button type="button" class="choice" data-layout="wide" aria-pressed="false">横向 <small>1 张</small></button>
+        <button type="button" class="choice" data-layout="four" aria-pressed="false">四格 <small>4 张</small></button>
+      </div>
+      <div class="section-head secondary">
+        <h2>放入照片</h2>
+        <span id="count" class="step-mark">已选择 0 / 1</span>
+      </div>
+      <div id="slotButtons" class="slot-buttons" role="group" aria-label="选择照片位置">
+        <button type="button" class="slot-button active" data-slot="0">第 1 格 · 选照片</button>
+      </div>
+      <input id="photoPicker" type="file" accept="image/*" class="file-picker" aria-label="选择照片">
+      <div class="preview-card">
+        <canvas id="preview" aria-label="拍立得实时预览">你的浏览器暂不支持 Canvas 预览</canvas>
+        <p id="previewHint" class="preview-hint">点击上面的照片格，选择一张喜欢的照片 ♡</p>
+      </div>
+      <div class="edit-controls">
+        <label for="zoom">缩放照片</label>
+        <input id="zoom" type="range" min="100" max="220" step="5" value="100" aria-label="缩放当前照片">
+        <span id="zoomValue">100%</span>
+      </div>
+      <p class="edit-help">选好照片后，可用手指或鼠标在相纸上拖动位置</p>
+    </section>
+    <section class="actions" aria-label="完成照片">
+      <button type="button" id="saveButton" class="action-primary" disabled>保存到相册 ♡</button>
+      <button type="button" id="shareButton" class="action-secondary" disabled>发小红书笔记</button>
+      <p id="status" class="status" role="status" aria-live="polite">照片仅在当前设备内处理，不会上传 PawCream 服务器。</p>
+    </section>
+    <footer>PAWCREAM · 收藏今天的一点甜</footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
