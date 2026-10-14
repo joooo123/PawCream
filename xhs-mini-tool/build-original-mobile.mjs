@@ -23,6 +23,11 @@ const tuningFixes=[
 const originalPlugin={name:'original-pawcream-mobile',setup(build){
  build.onLoad({filter:/\.(tsx?|jsx?)$/},async args=>{
   if(!args.path.startsWith(path.join(repo,'src')+path.sep))return;
+  // The original p5 particle renderer embeds syntax unsupported by Chrome 61.
+  // Keep its home UI slot and exact layout, replacing only this decorative layer.
+  if(args.path.endsWith(path.sep+'P5DreamLayer.tsx')){
+    return {contents:'export default function P5DreamLayer(){return null}',loader:'tsx'};
+  }
   let source=fs.readFileSync(args.path,'utf8');
   if(args.path.endsWith(path.sep+'pawcreamApi.ts')){
    source=source.replace(/const API_BASE = [^\n]+/,"const API_BASE = ''");
