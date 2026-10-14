@@ -1,0 +1,35 @@
+name: XHS mini-tool official skill check
+
+on:
+  push:
+    branches:
+      - feat/xiaohongshu-mini-tool
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  official-skill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact official 1.7.0 skill
+        run: |
+          set -euo pipefail
+          mkdir -p .skill
+          curl --fail --location --silent --show-error --retry 3 --max-time 120 \
+            'https://fe-static.xhscdn.com/minitool/20260923133933/minitool-zip-builder-1.7.0.skill' \
+            -o "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill"
+          file "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill"
+          sha256sum "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill"
+          unzip -t "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill" | tail -4
+      - name: Inspect official instructions
+        run: |
+          set -euo pipefail
+          unzip -q "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill" -d .skill
+          find .skill -maxdepth 4 -type f | sort | head -80
+          SKILL_FILE="$(find .skill -name SKILL.md -type f | head -1)"
+          test -n "$SKILL_FILE"
+          echo "OFFICIAL_SKILL_FILE=$SKILL_FILE"
+          cat "$SKILL_FILE"
