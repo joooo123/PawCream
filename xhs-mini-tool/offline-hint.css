@@ -1,0 +1,12 @@
+.xhs-cloud-hint {
+  position: fixed; z-index: 2147483000; left: 50%; bottom: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom,0px)); transform: translateX(-50%);
+  max-width: calc(100% - 30px); width: max-content; white-space: nowrap;
+  padding: 10px 38px 10px 17px; border-radius: 24px;
+  background: rgba(255,247,251,.96); border: 1px solid #e9ccdb;
+  color: #946781; font-family: -apple-system,"PingFang SC",sans-serif; font-size: 12px;
+  box-shadow: 0 5px 25px rgba(77,46,73,.16);
+}
+.xhs-cloud-hint[hidden] { display: none !important; }
+.xhs-cloud-hint button { position: absolute; right: 6px; top: 4px; border: 0; background: transparent;
+ color: inherit; min-width: 28px; min-height: 28px; font-size: 19px; cursor:pointer; }
