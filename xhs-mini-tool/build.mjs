@@ -47,7 +47,7 @@ fs.rmSync(zipPath, { force: true });
 execFileSync('zip', ['-q', '-X', '-9', '-r', zipPath, '.'], { cwd: dist, stdio: 'inherit' });
 const zipBytes = fs.statSync(zipPath).size;
 if (zipBytes > 10 * 1024 * 1024) fail('ZIP exceeds 10 MiB');
-const audit = path.resolve(root, '../../.skill/minitool-zip-builder/scripts/audit_artifact.py');
+const audit = path.resolve(root, '../.skill/minitool-zip-builder/scripts/audit_artifact.py');
 if (!fs.existsSync(audit)) fail('Official skill audit missing: ' + audit);
 const dirAudit = execFileSync('python3', [audit, dist], { encoding: 'utf8' }).trim();
 const zipAudit = execFileSync('python3', [audit, zipPath], { encoding: 'utf8' }).trim();
