@@ -27,7 +27,7 @@ jobs:
       - name: Inspect official instructions
         run: |
           set -euo pipefail
-          unzip -q "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill" -d .skill
+          unzip -oq "$RUNNER_TEMP/minitool-zip-builder-1.7.0.skill" -d .skill
           find .skill -maxdepth 4 -type f | sort | head -80
           SKILL_FILE="$(find .skill -name SKILL.md -type f | head -1)"
           test -n "$SKILL_FILE"
