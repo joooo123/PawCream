@@ -5,6 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import esbuild from 'esbuild';
+import { transformSync } from '@babel/core';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const repo=path.resolve(root,'..'), dist=path.join(root,'dist'),release=path.join(root,'release');
 const sourceAssets=path.join(repo,'public/assets'), assets=path.join(dist,'assets');
@@ -52,13 +53,18 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
 }};
 await esbuild.build({
  entryPoints:[path.join(root,'site-entry.ts')],bundle:true,format:'iife',write:true,
- platform:'browser',target:['chrome61','safari12'],jsx:'automatic',minify:true,
+ platform:'browser',target:'es2020',jsx:'automatic',minify:true,
  legalComments:'none',outdir:dist,entryNames:'pawcream',
  define:{'import.meta.env.BASE_URL':'"./"','import.meta.env.VITE_API_BASE_URL':'""','process.env.NODE_ENV':'"production"'},
  plugins:[originalPlugin],logLevel:'warning'
 });
 const jsFile=path.join(dist,'pawcream.js'),cssFile=path.join(dist,'pawcream.css');
 check(fs.existsSync(jsFile)&&fs.existsSync(cssFile),'Original React / CSS bundle missing');
+// Babel safely lowers the completed classic script for Android Chrome 61.
+const transpiled=transformSync(fs.readFileSync(jsFile,'utf8'),{babelrc:false,configFile:false,
+ presets:[['@babel/preset-env',{targets:{chrome:'61',safari:'12'},modules:false,bugfixes:true}]],compact:true,comments:false});
+check(transpiled && transpiled.code,'Chrome61 Babel transformation failed');
+fs.writeFileSync(jsFile,transpiled.code);
 let css=fs.readFileSync(cssFile,'utf8');
 css=css.replace(/url\((['"]?)\/assets\/font\//g,'url($1./assets/font/');
 css=css.replace(/,\s*url\((['"]?)\.\/assets\/font\/[^)]*\.ttf(['"]?)\)\s*format\(['"]truetype['"]\)/g,'');
