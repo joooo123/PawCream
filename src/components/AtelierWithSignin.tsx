@@ -609,7 +609,7 @@ export default function AtelierWithSignin(props: Props) {
             </header>
 
             {mode === 'profile' ? (
-              <form onSubmit={saveProfile}>
+              <form noValidate onSubmit={saveProfile}>
                 <div style={{ color: '#64849a', fontSize: (mobile ? 9 : 12) + tune.fontBoost, marginBottom: 11 }}>
                   {copy.profileTitle}
                 </div>
@@ -620,7 +620,6 @@ export default function AtelierWithSignin(props: Props) {
                     type="text"
                     autoComplete="nickname"
                     maxLength={40}
-                    required
                     value={profileName}
                     onChange={(event) => { setProfileName(event.currentTarget.value); setStatus('') }}
                     placeholder={copy.displayNamePlaceholder}
@@ -639,7 +638,7 @@ export default function AtelierWithSignin(props: Props) {
                 }}>{status}</div>
               </form>
             ) : (
-            <form onSubmit={submit}>
+            <form noValidate onSubmit={submit}>
               {mode === 'register' && registerStage === 'verify' && (
                 <div style={{ fontSize: (mobile ? 8 : 10) + tune.fontBoost, color:'#627f93', marginBottom: mobile ? 6 : 10, lineHeight:1.55 }}>
                   {email.trim()}
@@ -700,7 +699,7 @@ export default function AtelierWithSignin(props: Props) {
                   <input
                     className="pawcream-signin-input"
                     type="text" autoComplete="nickname"
-                    maxLength={40} required
+                    maxLength={40}
                     value={displayName}
                     onChange={e => { setDisplayName(e.currentTarget.value); setStatus('') }}
                     style={inputStyle}
@@ -734,7 +733,6 @@ export default function AtelierWithSignin(props: Props) {
                       value={confirmPassword}
                       onChange={e => { setConfirmPassword(e.currentTarget.value); setStatus('') }}
                       autoComplete="new-password"
-                      required
                       style={{ ...inputStyle, paddingRight: 36 }}
                     />
                     <button
@@ -766,7 +764,7 @@ export default function AtelierWithSignin(props: Props) {
                   <input
                     className="pawcream-signin-input"
                     type="text" inputMode="numeric" autoComplete="one-time-code"
-                    maxLength={6} pattern="[0-9]{6}" required
+                    maxLength={6} pattern="[0-9]{6}"
                     value={emailCode}
                     onChange={e => { setEmailCode(e.currentTarget.value.replace(/\D/g,'').slice(0,6)); setStatus('') }}
                     style={inputStyle}
