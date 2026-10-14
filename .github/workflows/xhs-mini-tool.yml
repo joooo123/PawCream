@@ -53,6 +53,11 @@ jobs:
             git commit -m "chore(xhs): install official minitool skill and record source hash"
             git push origin "HEAD:refs/heads/feat/xiaohongshu-mini-tool"
           fi
+      - name: Install WebP optimizer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq webp
+          command -v cwebp
       - name: Build, audit, and package mini-tool
         run: |
           set -euo pipefail
