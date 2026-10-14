@@ -3,9 +3,9 @@
   'use strict';
 
   var layouts = {
-    portrait: { file: './assets/pink-portrait.png', count: 1 },
-    wide: { file: './assets/pink-wide.png', count: 1 },
-    four: { file: './assets/pink-four.png', count: 4 }
+    portrait: { file: './assets/pink-portrait.webp', count: 1 },
+    wide: { file: './assets/pink-wide.webp', count: 1 },
+    four: { file: './assets/pink-four.webp', count: 4 }
   };
   var canvas = document.getElementById('preview');
   var ctx = canvas.getContext && canvas.getContext('2d');
