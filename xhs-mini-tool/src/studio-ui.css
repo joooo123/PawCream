@@ -52,6 +52,8 @@
 .tin-empty-note { margin: 2px 0 12px; padding: 16px 9px; text-align: center; background: rgba(255,247,250,.9);
   color: #a47994; font-size: 13px; border: 1px solid #f2dce8; border-radius: 20px; }
 .preview-actions .site-cta { margin-bottom: 9px; }
+.notes-decor { display: block; max-width: 120px; height: 75px; width: auto; object-fit: contain;
+  margin: 8px auto -5px; filter: drop-shadow(0 3px 5px rgba(101,65,82,.1)); }
 .notes-paper-shell { border: 1px solid #f0dce5; border-radius: 22px; padding: 17px 13px 18px;
   background: #fff9fc; margin: 0 0 18px; box-shadow: 0 10px 28px rgba(112,75,96,.07); }
 .notes-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
