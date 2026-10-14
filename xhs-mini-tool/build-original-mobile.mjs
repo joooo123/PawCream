@@ -53,6 +53,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
 }};
 await esbuild.build({
  entryPoints:[path.join(root,'site-entry.ts')],bundle:true,format:'iife',write:true,
+ external:['/assets/*'],
  platform:'browser',target:'es2020',jsx:'automatic',minify:true,
  legalComments:'none',outdir:dist,entryNames:'pawcream',
  define:{'import.meta.env.BASE_URL':'"./"','import.meta.env.VITE_API_BASE_URL':'""','process.env.NODE_ENV':'"production"'},
