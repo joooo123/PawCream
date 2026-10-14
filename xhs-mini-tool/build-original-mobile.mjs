@@ -63,7 +63,7 @@ const jsFile=path.join(dist,'pawcream.js'),cssFile=path.join(dist,'pawcream.css'
 check(fs.existsSync(jsFile)&&fs.existsSync(cssFile),'Original React / CSS bundle missing');
 // Babel safely lowers the completed classic script for Android Chrome 61.
 const transpiled=transformSync(fs.readFileSync(jsFile,'utf8'),{babelrc:false,configFile:false,
- presets:[['@babel/preset-env',{targets:{chrome:'61',safari:'12'},modules:false,bugfixes:true}]],compact:true,comments:false});
+ presets:[['@babel/preset-env',{targets:{chrome:'61',safari:'12'},modules:false}]],compact:true,comments:false});
 check(transpiled && transpiled.code,'Chrome61 Babel transformation failed');
 fs.writeFileSync(jsFile,transpiled.code);
 let css=fs.readFileSync(cssFile,'utf8');
