@@ -37,6 +37,90 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
    source=source.replace("return window.localStorage.getItem(PREVIEW_AUTH_STORAGE_KEY) === '1'","return false");
    source=source.replace("window.localStorage.setItem(PREVIEW_AUTH_STORAGE_KEY, signedIn ? '1' : '0')","void signedIn");
   }
+  if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
+    // Keep the original Instax and tin-box React UIs, but replace their cloud
+    // handlers with a clearly labeled current-session local preview. The
+    // original website source remains untouched.
+    const patches=[
+      ['  const openMyBox = async () => {','  const retryBoxSync = async () => {',
+`  const openMyBox = async () => {
+    setBoxOwnerName('离线访客')
+    setBoxPhotos([])
+    setNewestPhotoId(null)
+    setBoxSyncStatus('当前为离线预览；更多功能见工作室网站')
+    setStep('boxing')
+  }
+
+`],
+      ['  const retryBoxSync = async () => {','  const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {',
+`  const retryBoxSync = async () => {
+    setBoxSyncStatus('小红书离线版不支持云端同步；更多功能见工作室网站')
+  }
+
+`],
+      ['  const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {','  useEffect(() => {',
+`  const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {
+    setBoxPhotos(current => current.filter(item => item.id !== photo.id))
+    setNewestPhotoId(null)
+  }
+
+`],
+      ['  const placeInBox = async () => {','  const renderEditableComposite = () => {',
+`  const placeInBox = async () => {
+    if (!frameMeta || !frameName || !allSlotsFilled || busy) return
+    setBusy(true)
+    setStatus('正在保存这一刻…')
+    try {
+      const blob = await composeFinishedPhoto(transparentFrameSrc, frameMeta, photos)
+      const saved: PawCreamStoredPhoto = {
+        id: 'offline-' + Date.now(),
+        ownerId: 'offline-session',
+        ownerName: '离线访客',
+        imageBlob: blob,
+        sourceBlobs: frameMeta.slots.map((_, index) => photos[index]!.sourceBlob),
+        frameName, visibility: 'private',
+        createdAt: new Date().toISOString(),
+        cloudSynced: false,
+      }
+      setBoxOwnerName('离线访客')
+      setBoxPhotos([saved])
+      setNewestPhotoId(saved.id)
+      setStep('boxing')
+      setStatus('')
+      setBoxSyncStatus('作品只在本次离线页面中预览；更多功能见工作室网站')
+      const api: any = (window as any).xhs && (window as any).xhs.miniTool
+      if (api && typeof api.saveImageToPhotosAlbum === 'function') {
+        try {
+          const encoded = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(String(reader.result))
+            reader.onerror = () => reject(new Error('无法编码照片'))
+            reader.readAsDataURL(blob)
+          })
+          let filePath = encoded
+          if (typeof api.writeTempFile === 'function') {
+            const result = await api.writeTempFile({ data: encoded })
+            if (result && result.filePath) filePath = result.filePath
+          }
+          await api.saveImageToPhotosAlbum({ filePath })
+          setBoxSyncStatus('图片已保存至相册；云端铁盒请前往工作室网站')
+        } catch (error) {
+          setBoxSyncStatus('已完成离线盒子预览；相册保存未成功，请检查权限。更多功能见工作室网站')
+        }
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : '生成拍立得失败')
+    } finally { setBusy(false) }
+  }
+
+`]
+    ];
+    for(const [startToken,endToken,replacement] of patches){
+      const a=source.indexOf(startToken),b=a>=0?source.indexOf(endToken,a+startToken.length):-1;
+      if(a<0||b<=a)throw Error('Unable to locate original Instax offline adapter: '+startToken);
+      source=source.slice(0,a)+replacement+source.slice(b);
+    }
+  }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
     source=source.replace(/^.*background4\.png.*\r?\n/m,'');
