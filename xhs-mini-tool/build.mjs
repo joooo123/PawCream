@@ -25,7 +25,7 @@ const css = fs.readFileSync(required('styles.css'), 'utf8');
 if (!html.startsWith('<!DOCTYPE html>')) fail('index.html must start with DOCTYPE');
 if (!html.includes('lang="zh-CN"') || !html.includes('viewport-fit=cover')) fail('Missing HTML locale or viewport');
 if (!html.includes('<script src="./app.js"></script>') || !html.includes('href="./styles.css"')) fail('Invalid relative local entry refs');
-if (/<script(?!\s+src=)[^>]*>/i.test(html) || /\bon[a-z]+\s*=/i.test(html)) fail('Inline scripts or event handlers are not permitted');
+if (/<script(?!\s+src=)[^>]*>/i.test(html) || /\s+on[a-z]+\s*=/i.test(html)) fail('Inline scripts or event handlers are not permitted');
 if (/type=["']module["']/i.test(html) || /<iframe\b|<object\b|<base\b/i.test(html)) fail('Unsupported DOM embedded resource');
 if (/\b(?:eval|Function|fetch|WebSocket|XMLHttpRequest|Worker)\s*\(/.test(js)) fail('Unsupported runtime capability');
 if (/\b(?:import|export)\s+(?:from|\{|default)/.test(js)) fail('Module syntax in classic script');
