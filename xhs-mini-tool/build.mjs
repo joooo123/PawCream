@@ -11,11 +11,13 @@ const release = path.join(root, 'release');
 const zipPath = path.join(release, 'pawcream-xhs-mini-tool.zip');
 const files = [
   'index.html', 'styles.css', 'app.js', 'studio-ui.css', 'studio-ui.js',
-  'assets/pink-portrait.png', 'assets/pink-wide.png', 'assets/pink-four.png',
 ];
 // Decorative UI assets come from the existing PawCream website, then are
 // resized into the offline ZIP without changing the source PNG files.
 const decorative = [
+  { source: 'xhs-mini-tool/src/assets/pink-portrait.png', target: 'assets/pink-portrait.webp', lossless: true },
+  { source: 'xhs-mini-tool/src/assets/pink-wide.png', target: 'assets/pink-wide.webp', lossless: true },
+  { source: 'xhs-mini-tool/src/assets/pink-four.png', target: 'assets/pink-four.webp', lossless: true },
   { source: 'public/assets/signin/打字机.png', target: 'assets/login-typewriter.webp', width: 820, quality: 86 },
   { source: 'public/assets/signin/打印机注册.png', target: 'assets/register-typewriter.webp', width: 820, quality: 86 },
   { source: 'public/assets/iron_box.png', target: 'assets/iron-box.webp', width: 940, quality: 86 },
@@ -62,10 +64,11 @@ for (const item of decorative) {
   if (!fs.existsSync(original)) fail('Original artwork missing: ' + item.source);
   const target = path.join(dist, item.target);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  execFileSync('cwebp', [
-    '-quiet', '-m', '6', '-q', String(item.quality),
-    '-resize', String(item.width), '0', original, '-o', target,
-  ], { stdio: 'inherit' });
+  const options = item.lossless
+    ? ['-quiet', '-lossless', '-m', '6', original, '-o', target]
+    : ['-quiet', '-m', '6', '-q', String(item.quality),
+      '-resize', String(item.width), '0', original, '-o', target];
+  execFileSync('cwebp', options, { stdio: 'inherit' });
   uncompressed += fs.statSync(target).size;
 }
 const foundRefs = [...html.matchAll(/(?:src|href|data-gallery-src)="(\.\/[^"#?]+)"/g)]
@@ -99,7 +102,7 @@ const report = {
   classicScript: true,
   noInlineScript: true,
   studioUis: ['offline Instax maker', 'login/register paper', 'private tin-box', 'sticky-note wall', 'public-photo wall'],
-  siteHint: '更多功能见工作室网站 · joooo123.github.io/PawCream/',
+  siteHint: '更多功能见工作室网站（尚未指定正式公开网址）',
   onlineAccountFeaturesDisabled: true,
   realUserCloudContentIncluded: false,
   minJsTarget: 'Chrome 61 / ES2017 (static review)',
