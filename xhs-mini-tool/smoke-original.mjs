@@ -9,7 +9,7 @@ import {chromium} from 'playwright';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const dist=path.join(root,'dist'),release=path.join(root,'release');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css',
- '.webp':'image/webp','.mp3':'audio/mpeg','.svg':'image/svg+xml','.woff2':'font/woff2'};
+ '.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2'};
 const server=http.createServer((req,res)=>{
  let pathname;
  try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname)}catch{res.writeHead(400);res.end();return}
@@ -166,19 +166,19 @@ try{
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="music"]',{timeout:15000});
  await page.waitForTimeout(700);
- // Verify touchable spoon and real offline audio preview.
+ // Verify touchable spoon animation without unsupported audio.
  await page.locator('[data-atelier-asset="music"]').click();
  await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
  await page.locator('.pawcream-music-slot-button').first().click();
- await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="Play music"]',{timeout:5000});
- await page.locator('section[aria-label="Current music disc"] button[aria-label="Play music"]').click();
+ await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]',{timeout:5000});
+ await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
  await page.waitForTimeout(900);
- if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="Pause music"]').count())
-  throw Error('Tapping spoon failed to start rotation/audio');
- await page.locator('section[aria-label="Current music disc"] button[aria-label="Pause music"]').click();
+ if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').count())
+  throw Error('Tapping spoon failed to rotate');
+ await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').click();
  await page.waitForTimeout(200);
- if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="Play music"]').count())
-  throw Error('Spoon did not pause');
+ if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').count())
+  throw Error('Spoon animation did not stop');
 
  // Real file input activation: the offline photo editor must open the
  // system file chooser on a visible, user-tapped gallery control.
