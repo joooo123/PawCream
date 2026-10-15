@@ -56,7 +56,7 @@ jobs:
       - name: Install WebP optimizer
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq webp
+          sudo apt-get install -y -qq webp ffmpeg
           command -v cwebp
       - name: Install original PawCream React build dependencies
         run: |
