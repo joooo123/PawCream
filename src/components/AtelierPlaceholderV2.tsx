@@ -611,7 +611,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           zIndex: asset.zIndex,
           cursor: tuneMode ? 'grab' : key === 'message' ? (movingMessage ? 'move' : 'grab') : interactive ? 'pointer' : 'default',
           touchAction: tuneMode || key === 'message' ? 'none' : 'auto', userSelect: 'none',
-          pointerEvents: noteIsPassive ? 'none' : undefined,
+          pointerEvents: noteIsPassive || (!tuneMode && key === 'color') ? 'none' : undefined,
           outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
           outlineOffset: selectedAsset ? 6 : 0, borderRadius: selectedAsset ? 10 : 0,
         }}
@@ -620,6 +620,17 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           src={asset.src} alt={asset.label} draggable={false} decoding="async"
           style={{ display: 'block', width: '100%', height: 'auto', pointerEvents: 'none', userSelect: 'none' }}
         />
+
+        {!tuneMode && key === 'color' && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', left: '45%', top: '45%',
+              width: '10%', height: '10%', cursor: 'pointer',
+              pointerEvents: 'auto',
+            }}
+          />
+        )}
 
         {selectedAsset && (
           <span style={{ position: 'absolute', left: '50%', top: -27, transform: `translateX(-50%) rotate(${-layout.rotation}deg)`, padding: '3px 7px', borderRadius: 999, background: 'rgba(255, 249, 252, 0.96)', color: '#a4687f', fontSize: 10, fontFamily: uiFont, boxShadow: '0 4px 14px rgba(113,81,91,.1)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
