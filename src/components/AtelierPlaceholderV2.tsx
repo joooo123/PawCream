@@ -584,17 +584,11 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onClick={(event) => {
           if (noteIsPassive) return
           event.stopPropagation()
-          // Light has large transparent padding: the lamp, not its full image box,
-          // is the clickable target. Keep the Color hot zone restricted as well.
-          if (!tuneMode && event.detail !== 0) {
-            if (key === 'light' && !assetOpaqueAt('light', event.clientX, event.clientY)) return
-            if (key === 'color') {
-              const rect = event.currentTarget.getBoundingClientRect()
-              if (!rect.width || !rect.height ||
-                  Math.abs(event.clientX - (rect.left + rect.width / 2)) > rect.width * 0.05 ||
-                  Math.abs(event.clientY - (rect.top + rect.height / 2)) > rect.height * 0.05) return
-            }
-          }
+          // The lamp only reacts on its painted pixels.
+          if (!tuneMode && event.detail !== 0 && key === 'light' &&
+              !assetOpaqueAt('light', event.clientX, event.clientY)) return
+          // Color is handled by its explicit 10% child hot zone, not this large wrapper.
+          if (!tuneMode && key === 'color') return
           handleNormalAssetClick(key)
         }}
         onKeyDown={(event) => {
@@ -624,6 +618,10 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         {!tuneMode && key === 'color' && (
           <span
             aria-hidden="true"
+            onClick={(event) => {
+              event.stopPropagation()
+              handleNormalAssetClick('color')
+            }}
             style={{
               position: 'absolute', left: '45%', top: '45%',
               width: '10%', height: '10%', cursor: 'pointer',
