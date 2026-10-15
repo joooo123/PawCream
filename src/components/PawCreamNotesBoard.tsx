@@ -312,10 +312,8 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         zIndex: 80,
         display: 'grid',
         placeItems: 'center',
-        // Reserve space for the XHS top controls and bottom home indicator.
-        padding: mobile
-          ? 'max(76px, calc(env(safe-area-inset-top, 0px) + 52px)) 16px max(38px, calc(env(safe-area-inset-bottom, 0px) + 20px))'
-          : 28,
+        // Keep space for XHS navigation; avoid CSS max() unsupported by old WebViews.
+        padding: mobile ? '82px 15px 42px' : 28,
         background: 'rgba(255,249,251,.64)',
         backdropFilter: 'blur(13px)',
         WebkitBackdropFilter: 'blur(13px)',
@@ -337,13 +335,14 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       <section
         className="pawcream-notes-card"
         style={{
-          width: mobile ? 'min(350px, 100%)' : 'min(760px, 100%)',
+          width: mobile ? '100%' : 'min(760px, 100%)',
+          maxWidth: mobile ? 340 : undefined,
           maxHeight: mobile ? '100%' : 'min(760px, calc(100% - 30px))',
           overflow: 'auto',
           boxSizing: 'border-box',
-          padding: mobile ? 17 : 24,
+          padding: mobile ? 15 : 24,
           border: '1px solid rgba(205,148,168,.23)',
-          borderRadius: mobile ? 23 : 30,
+          borderRadius: mobile ? 20 : 30,
           background: 'rgba(255,253,253,.965)',
           boxShadow: '0 24px 70px rgba(101,74,84,.17)',
           color: '#765d66',
@@ -351,7 +350,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       >
         <header style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' }}>
           <div>
-            <strong style={{ display: 'block', fontSize: uiSize(mobile ? 22 : 28), letterSpacing: '.015em' }}>{copy.title}</strong>
+            <strong style={{ display: 'block', fontSize: uiSize(mobile ? 20 : 28), letterSpacing: '.015em' }}>{copy.title}</strong>
             <p style={{ margin: '6px 0 0', fontSize: uiSize(mobile ? 13 : 14), lineHeight: 1.55, color: '#9d818a' }}>{copy.subtitle}</p>
           </div>
           <button
