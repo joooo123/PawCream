@@ -70,9 +70,7 @@ function intercept(event: MouseEvent | PointerEvent) {
   if (event.type === 'click' && event.detail === 0 && event.clientX === 0 && event.clientY === 0) return
   const asset = targetArtwork(event.target)
   if (!asset) return
-  const painted = isPainted(asset.control, asset.image, asset.key, event.clientX, event.clientY)
-  asset.control.dataset.debugAlpha = painted ? 'painted' : 'transparent'
-  if (painted) return
+  if (isPainted(asset.control, asset.image, asset.key, event.clientX, event.clientY)) return
   event.preventDefault()
   event.stopImmediatePropagation()
 }
