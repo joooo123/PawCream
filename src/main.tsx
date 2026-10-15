@@ -5,6 +5,7 @@ import { startPawCreamStartup } from './startupLoader'
 import './styles.css'
 import './atelierBackground.css'
 import './polka-overlays.css'
+import './atelierAlphaHit'
 
 const atelierBackgroundUrl = `${import.meta.env.BASE_URL}assets/atelier/background.png`
 document.documentElement.style.setProperty(
