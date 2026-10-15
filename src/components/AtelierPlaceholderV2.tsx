@@ -584,11 +584,17 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onClick={(event) => {
           if (noteIsPassive) return
           event.stopPropagation()
-          // The lamp only reacts on its painted pixels.
-          if (!tuneMode && event.detail !== 0 && key === 'light' &&
-              !assetOpaqueAt('light', event.clientX, event.clientY)) return
-          // Color is handled by its explicit 10% child hot zone, not this large wrapper.
-          if (!tuneMode && key === 'color') return
+          // Light has large transparent padding: the lamp, not its full image box,
+          // is the clickable target. Keep the Color hot zone restricted as well.
+          if (!tuneMode && event.detail !== 0 && (key === 'light' || key === 'color')) {
+            if (!assetOpaqueAt(key, event.clientX, event.clientY)) return
+            if (key === 'color') {
+              const rect = event.currentTarget.getBoundingClientRect()
+              if (!rect.width || !rect.height ||
+                  Math.abs(event.clientX - (rect.left + rect.width / 2)) > rect.width * 0.05 ||
+                  Math.abs(event.clientY - (rect.top + rect.height / 2)) > rect.height * 0.05) return
+            }
+          }
           handleNormalAssetClick(key)
         }}
         onKeyDown={(event) => {
@@ -605,7 +611,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           zIndex: asset.zIndex,
           cursor: tuneMode ? 'grab' : key === 'message' ? (movingMessage ? 'move' : 'grab') : interactive ? 'pointer' : 'default',
           touchAction: tuneMode || key === 'message' ? 'none' : 'auto', userSelect: 'none',
-          pointerEvents: noteIsPassive || (!tuneMode && key === 'color') ? 'none' : undefined,
+          pointerEvents: noteIsPassive ? 'none' : undefined,
           outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
           outlineOffset: selectedAsset ? 6 : 0, borderRadius: selectedAsset ? 10 : 0,
         }}
@@ -614,21 +620,6 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           src={asset.src} alt={asset.label} draggable={false} decoding="async"
           style={{ display: 'block', width: '100%', height: 'auto', pointerEvents: 'none', userSelect: 'none' }}
         />
-
-        {!tuneMode && key === 'color' && (
-          <span
-            aria-hidden="true"
-            onClick={(event) => {
-              event.stopPropagation()
-              handleNormalAssetClick('color')
-            }}
-            style={{
-              position: 'absolute', left: '45%', top: '45%',
-              width: '10%', height: '10%', cursor: 'pointer',
-              pointerEvents: 'auto',
-            }}
-          />
-        )}
 
         {selectedAsset && (
           <span style={{ position: 'absolute', left: '50%', top: -27, transform: `translateX(-50%) rotate(${-layout.rotation}deg)`, padding: '3px 7px', borderRadius: 999, background: 'rgba(255, 249, 252, 0.96)', color: '#a4687f', fontSize: 10, fontFamily: uiFont, boxShadow: '0 4px 14px rgba(113,81,91,.1)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
