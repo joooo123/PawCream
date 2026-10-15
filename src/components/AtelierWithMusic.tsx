@@ -653,6 +653,7 @@ export default function AtelierWithMusic(props: Props) {
                 {selectedIndex === null
                   ? copy.ready
                   : `${copy.current} · ${String(selectedIndex + 1).padStart(2, '0')} / ${String(CD_URLS.length).padStart(2, '0')}`}
+                {selectedIndex !== null && <span style={{ marginLeft: 6 }}>· 离线试听 20 秒</span>}
               </div>
             </header>
 
