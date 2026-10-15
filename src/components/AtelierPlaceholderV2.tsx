@@ -586,8 +586,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           event.stopPropagation()
           // Light has large transparent padding: the lamp, not its full image box,
           // is the clickable target. Keep the Color hot zone restricted as well.
-          if (!tuneMode && event.detail !== 0 && (key === 'light' || key === 'color')) {
-            if (!assetOpaqueAt(key, event.clientX, event.clientY)) return
+          if (!tuneMode && event.detail !== 0) {
+            if (key === 'light' && !assetOpaqueAt('light', event.clientX, event.clientY)) return
             if (key === 'color') {
               const rect = event.currentTarget.getBoundingClientRect()
               if (!rect.width || !rect.height ||
