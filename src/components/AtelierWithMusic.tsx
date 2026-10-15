@@ -89,7 +89,8 @@ function readMobileViewportFrame(): MobileViewportFrame {
 
 function getMobileStageScale(frame: MobileViewportFrame) {
   const widthScale = (frame.width - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_WIDTH
-  const heightScale = (frame.height - MOBILE_STAGE_GUTTER) / MOBILE_STAGE_HEIGHT
+  // Leave room for the XHS app chrome rather than filling the full viewport.
+  const heightScale = (frame.height - 128) / MOBILE_STAGE_HEIGHT
   return clamp(Math.min(1, widthScale, heightScale), 0.2, 1)
 }
 
@@ -510,7 +511,7 @@ export default function AtelierWithMusic(props: Props) {
   const panelStyle: CSSProperties = {
     position: mobile ? 'absolute' : 'relative',
     left: mobile ? '50%' : undefined,
-    top: mobile ? '50%' : undefined,
+    top: mobile ? 'calc(50% + 16px)' : undefined,
     width: mobile ? MOBILE_STAGE_WIDTH : 'min(1120px, calc(100vw - 34px))',
     height: mobile ? MOBILE_STAGE_HEIGHT : 'min(760px, calc(100svh - 38px))',
     maxHeight: mobile ? 'none' : 'calc(100svh - 14px)',
