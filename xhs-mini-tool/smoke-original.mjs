@@ -171,6 +171,9 @@ try{
  await assertNotesBounds(320,700);
  await page.setViewportSize({width:390,height:844});
 
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="music"]',{timeout:15000});
+ await page.waitForTimeout(700);
  // Verify touchable spoon and real offline audio preview.
  await page.locator('[data-atelier-asset="music"]').click();
  await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
