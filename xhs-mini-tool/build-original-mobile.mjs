@@ -45,7 +45,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ['  const openMyBox = async () => {','  const retryBoxSync = async () => {',
 `  const openMyBox = async () => {
     setBoxOwnerName('离线访客')
-    setBoxPhotos([])
+    // Keep private creations already made during this offline page session.
     setNewestPhotoId(null)
     setBoxSyncStatus('当前为离线预览；更多功能见工作室网站')
     setStep('boxing')
@@ -83,7 +83,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
         cloudSynced: false,
       }
       setBoxOwnerName('离线访客')
-      setBoxPhotos([saved])
+      setBoxPhotos(current => [saved, ...current])
       setNewestPhotoId(saved.id)
       setStep('boxing')
       setStatus('')
