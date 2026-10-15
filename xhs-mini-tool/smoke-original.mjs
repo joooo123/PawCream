@@ -33,6 +33,7 @@ try{
  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('.home-stage',{timeout:15000});
  await page.waitForTimeout(1100);
+ await page.waitForFunction(() => Number(document.querySelector('.p5-dream-layer canvas')?.getAttribute('data-star-draw-count')) > 0, {timeout:12000});
  const home=await page.evaluate(()=>({
   hasOriginalHome:!!document.querySelector('.home-stage'),
   renderedImages:document.querySelectorAll('.home-stage img').length,
@@ -108,16 +109,27 @@ try{
  await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
  await page.waitForTimeout(280);
  if(!await night())throw Error('Opaque lamp does not open night mode');
- if(!await page.locator('[aria-label="关灯提示"]').isVisible())
-  throw Error('Missing night-mode turn-off hint');
+ if(!await page.locator('[aria-label="房间功能提示"]').isVisible())
+  throw Error('Missing component feature hints in night mode');
+ if(await page.locator('[aria-label="房间功能提示"] span').count()<5)
+  throw Error('Night component guide is incomplete');
  await page.mouse.click(lampPoints.transparent.x,lampPoints.transparent.y);
  await page.waitForTimeout(280);
  if(!await night())throw Error('Transparent lamp padding closes night mode');
  await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
  await page.waitForTimeout(280);
  if(await night())throw Error('Opaque lamp cannot close night mode');
- if(await page.locator('[aria-label="关灯提示"]').count())
-  throw Error('Turn-off hint remains after closing night mode');
+ if(await page.locator('[aria-label="房间功能提示"]').count())
+  throw Error('Component hints remain after closing night mode');
+
+ // Touch-synthesized clicks sometimes have detail=0; they must still reject
+ // invisible image pixels (the previous bypass caused accidental lamp toggles).
+ await page.evaluate(({x,y})=>{
+  const lamp=document.querySelector('[data-atelier-asset="light"]');
+  lamp.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,detail:0,clientX:x,clientY:y}));
+ }, lampPoints.transparent);
+ await page.waitForTimeout(250);
+ if(await night())throw Error('detail=0 transparent touch still opens night mode');
 
  // Open the sticky-note wall and verify the actual mobile card does not
  // overlap the XHS header or phone home indicator.
@@ -142,6 +154,31 @@ try{
  await page.waitForTimeout(100);
  await assertNotesBounds(320,700);
  await page.setViewportSize({width:390,height:844});
+ // Real file input activation: the offline photo editor must open the
+ // system file chooser on a visible, user-tapped gallery control.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('section[aria-label^="PawCream Atelier Room"]',{timeout:15000});
+ await page.waitForTimeout(500);
+ await page.locator('[data-atelier-asset="instax"]').click();
+ await page.waitForSelector('.pawcream-instax-maker-card',{timeout:5000});
+ await page.getByRole('button',{name:'ok!'}).click();
+ await page.waitForSelector('[aria-label^="照片格"]',{timeout:3000}).catch(()=>{});
+ const photoSlot=page.locator('.pawcream-instax-maker-card [role="button"]').filter({hasText:/选择照片|点击/}).first();
+ const slotElement=page.locator('.pawcream-instax-maker-card').locator('[data-slot-index]').first();
+ if(await slotElement.count())await slotElement.click();
+ else await page.locator('.pawcream-instax-maker-card').getByText('点击照片', {exact:false}).first().click().catch(async()=>{
+  await page.locator('.pawcream-instax-maker-card').locator('div[style*="cursor: pointer"]').last().click();
+ });
+ await page.waitForSelector('input[aria-label="从图库选择照片"]',{timeout:4000});
+ const choose=page.waitForEvent('filechooser',{timeout:4000});
+ await page.getByText('从图库选择',{exact:false}).last().click();
+ const fileChooser=await choose;
+ await fileChooser.setFiles(path.join(dist,'assets/home/Home_mobile.webp'));
+ await page.waitForTimeout(450);
+ const inputClosed=await page.locator('input[aria-label="从图库选择照片"]').count()===0;
+ const photoLoaded=await page.locator('.pawcream-instax-maker-card img[src^="blob:"]').count()>0;
+ if(!inputClosed||!photoLoaded)throw Error('Photo gallery selection did not update the Instax editor');
+
  const results={size:{width:390,height:844},home,atelier,
   pageErrors:errors,missingAssets:unavailable};
  fs.writeFileSync(path.join(release,'browser-smoke.json'),JSON.stringify(results,null,2)+'\n');
