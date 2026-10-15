@@ -1,173 +1,78 @@
+// Run before React and the individual overlay handlers. Transparent artwork
+// must not intercept a tap simply because the PNG has a large rectangular box.
 const ALPHA_THRESHOLD = 40
+const UNCHANGED = new Set(['bear', 'cabinet', 'note', 'window', 'pawcream'])
+let canvas: HTMLCanvasElement | null = null
 
-let sampleCanvas: HTMLCanvasElement | null = null
-
-function isTuneMode() {
-  return new URLSearchParams(window.location.search).get('tune') === '1'
+function isTuning() {
+  return new URLSearchParams(location.search).get('tune') === '1'
 }
 
-function getInteractiveAsset(target: EventTarget | null) {
+function targetArtwork(target: EventTarget | null) {
   if (!(target instanceof Element)) return null
-  const stage = target.closest<HTMLElement>('section[aria-label^="PawCream Atelier Room"]')
-  if (!stage) return null
-
-  const control = target.closest<HTMLElement>('[role="button"]')
-  if (!control || !stage.contains(control)) return null
-
-  const image =
-    control instanceof HTMLImageElement
-      ? control
-      : control.querySelector<HTMLImageElement>(':scope > img')
-
-  if (!image) return null
-
-  // Only artwork controls are alpha-gated. Toolbar buttons and other UI have no image child.
-  const label = control.getAttribute('aria-label') ?? ''
-  const isAssetInteraction = label.endsWith(' interaction') || label === 'Change Atelier background'
-  if (!isAssetInteraction) return null
-
-  return { stage, control, image }
+  const control = target.closest<HTMLElement>('[data-atelier-asset]')
+  const key = control?.dataset.atelierAsset
+  if (!control || !key || UNCHANGED.has(key)) return null
+  if (!control.closest('section[aria-label^="PawCream Atelier Room"]')) return null
+  const image = control.querySelector<HTMLImageElement>(':scope > img')
+  return image ? { control, image, key } : null
 }
 
-function readRotationDegrees(control: HTMLElement) {
-  const transform = control.style.transform || window.getComputedStyle(control).transform
-  const direct = transform.match(/rotate\(([-+]?\d*\.?\d+)deg\)/)
-  if (direct) return Number(direct[1]) || 0
-
-  const matrix = window.getComputedStyle(control).transform
-  const match = matrix.match(/^matrix\(([^)]+)\)$/)
-  if (!match) return 0
-  const values = match[1].split(',').map(Number)
-  if (values.length < 2 || values.some((value) => !Number.isFinite(value))) return 0
-  return (Math.atan2(values[1], values[0]) * 180) / Math.PI
-}
-
-function isOpaqueAt(
-  stage: HTMLElement,
-  control: HTMLElement,
-  image: HTMLImageElement,
-  clientX: number,
-  clientY: number,
-) {
+function isPainted(control: HTMLElement, image: HTMLImageElement, key: string, x: number, y: number) {
   if (!image.complete || !image.naturalWidth || !image.naturalHeight) return false
-
-  // Color has no rotation: sample against the rendered image rectangle directly.
-  // This also handles percentage sizing and scaled mobile viewports correctly.
-  if (control === image && image.getAttribute('aria-label') === 'Change Atelier background') {
-    const rect = image.getBoundingClientRect()
-    if (!rect.width || !rect.height) return false
-    const nx = (clientX - rect.left) / rect.width
-    const ny = (clientY - rect.top) / rect.height
-    if (nx < 0 || nx >= 1 || ny < 0 || ny >= 1) return false
-    try {
-      sampleCanvas ??= document.createElement('canvas')
-      sampleCanvas.width = sampleCanvas.height = 1
-      const context = sampleCanvas.getContext('2d', { willReadFrequently: true })
-      if (!context) return false
-      context.clearRect(0, 0, 1, 1)
-      context.drawImage(image,
-        Math.min(image.naturalWidth - 1, Math.floor(nx * image.naturalWidth)),
-        Math.min(image.naturalHeight - 1, Math.floor(ny * image.naturalHeight)),
-        1, 1, 0, 0, 1, 1)
-      return context.getImageData(0, 0, 1, 1).data[3] >= ALPHA_THRESHOLD
-    } catch {
-      return false
-    }
+  const width = control.offsetWidth
+  const height = control.offsetHeight
+  const rect = control.getBoundingClientRect()
+  if (!width || !height) return false
+  // The browser reports the axis-aligned bounds after CSS rotation. Undo that
+  // rotation around the actual rendered center, rather than using tune values.
+  const transform = getComputedStyle(control).transform
+  let angle = 0
+  const m = transform.match(/^matrix\(([^)]+)\)$/)
+  if (m) {
+    const fields = m[1].split(',').map(Number)
+    angle = -Math.atan2(fields[1], fields[0])
+  } else {
+    const match = control.style.transform.match(/rotate\(([-+\d.]+)deg\)/)
+    if (match) angle = -Number(match[1]) * Math.PI / 180
   }
-
-  const stageRect = stage.getBoundingClientRect()
-  const computed = window.getComputedStyle(control)
-  const left = Number.parseFloat(computed.left)
-  const top = Number.parseFloat(computed.top)
-  const renderWidth = control.offsetWidth
-  const renderHeight = control.offsetHeight
-
-  if (
-    !Number.isFinite(left) ||
-    !Number.isFinite(top) ||
-    renderWidth <= 0 ||
-    renderHeight <= 0
-  ) {
-    return false
-  }
-
-  const centerX = stageRect.left + left
-  const centerY = stageRect.top + top
-  const dx = clientX - centerX
-  const dy = clientY - centerY
-  const angle = (-readRotationDegrees(control) * Math.PI) / 180
-  const localX = dx * Math.cos(angle) - dy * Math.sin(angle)
-  const localY = dx * Math.sin(angle) + dy * Math.cos(angle)
-  const nx = (localX + renderWidth / 2) / renderWidth
-  const ny = (localY + renderHeight / 2) / renderHeight
-
-  if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return false
+  const dx = x - (rect.left + rect.width / 2)
+  const dy = y - (rect.top + rect.height / 2)
+  const u = (dx * Math.cos(angle) - dy * Math.sin(angle) + width / 2) / width
+  const v = (dx * Math.sin(angle) + dy * Math.cos(angle) + height / 2) / height
+  if (u < 0 || u >= 1 || v < 0 || v >= 1) return false
 
   try {
-    sampleCanvas ??= document.createElement('canvas')
-    sampleCanvas.width = 1
-    sampleCanvas.height = 1
-    const context = sampleCanvas.getContext('2d', { willReadFrequently: true })
-    if (!context) return false
-
-    const sourceX = Math.min(
-      image.naturalWidth - 1,
-      Math.max(0, Math.floor(nx * image.naturalWidth)),
-    )
-    const sourceY = Math.min(
-      image.naturalHeight - 1,
-      Math.max(0, Math.floor(ny * image.naturalHeight)),
-    )
-
-    context.clearRect(0, 0, 1, 1)
-    context.drawImage(image, sourceX, sourceY, 1, 1, 0, 0, 1, 1)
-    return context.getImageData(0, 0, 1, 1).data[3] >= ALPHA_THRESHOLD
-  } catch {
-    return false
-  }
+    canvas ??= document.createElement('canvas')
+    canvas.width = canvas.height = 1
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return false
+    const sx = Math.min(image.naturalWidth - 1, Math.floor(u * image.naturalWidth))
+    const sy = Math.min(image.naturalHeight - 1, Math.floor(v * image.naturalHeight))
+    // A tiny 5 CSS-pixel touch allowance helps with narrow lamp outlines.
+    const allowance = key === 'light' ? 5 : 0
+    const checks = allowance ? [[0,0],[-allowance,0],[allowance,0],[0,-allowance],[0,allowance]] : [[0,0]]
+    for (const [ox, oy] of checks) {
+      const px = Math.max(0, Math.min(image.naturalWidth - 1, sx + Math.round(ox * image.naturalWidth / width)))
+      const py = Math.max(0, Math.min(image.naturalHeight - 1, sy + Math.round(oy * image.naturalHeight / height)))
+      ctx.clearRect(0, 0, 1, 1)
+      ctx.drawImage(image, px, py, 1, 1, 0, 0, 1, 1)
+      if (ctx.getImageData(0, 0, 1, 1).data[3] >= ALPHA_THRESHOLD) return true
+    }
+  } catch { return false }
+  return false
 }
 
-function blockTransparentPointer(event: PointerEvent) {
-  if (isTuneMode()) return
-  const asset = getInteractiveAsset(event.target)
+function intercept(event: MouseEvent | PointerEvent) {
+  if (isTuning()) return
+  // Preserve keyboard-generated clicks, but not zero-detail touch clicks
+  // carrying a real on-screen coordinate (a known mobile WebView behavior).
+  if (event.type === 'click' && event.detail === 0 && event.clientX === 0 && event.clientY === 0) return
+  const asset = targetArtwork(event.target)
   if (!asset) return
-  if (isOpaqueAt(asset.stage, asset.control, asset.image, event.clientX, event.clientY)) return
-
-  // Prevent transparent padding from entering React pointer logic (notably Message drag).
+  if (isPainted(asset.control, asset.image, asset.key, event.clientX, event.clientY)) return
   event.preventDefault()
   event.stopImmediatePropagation()
 }
-
-function blockTransparentClick(event: MouseEvent) {
-  if (isTuneMode()) return
-  // detail === 0 is normally a keyboard-generated click; keep keyboard accessibility intact.
-  if (event.detail === 0) return
-
-  const asset = getInteractiveAsset(event.target)
-  if (!asset) return
-  if (isOpaqueAt(asset.stage, asset.control, asset.image, event.clientX, event.clientY)) return
-
-  event.preventDefault()
-  event.stopImmediatePropagation()
-
-  // Let the click fall through transparent artwork to whatever is visually underneath.
-  const previousPointerEvents = asset.control.style.pointerEvents
-  asset.control.style.pointerEvents = 'none'
-  const underneath = document.elementFromPoint(event.clientX, event.clientY)
-  if (underneath && underneath !== asset.control) {
-    underneath.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clientX: event.clientX,
-        clientY: event.clientY,
-        detail: 1,
-      }),
-    )
-  }
-  asset.control.style.pointerEvents = previousPointerEvents
-}
-
-document.addEventListener('pointerdown', blockTransparentPointer, true)
-document.addEventListener('click', blockTransparentClick, true)
+document.addEventListener('pointerdown', intercept, true)
+document.addEventListener('click', intercept, true)
