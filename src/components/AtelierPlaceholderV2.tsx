@@ -584,18 +584,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onClick={(event) => {
           if (noteIsPassive) return
           event.stopPropagation()
-          // Light has large transparent padding: the lamp, not its full image box,
-          // is the clickable target. Keep the Color hot zone restricted as well.
-          // Touch WebViews may synthesize clicks with detail=0; do not bypass hit tests.
-          if (!tuneMode && (key === 'light' || key === 'color')) {
-            if (!assetOpaqueAt(key, event.clientX, event.clientY)) return
-            if (key === 'color') {
-              const rect = event.currentTarget.getBoundingClientRect()
-              if (!rect.width || !rect.height ||
-                  Math.abs(event.clientX - (rect.left + rect.width / 2)) > rect.width * 0.05 ||
-                  Math.abs(event.clientY - (rect.top + rect.height / 2)) > rect.height * 0.05) return
-            }
-          }
+          // The shared capture listener checks visible alpha for every active
+          // artwork component, including rotated Color and the lamp.
           handleNormalAssetClick(key)
         }}
         onKeyDown={(event) => {
@@ -629,7 +619,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         )}
 
         {!tuneMode && key === 'note' && messageMoveMode && (
-          <span style={{ position: 'absolute', left: '50%', top: '50%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '58%' : '48%', maxWidth: 220, padding: mobile ? '8px 10px' : '10px 13px', borderRadius: 14, border: '1px solid rgba(215,151,174,.18)', background: 'rgba(255,252,253,.9)', color: '#946d7a', fontFamily: uiFont, fontSize: mobile ? 9 : 11, lineHeight: 1.5, textAlign: 'center', boxShadow: '0 8px 26px rgba(113,81,91,.11)', pointerEvents: 'none' }}>
+          <span style={{ position: 'absolute', left: '50%', top: '50%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '40%' : '35%', maxWidth: 145, padding: 0, border: 'none', background: 'transparent', color: '#946d7a', fontFamily: uiFont, fontSize: mobile ? 8 : 10, lineHeight: 1.45, textAlign: 'center', whiteSpace: 'normal', overflowWrap: 'anywhere', boxShadow: 'none', pointerEvents: 'none' }}>
             {copy.notePrompt}
           </span>
         )}
@@ -725,10 +715,11 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
               position: 'absolute', left: `${hint.x}%`, top: `${hint.y}%`,
               transform: 'translate(-50%, -50%)', borderRadius: 999,
               padding: mobile ? '5px 8px' : '7px 11px',
-              background: 'rgba(255,250,253,.93)',
-              border: '1px solid rgba(244,222,234,.8)', color: '#966d82',
+              background: 'transparent',
+              border: 'none', color: '#fff',
+              textShadow: '0 1px 5px rgba(0,0,0,.75), 0 2px 9px rgba(0,0,0,.42)',
               fontFamily: uiFont, fontSize: mobile ? 10 : 12,
-              whiteSpace: 'nowrap', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
+              whiteSpace: 'nowrap', boxShadow: 'none',
               pointerEvents: 'none',
             }}>{language === 'zh' ? hint.zh : hint.en}</span>
           ))}
