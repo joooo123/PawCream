@@ -363,16 +363,6 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           </button>
         </header>
 
-        {!apiEnabled && (
-          <section style={{ marginTop: 13, padding: '10px 11px', borderRadius: 14, background: 'rgba(233,243,249,.78)', color: '#7891a1' }}>
-            <div style={{ fontSize: uiSize(mobile ? 11.5 : 12.5), lineHeight: 1.5 }}>{copy.preview}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 9 }}>
-              <button type="button" onClick={() => switchPreviewUser(false)} style={previewPill(!viewer)}>{copy.guestPreview}</button>
-              <button type="button" onClick={() => switchPreviewUser(true)} style={previewPill(Boolean(viewer))}>{copy.signedPreview}</button>
-              <button type="button" onClick={resetPreview} style={previewPill(false)}>{copy.resetPreview}</button>
-            </div>
-          </section>
-        )}
 
         <div style={{ display: 'flex', gap: 7, marginTop: 14 }}>
           <button type="button" onClick={() => selectScope('all')} style={pill(scope === 'all')}>{copy.all}</button>
