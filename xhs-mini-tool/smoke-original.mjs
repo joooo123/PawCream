@@ -169,7 +169,7 @@ try{
  else await page.locator('.pawcream-instax-maker-card').getByText('点击照片', {exact:false}).first().click().catch(async()=>{
   await page.locator('.pawcream-instax-maker-card').locator('div[style*="cursor: pointer"]').last().click();
  });
- await page.waitForSelector('input[aria-label="从图库选择照片"]',{timeout:4000});
+ await page.waitForSelector('input[aria-label="从图库选择照片"]',{state:'attached',timeout:4000});
  const choose=page.waitForEvent('filechooser',{timeout:4000});
  await page.getByText('从图库选择',{exact:false}).last().click();
  const fileChooser=await choose;
