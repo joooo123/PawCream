@@ -584,13 +584,16 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onClick={(event) => {
           if (noteIsPassive) return
           event.stopPropagation()
-          // Keep the click target to the central 10% of Color's rendered box.
-          // getBoundingClientRect includes the asset's rotation and works on touch.
-          if (!tuneMode && key === 'color' && event.detail !== 0) {
-            const rect = event.currentTarget.getBoundingClientRect()
-            if (!rect.width || !rect.height ||
-                Math.abs(event.clientX - (rect.left + rect.width / 2)) > rect.width * 0.05 ||
-                Math.abs(event.clientY - (rect.top + rect.height / 2)) > rect.height * 0.05) return
+          // Light has large transparent padding: the lamp, not its full image box,
+          // is the clickable target. Keep the Color hot zone restricted as well.
+          if (!tuneMode && event.detail !== 0 && (key === 'light' || key === 'color')) {
+            if (!assetOpaqueAt(key, event.clientX, event.clientY)) return
+            if (key === 'color') {
+              const rect = event.currentTarget.getBoundingClientRect()
+              if (!rect.width || !rect.height ||
+                  Math.abs(event.clientX - (rect.left + rect.width / 2)) > rect.width * 0.05 ||
+                  Math.abs(event.clientY - (rect.top + rect.height / 2)) > rect.height * 0.05) return
+            }
           }
           handleNormalAssetClick(key)
         }}
@@ -704,6 +707,27 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
             <button type="button" onClick={closeToolbar} aria-label={copy.toolbarClose} title={copy.toolbarClose} style={{ width: mobile ? 28 : 32, height: mobile ? 28 : 32, border: '1px solid rgba(198,133,157,.2)', borderRadius: '50%', background: 'rgba(255,255,255,.78)', color: '#9b7682', cursor: 'pointer' }}>×</button>
           </div>
         </nav>
+      )}
+
+      {!tuneMode && topBarOpen && (
+        <p
+          role="status"
+          aria-label={language === 'zh' ? '关灯提示' : 'Turn off light hint'}
+          style={{
+            position: 'absolute', left: '50%', bottom: mobile ? 93 : 91,
+            transform: 'translateX(-50%)', zIndex: 55,
+            margin: 0, padding: '7px 13px',
+            maxWidth: 'calc(100% - 28px)',
+            borderRadius: 999, whiteSpace: 'nowrap',
+            background: 'rgba(255,252,253,.88)', color: '#8e717c',
+            border: '1px solid rgba(222,187,201,.55)',
+            boxShadow: '0 6px 22px rgba(0,0,0,.09)',
+            fontSize: mobile ? 11 : 12, fontFamily: uiFont,
+            pointerEvents: 'none',
+          }}
+        >
+          {language === 'zh' ? '再点一下台灯，就可以关灯啦 ♡' : 'Tap the lamp again to turn off the light ♡'}
+        </p>
       )}
 
       {!tuneMode && loginNoticeOpen && topBarOpen && (
