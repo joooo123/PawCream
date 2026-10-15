@@ -39,10 +39,10 @@ export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Pr
         <article
           key={note.id}
           style={{
-            minHeight: mobile ? 142 : 158,
+            minHeight: mobile ? 128 : 158,
             display: 'flex',
             flexDirection: 'column',
-            padding: mobile ? '12px 11px 10px' : '14px 13px 11px',
+            padding: mobile ? '10px 9px 8px' : '14px 13px 11px',
             border: '1px solid rgba(207,155,174,.18)',
             borderRadius: 4,
             background: index % 3 === 1 ? '#fff9e8' : index % 3 === 2 ? '#f5fafc' : '#fff5f8',
@@ -53,7 +53,7 @@ export default function PawCreamNoteWall({ notes, mobile, language, onLike }: Pr
             WebkitFontSmoothing: 'antialiased',
           }}
         >
-          <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: language === 'zh' ? (mobile ? 16 : 17) : (mobile ? 13.5 : 15), lineHeight: 1.68 }}>
+          <p style={{ flex: 1, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', color: '#735d65', fontSize: language === 'zh' ? (mobile ? 14.5 : 17) : (mobile ? 13 : 15), lineHeight: 1.68 }}>
             {note.text}
           </p>
 
