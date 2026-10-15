@@ -59,7 +59,10 @@ try{
   const img=asset?.querySelector('img');
   if(!img?.naturalWidth)throw Error('Color image unavailable');
   const r=asset.getBoundingClientRect();
-  const angle=parseFloat(asset.style.transform.match(/rotate\\(([-+\\d.]+)deg\\)/)?.[1]||0)*Math.PI/180;
+  // Compute rendered CSS rotation from matrix; regex parsing inline style
+  // previously failed and silently generated unrotated test coordinates.
+  const values=getComputedStyle(asset).transform.slice(7,-1).split(',').map(Number);
+  const angle=Math.atan2(values[1],values[0]);
   const point=(u,v)=>{
    const dx=(u-.5)*asset.offsetWidth,dy=(v-.5)*asset.offsetHeight;
    const x=r.left+r.width/2+dx*Math.cos(angle)-dy*Math.sin(angle);
@@ -77,10 +80,7 @@ try{
  if(await backgroundIndex()!==before)throw Error('Color transparent pixel changed background');
  await page.mouse.click(colorHits.opaque.x,colorHits.opaque.y);
  await page.waitForTimeout(95);
- if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background: '+JSON.stringify({colorHits,debug:await page.evaluate(()=>{
- const a=document.querySelector('[data-atelier-asset="color"]');
- return {status:a.dataset.debugAlpha,transform:getComputedStyle(a).transform,offset:{w:a.offsetWidth,h:a.offsetHeight},rect:a.getBoundingClientRect().toJSON()};
- })}));
+ if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background: '+JSON.stringify(colorHits));
 
  // Regression: the lamp has a huge transparent image box. Only painted
  // lamp pixels may toggle night mode, in both directions.
