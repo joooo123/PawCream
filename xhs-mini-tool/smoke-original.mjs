@@ -77,7 +77,10 @@ try{
  if(await backgroundIndex()!==before)throw Error('Color transparent pixel changed background');
  await page.mouse.click(colorHits.opaque.x,colorHits.opaque.y);
  await page.waitForTimeout(95);
- if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background: '+JSON.stringify(colorHits));
+ if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background: '+JSON.stringify({colorHits,debug:await page.evaluate(()=>{
+ const a=document.querySelector('[data-atelier-asset="color"]');
+ return {status:a.dataset.debugAlpha,transform:getComputedStyle(a).transform,offset:{w:a.offsetWidth,h:a.offsetHeight},rect:a.getBoundingClientRect().toJSON()};
+ })}));
 
  // Regression: the lamp has a huge transparent image box. Only painted
  // lamp pixels may toggle night mode, in both directions.
