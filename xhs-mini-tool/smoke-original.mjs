@@ -60,8 +60,8 @@ try{
   const outer={x:center.x-Math.min(r.width*.25,40),y:center.y};
   if(!document.elementFromPoint(center.x,center.y)?.closest('[data-atelier-asset="color"]'))
    throw Error('Color center is covered by another element');
-  if(!document.elementFromPoint(outer.x,outer.y)?.closest('[data-atelier-asset="color"]'))
-   throw Error('Color outer target is not hittable in test');
+  if(document.elementFromPoint(outer.x,outer.y)?.closest('[data-atelier-asset="color"]'))
+   throw Error('Color transparent padding still intercepts pointer events');
   return {center,outer};
  });
  const backgroundIndex=()=>page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
