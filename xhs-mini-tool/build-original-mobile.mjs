@@ -24,10 +24,11 @@ const tuningFixes=[
 const originalPlugin={name:'original-pawcream-mobile',setup(build){
  build.onLoad({filter:/\.(tsx?|jsx?)$/},async args=>{
   if(!args.path.startsWith(path.join(repo,'src')+path.sep))return;
-  // The original p5 particle renderer embeds syntax unsupported by Chrome 61.
-  // Keep its home UI slot and exact layout, replacing only this decorative layer.
+  // Use the offline Canvas renderer in place of the p5 dependency.
+  // Removing the entire layer previously deleted all flying Home stars.
   if(args.path.endsWith(path.sep+'P5DreamLayer.tsx')){
-    return {contents:'export default function P5DreamLayer(){return null}',loader:'tsx'};
+    const contents=fs.readFileSync(path.join(root,'P5DreamLayerOffline.tsx'),'utf8');
+    return {contents:contents.replace(/\\.png\\b/g,'.webp'),loader:'tsx'};
   }
   let source=fs.readFileSync(args.path,'utf8');
   if(args.path.endsWith(path.sep+'pawcreamApi.ts')){
