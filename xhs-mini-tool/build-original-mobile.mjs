@@ -38,6 +38,10 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
    source=source.replace("return window.localStorage.getItem(PREVIEW_AUTH_STORAGE_KEY) === '1'","return false");
    source=source.replace("window.localStorage.setItem(PREVIEW_AUTH_STORAGE_KEY, signedIn ? '1' : '0')","void signedIn");
   }
+  // Offline XHS cannot package or stream MP3. Keep CD and spoon visuals.
+  if(args.path.endsWith(path.sep+'AtelierWithMusicAudio.tsx')){
+    return {contents:"import AtelierWithMusicReturn from './AtelierWithMusicReturn'; export default AtelierWithMusicReturn;",loader:'tsx'};
+  }
   if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
     // Keep the original Instax and tin-box React UIs, but replace their cloud
     // handlers with a clearly labeled current-session local preview. The
@@ -122,6 +126,12 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       source=source.slice(0,a)+replacement+source.slice(b);
     }
   }
+  if(args.path.endsWith(path.sep+'AtelierWithMusicLayout.tsx')){
+    source=source.replace("isPlaying ? 'Pause music' : 'Play music'","isPlaying ? '停止唱针动画' : '旋转唱针'");
+  }
+  if(args.path.endsWith(path.sep+'AtelierWithMusic.tsx')){
+    source=source.replace('离线试听 20 秒','离线唱片演示 · 无音频');
+  }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
     source=source.replace(/^.*background4\.png.*\r?\n/m,'');
@@ -172,19 +182,7 @@ for(const relative of walk(sourceAssets)){
  const q=(paper||opening)?65:bg?57:studio?61:66;
  cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',input,'-o',output]);num++;
 }
-// Original nine full-length MP3 files exceed the official 10 MiB offline ZIP
-// budget. Bundle honest 20-second previews so the spoon/CD player can play
-// without network access; never alter the original source recordings.
-let audioPreviews = 0;
-for(const relative of walk(sourceAssets)){
- if(!relative.startsWith('music player/')||!relative.toLowerCase().endsWith('.mp3'))continue;
- const input=path.join(sourceAssets,relative);
- const output=path.join(assets,relative);mkdir(output);
- cmd('ffmpeg',['-nostdin','-hide_banner','-loglevel','error','-y','-i',input,
-   '-t','20','-vn','-ac','1','-ar','24000','-codec:a','libmp3lame','-b:a','48k',output]);
- audioPreviews++;
-}
-check(audioPreviews===9,'Expected nine offline CD audio previews');
+// No audio files: the XHS upload whitelist rejects MP3.
 for(const font of ['pawcream-en.woff2','pawcream-cn.woff2']){
  const input=path.join(sourceAssets,'font',font);
  check(fs.existsSync(input),'Missing converted font: '+font);
@@ -214,6 +212,9 @@ const zipBytes=fs.statSync(zip).size;
 check(zipBytes<=10*1048576,'ZIP TOO LARGE: '+(zipBytes/1048576).toFixed(2)+' MiB');
 const entries=cmd('unzip',['-Z','-1',zip]).trim().split('\n');
 check(entries.includes('index.html'),'Missing ZIP root index.html');
+const allowed=new Set(['jpg','css','gif','svg','png','js','jpeg','json','html','woff2','webp','woff']);
+const forbidden=entries.filter(entry=>!entry.endsWith('/')&&!allowed.has(path.extname(entry).slice(1).toLowerCase()));
+check(forbidden.length===0,'XHS upload rejects unsupported file types: '+forbidden.join(', '));
 check(entries.every(x=>!x.startsWith('/')&&!x.startsWith('../')&&!/\.map$/.test(x)),'Unsupported ZIP entry');
 const official=path.join(repo,'.skill/minitool-zip-builder/scripts/audit_artifact.py');
 const directoryAudit=cmd('python3',[official,dist]).trim(),zipAudit=cmd('python3',[official,zip]).trim();
