@@ -162,13 +162,7 @@ try{
  await page.locator('[data-atelier-asset="instax"]').click();
  await page.waitForSelector('.pawcream-instax-maker-card',{timeout:5000});
  await page.getByRole('button',{name:'ok!'}).click();
- await page.waitForSelector('[aria-label^="照片格"]',{timeout:3000}).catch(()=>{});
- const photoSlot=page.locator('.pawcream-instax-maker-card [role="button"]').filter({hasText:/选择照片|点击/}).first();
- const slotElement=page.locator('.pawcream-instax-maker-card').locator('[data-slot-index]').first();
- if(await slotElement.count())await slotElement.click();
- else await page.locator('.pawcream-instax-maker-card').getByText('点击照片', {exact:false}).first().click().catch(async()=>{
-  await page.locator('.pawcream-instax-maker-card').locator('div[style*="cursor: pointer"]').last().click();
- });
+ await page.getByRole('button',{name:/第 1 格，选择照片/}).click();
  await page.waitForSelector('input[aria-label="从图库选择照片"]',{state:'attached',timeout:4000});
  const choose=page.waitForEvent('filechooser',{timeout:4000});
  await page.getByText('从图库选择',{exact:false}).last().click();
