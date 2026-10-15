@@ -199,6 +199,41 @@ try{
  const photoLoaded=await page.locator('.pawcream-instax-maker-card img[src^="blob:"]').count()>0;
  if(!inputClosed||!photoLoaded)throw Error('Photo gallery selection did not update the Instax editor');
 
+
+ // Offline notes must not expose simulation-mode controls.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="message"]',{timeout:5000});
+ await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
+ await page.evaluate(()=>{
+  const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
+  const note=stage.querySelector('[data-atelier-asset="note"]');
+  const r=note.getBoundingClientRect();
+  stage.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,
+   clientX:r.left+r.width/2,clientY:r.top+r.height/2}));
+ });
+ await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
+ if(await page.locator('.pawcream-notes-card').getByText('游客预览',{exact:true}).count() ||
+    await page.locator('.pawcream-notes-card').getByText('已登录预览',{exact:true}).count())
+  throw Error('Offline notes still have simulation mode controls');
+
+ // Registration must stay within the paper, with no inner scrollbar.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="light"]',{timeout:5000});
+ await page.evaluate(()=>window.dispatchEvent(new CustomEvent('pawcream:open-signin',{detail:{mode:'register'}})));
+ await page.waitForSelector('.pawcream-signin-drop',{timeout:5000});
+ const registerFit=await page.evaluate(()=>{
+  const modal=document.querySelector('.pawcream-signin-drop');
+  const form=modal.querySelector('form');
+  const paper=form?.parentElement;
+  const send=[...modal.querySelectorAll('button')].find(x=>x.textContent?.includes('发送验证码'));
+  const p=paper?.getBoundingClientRect(),b=send?.getBoundingClientRect();
+  return {overflow:paper?getComputedStyle(paper).overflowY:null,
+   sendInside:Boolean(p&&b&&b.left>=p.left-2&&b.right<=p.right+2),
+   sendWidth:b?.width||0,scrollHeight:paper?.scrollHeight||0,clientHeight:paper?.clientHeight||0};
+ });
+ if(registerFit.overflow==='auto'||!registerFit.sendInside)
+  throw Error('Registration paper still scrolls or verification button exceeds boundaries: '+JSON.stringify(registerFit));
+
  const results={size:{width:390,height:844},home,atelier,
   pageErrors:errors,missingAssets:unavailable};
  fs.writeFileSync(path.join(release,'browser-smoke.json'),JSON.stringify(results,null,2)+'\n');
