@@ -63,7 +63,7 @@ try{
   const rect=stage.getBoundingClientRect();
   const cx=rect.left+parseFloat(asset.style.left)/100*rect.width;
   const cy=rect.top+parseFloat(asset.style.top)/100*rect.height;
-  const angle=parseFloat(asset.style.transform.match(/rotate\\(([-+\\d.]+)deg\\)/)?.[1]||0)*Math.PI/180;
+  const angle=parseFloat(asset.style.transform.match(/rotate\(([-+\d.]+)deg\)/)?.[1]||0)*Math.PI/180;
   const width=asset.offsetWidth,height=asset.offsetHeight;
   const points={opaque:null,transparent:null};
   for(let v=.08;v<.92;v+=.02)for(let u=.08;u<.92;u+=.02){
