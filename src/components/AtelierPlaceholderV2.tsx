@@ -586,7 +586,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           event.stopPropagation()
           // Light has large transparent padding: the lamp, not its full image box,
           // is the clickable target. Keep the Color hot zone restricted as well.
-          if (!tuneMode && event.detail !== 0 && (key === 'light' || key === 'color')) {
+          // Touch WebViews may synthesize clicks with detail=0; do not bypass hit tests.
+          if (!tuneMode && (key === 'light' || key === 'color')) {
             if (!assetOpaqueAt(key, event.clientX, event.clientY)) return
             if (key === 'color') {
               const rect = event.currentTarget.getBoundingClientRect()
@@ -710,24 +711,28 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       )}
 
       {!tuneMode && topBarOpen && (
-        <p
-          role="status"
-          aria-label={language === 'zh' ? '关灯提示' : 'Turn off light hint'}
-          style={{
-            position: 'absolute', left: '50%', bottom: mobile ? 93 : 91,
-            transform: 'translateX(-50%)', zIndex: 55,
-            margin: 0, padding: '7px 13px',
-            maxWidth: 'calc(100% - 28px)',
-            borderRadius: 999, whiteSpace: 'nowrap',
-            background: 'rgba(255,252,253,.88)', color: '#8e717c',
-            border: '1px solid rgba(222,187,201,.55)',
-            boxShadow: '0 6px 22px rgba(0,0,0,.09)',
-            fontSize: mobile ? 11 : 12, fontFamily: uiFont,
-            pointerEvents: 'none',
-          }}
-        >
-          {language === 'zh' ? '再点一下台灯，就可以关灯啦 ♡' : 'Tap the lamp again to turn off the light ♡'}
-        </p>
+        <div aria-label={language === 'zh' ? '房间功能提示' : 'Room feature guide'}
+          style={{ position: 'absolute', inset: 0, zIndex: 53, pointerEvents: 'none' }}>
+          {([
+            { x: 19, y: 33, zh: '音乐播放器 ♫', en: 'Music player ♫' },
+            { x: 28, y: 46, zh: '公共照片墙 ♡', en: 'Photo wall ♡' },
+            { x: 76, y: 60, zh: '娃衣收藏册', en: 'Outfit lookbook' },
+            { x: 18, y: 64, zh: '留言便签 ✎', en: 'Message notes ✎' },
+            { x: 55, y: 79, zh: '制作拍立得', en: 'Make Instax' },
+            { x: 83, y: 36, zh: '切换背景', en: 'Change color' },
+          ] as const).map((hint) => (
+            <span key={hint.zh} style={{
+              position: 'absolute', left: `${hint.x}%`, top: `${hint.y}%`,
+              transform: 'translate(-50%, -50%)', borderRadius: 999,
+              padding: mobile ? '5px 8px' : '7px 11px',
+              background: 'rgba(255,250,253,.93)',
+              border: '1px solid rgba(244,222,234,.8)', color: '#966d82',
+              fontFamily: uiFont, fontSize: mobile ? 10 : 12,
+              whiteSpace: 'nowrap', boxShadow: '0 6px 16px rgba(0,0,0,.15)',
+              pointerEvents: 'none',
+            }}>{language === 'zh' ? hint.zh : hint.en}</span>
+          ))}
+        </div>
       )}
 
       {!tuneMode && loginNoticeOpen && topBarOpen && (
