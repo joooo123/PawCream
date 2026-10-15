@@ -55,30 +55,19 @@ try{
 
  // Full opaque Color pixels (even outside center 10%) must work.
  const colorHits=await page.evaluate(()=>{
-  const asset=document.querySelector('[data-atelier-asset="color"]'), image=asset?.querySelector('img');
-  if(!image?.naturalWidth)throw Error('Color image unavailable');
-  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
-  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
-  const data=ctx.getImageData(0,0,c.width,c.height).data,rect=asset.getBoundingClientRect();
-  const width=asset.offsetWidth,height=asset.offsetHeight;
-  const matrix=getComputedStyle(asset).transform.match(/^matrix\\(([^)]+)\\)$/);
-  const fields=matrix?matrix[1].split(',').map(Number):[1,0];
-  const angle=-Math.atan2(fields[1],fields[0]);
-  const hits={opaque:null,transparent:null};
-  for(let y=Math.max(80,Math.floor(rect.top));y<Math.min(innerHeight-70,rect.bottom);y+=4){
-   for(let x=Math.max(8,Math.floor(rect.left));x<Math.min(innerWidth-8,rect.right);x+=4){
-    if(!document.elementFromPoint(x,y)?.closest('[data-atelier-asset="color"]'))continue;
-    const dx=x-rect.left-rect.width/2,dy=y-rect.top-rect.height/2;
-    const u=(dx*Math.cos(angle)-dy*Math.sin(angle)+width/2)/width;
-    const v=(dx*Math.sin(angle)+dy*Math.cos(angle)+height/2)/height;
-    if(u<0||u>=1||v<0||v>=1)continue;
-    const alpha=data[(Math.floor(v*c.height)*c.width+Math.floor(u*c.width))*4+3];
-    if(alpha>220&&!hits.opaque)hits.opaque={x,y};
-    if(alpha===0&&!hits.transparent)hits.transparent={x,y};
-    if(hits.opaque&&hits.transparent)return hits;
-   }
-  }
-  return hits;
+  const asset=document.querySelector('[data-atelier-asset="color"]');
+  const img=asset?.querySelector('img');
+  if(!img?.naturalWidth)throw Error('Color image unavailable');
+  const r=asset.getBoundingClientRect();
+  const angle=parseFloat(asset.style.transform.match(/rotate\\(([-+\\d.]+)deg\\)/)?.[1]||0)*Math.PI/180;
+  const point=(u,v)=>{
+   const dx=(u-.5)*asset.offsetWidth,dy=(v-.5)*asset.offsetHeight;
+   const x=r.left+r.width/2+dx*Math.cos(angle)-dy*Math.sin(angle);
+   const y=r.top+r.height/2+dx*Math.sin(angle)+dy*Math.cos(angle);
+   const target=document.elementFromPoint(x,y)?.closest('[data-atelier-asset]')?.getAttribute('data-atelier-asset');
+   return {x,y,u,v,target};
+  };
+  return {opaque:point(.5,.45),transparent:point(.25,.5)};
  });
  if(!colorHits.opaque||!colorHits.transparent)throw Error('Cannot find Color painted/transparent taps');
  const backgroundIndex=()=>page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
@@ -88,7 +77,7 @@ try{
  if(await backgroundIndex()!==before)throw Error('Color transparent pixel changed background');
  await page.mouse.click(colorHits.opaque.x,colorHits.opaque.y);
  await page.waitForTimeout(95);
- if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background');
+ if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background: '+JSON.stringify(colorHits));
 
  // Regression: the lamp has a huge transparent image box. Only painted
  // lamp pixels may toggle night mode, in both directions.
