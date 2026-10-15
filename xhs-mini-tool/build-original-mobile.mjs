@@ -172,6 +172,19 @@ for(const relative of walk(sourceAssets)){
  const q=(paper||opening)?65:bg?57:studio?61:66;
  cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',input,'-o',output]);num++;
 }
+// Original nine full-length MP3 files exceed the official 10 MiB offline ZIP
+// budget. Bundle honest 20-second previews so the spoon/CD player can play
+// without network access; never alter the original source recordings.
+let audioPreviews = 0;
+for(const relative of walk(sourceAssets)){
+ if(!relative.startsWith('music player/')||!relative.toLowerCase().endsWith('.mp3'))continue;
+ const input=path.join(sourceAssets,relative);
+ const output=path.join(assets,relative);mkdir(output);
+ cmd('ffmpeg',['-nostdin','-hide_banner','-loglevel','error','-y','-i',input,
+   '-t','20','-vn','-ac','1','-ar','24000','-codec:a','libmp3lame','-b:a','48k',output]);
+ audioPreviews++;
+}
+check(audioPreviews===9,'Expected nine offline CD audio previews');
 for(const font of ['pawcream-en.woff2','pawcream-cn.woff2']){
  const input=path.join(sourceAssets,'font',font);
  check(fs.existsSync(input),'Missing converted font: '+font);
