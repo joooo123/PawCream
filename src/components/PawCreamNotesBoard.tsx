@@ -312,7 +312,10 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         zIndex: 80,
         display: 'grid',
         placeItems: 'center',
-        padding: mobile ? 12 : 28,
+        // Reserve space for the XHS top controls and bottom home indicator.
+        padding: mobile
+          ? 'max(76px, calc(env(safe-area-inset-top, 0px) + 52px)) 16px max(38px, calc(env(safe-area-inset-bottom, 0px) + 20px))'
+          : 28,
         background: 'rgba(255,249,251,.64)',
         backdropFilter: 'blur(13px)',
         WebkitBackdropFilter: 'blur(13px)',
@@ -334,8 +337,8 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       <section
         className="pawcream-notes-card"
         style={{
-          width: mobile ? '100%' : 'min(760px, 100%)',
-          maxHeight: mobile ? 'calc(100% - 12px)' : 'min(760px, calc(100% - 30px))',
+          width: mobile ? 'min(350px, 100%)' : 'min(760px, 100%)',
+          maxHeight: mobile ? '100%' : 'min(760px, calc(100% - 30px))',
           overflow: 'auto',
           boxSizing: 'border-box',
           padding: mobile ? 17 : 24,
