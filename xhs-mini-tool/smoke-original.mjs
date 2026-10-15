@@ -73,6 +73,52 @@ try{
  await page.waitForTimeout(90);
  if(await backgroundIndex()===before)throw Error('Color central 10% cannot switch the background');
 
+ // Regression: the lamp has a huge transparent image box. Only painted
+ // lamp pixels may toggle night mode, in both directions.
+ const lampPoints=await page.evaluate(()=>{
+  const asset=document.querySelector('[data-atelier-asset="light"]');
+  const image=asset?.querySelector('img');
+  if(!image?.complete||!image.naturalWidth)throw Error('Lamp image unavailable');
+  const rect=asset.getBoundingClientRect();
+  const c=document.createElement('canvas');
+  c.width=image.naturalWidth;c.height=image.naturalHeight;
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(image,0,0);
+  const rgba=ctx.getImageData(0,0,c.width,c.height).data;
+  const hits={opaque:null,transparent:null};
+  for(let y=Math.max(70,Math.ceil(rect.top));y<Math.min(innerHeight-100,rect.bottom);y+=5){
+   for(let x=Math.max(12,Math.ceil(rect.left));x<Math.min(innerWidth-12,rect.right);x+=5){
+    if(!document.elementFromPoint(x,y)?.closest('[data-atelier-asset="light"]'))continue;
+    const sx=Math.min(c.width-1,Math.floor((x-rect.left)/rect.width*c.width));
+    const sy=Math.min(c.height-1,Math.floor((y-rect.top)/rect.height*c.height));
+    const alpha=rgba[(sy*c.width+sx)*4+3];
+    if(alpha>200&&!hits.opaque)hits.opaque={x,y};
+    if(alpha===0&&!hits.transparent)hits.transparent={x,y};
+    if(hits.opaque&&hits.transparent)return hits;
+   }
+  }
+  return hits;
+ });
+ if(!lampPoints.opaque||!lampPoints.transparent)
+  throw Error('Could not find tappable opaque/transparent lamp pixels');
+ const night=()=>page.evaluate(()=>document.querySelector('section[aria-label^="PawCream Atelier Room"]').classList.contains('atelier-night-active'));
+ await page.mouse.click(lampPoints.transparent.x,lampPoints.transparent.y);
+ await page.waitForTimeout(280);
+ if(await night())throw Error('Transparent lamp padding opens night mode');
+ await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
+ await page.waitForTimeout(280);
+ if(!await night())throw Error('Opaque lamp does not open night mode');
+ if(!await page.locator('[aria-label="关灯提示"]').isVisible())
+  throw Error('Missing night-mode turn-off hint');
+ await page.mouse.click(lampPoints.transparent.x,lampPoints.transparent.y);
+ await page.waitForTimeout(280);
+ if(!await night())throw Error('Transparent lamp padding closes night mode');
+ await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
+ await page.waitForTimeout(280);
+ if(await night())throw Error('Opaque lamp cannot close night mode');
+ if(await page.locator('[aria-label="关灯提示"]').count())
+  throw Error('Turn-off hint remains after closing night mode');
+
  // Open the sticky-note wall and verify the actual mobile card does not
  // overlap the XHS header or phone home indicator.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
