@@ -9,7 +9,7 @@ import {chromium} from 'playwright';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const dist=path.join(root,'dist'),release=path.join(root,'release');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css',
- '.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2'};
+ '.webp':'image/webp','.mp3':'audio/mpeg','.svg':'image/svg+xml','.woff2':'font/woff2'};
 const server=http.createServer((req,res)=>{
  let pathname;
  try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname)}catch{res.writeHead(400);res.end();return}
@@ -52,27 +52,43 @@ try{
  }));
  await page.screenshot({path:path.join(release,'mobile-atelier.png')});
 
- // The center 10% is interactive; the rest of Color's oversized artboard is not.
- const colorArea=await page.evaluate(()=>{
-  const asset=document.querySelector('[data-atelier-asset="color"]');
-  if(!asset)throw Error('Color control unavailable');
-  const r=asset.getBoundingClientRect();
-  const center={x:r.left+r.width/2,y:r.top+r.height/2};
-  const outer={x:center.x-Math.min(r.width*.25,40),y:center.y};
-  if(!document.elementFromPoint(center.x,center.y)?.closest('[data-atelier-asset="color"]'))
-   throw Error('Color center is covered by another element');
-  if(!document.elementFromPoint(outer.x,outer.y)?.closest('[data-atelier-asset="color"]'))
-   throw Error('Color outer target is not hittable in test');
-  return {center,outer};
+
+ // Full opaque Color pixels (even outside center 10%) must work.
+ const colorHits=await page.evaluate(()=>{
+  const asset=document.querySelector('[data-atelier-asset="color"]'), image=asset?.querySelector('img');
+  if(!image?.naturalWidth)throw Error('Color image unavailable');
+  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
+  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
+  const data=ctx.getImageData(0,0,c.width,c.height).data,rect=asset.getBoundingClientRect();
+  const width=asset.offsetWidth,height=asset.offsetHeight;
+  const matrix=getComputedStyle(asset).transform.match(/^matrix\\(([^)]+)\\)$/);
+  const fields=matrix?matrix[1].split(',').map(Number):[1,0];
+  const angle=-Math.atan2(fields[1],fields[0]);
+  const hits={opaque:null,transparent:null};
+  for(let y=Math.max(80,Math.floor(rect.top));y<Math.min(innerHeight-70,rect.bottom);y+=4){
+   for(let x=Math.max(8,Math.floor(rect.left));x<Math.min(innerWidth-8,rect.right);x+=4){
+    if(!document.elementFromPoint(x,y)?.closest('[data-atelier-asset="color"]'))continue;
+    const dx=x-rect.left-rect.width/2,dy=y-rect.top-rect.height/2;
+    const u=(dx*Math.cos(angle)-dy*Math.sin(angle)+width/2)/width;
+    const v=(dx*Math.sin(angle)+dy*Math.cos(angle)+height/2)/height;
+    if(u<0||u>=1||v<0||v>=1)continue;
+    const alpha=data[(Math.floor(v*c.height)*c.width+Math.floor(u*c.width))*4+3];
+    if(alpha>220&&!hits.opaque)hits.opaque={x,y};
+    if(alpha===0&&!hits.transparent)hits.transparent={x,y};
+    if(hits.opaque&&hits.transparent)return hits;
+   }
+  }
+  return hits;
  });
+ if(!colorHits.opaque||!colorHits.transparent)throw Error('Cannot find Color painted/transparent taps');
  const backgroundIndex=()=>page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
  const before=await backgroundIndex();
- await page.mouse.click(colorArea.outer.x,colorArea.outer.y);
- await page.waitForTimeout(90);
- if(await backgroundIndex()!==before)throw Error('Color outer 90% still switches the background');
- await page.mouse.click(colorArea.center.x,colorArea.center.y);
- await page.waitForTimeout(90);
- if(await backgroundIndex()===before)throw Error('Color central 10% cannot switch the background');
+ await page.mouse.click(colorHits.transparent.x,colorHits.transparent.y);
+ await page.waitForTimeout(95);
+ if(await backgroundIndex()!==before)throw Error('Color transparent pixel changed background');
+ await page.mouse.click(colorHits.opaque.x,colorHits.opaque.y);
+ await page.waitForTimeout(95);
+ if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background');
 
  // Regression: the lamp has a huge transparent image box. Only painted
  // lamp pixels may toggle night mode, in both directions.
@@ -154,6 +170,21 @@ try{
  await page.waitForTimeout(100);
  await assertNotesBounds(320,700);
  await page.setViewportSize({width:390,height:844});
+
+ // Verify touchable spoon and real offline audio preview.
+ await page.locator('[data-atelier-asset="music"]').click();
+ await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
+ await page.locator('.pawcream-music-slot-button').first().click();
+ await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="Play music"]',{timeout:5000});
+ await page.locator('section[aria-label="Current music disc"] button[aria-label="Play music"]').click();
+ await page.waitForTimeout(900);
+ if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="Pause music"]').count())
+  throw Error('Tapping spoon failed to start rotation/audio');
+ await page.locator('section[aria-label="Current music disc"] button[aria-label="Pause music"]').click();
+ await page.waitForTimeout(200);
+ if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="Play music"]').count())
+  throw Error('Spoon did not pause');
+
  // Real file input activation: the offline photo editor must open the
  // system file chooser on a visible, user-tapped gallery control.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
