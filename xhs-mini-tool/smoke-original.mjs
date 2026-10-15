@@ -50,6 +50,46 @@ try{
   }))
  }));
  await page.screenshot({path:path.join(release,'mobile-atelier.png')});
+ // Regression: Color has a large transparent canvas. A tap in that padding
+ // must not cycle the background, while a tap on painted pixels must.
+ const colorPoints=await page.evaluate(()=>{
+  const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
+  const asset=stage?.querySelector('[data-atelier-asset="color"]');
+  const image=asset?.querySelector('img');
+  if(!stage||!asset||!image?.complete||!image.naturalWidth)throw Error('Color asset unavailable');
+  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
+  const context=c.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);
+  const data=context.getImageData(0,0,c.width,c.height).data;
+  const rect=stage.getBoundingClientRect();
+  const cx=rect.left+parseFloat(asset.style.left)/100*rect.width;
+  const cy=rect.top+parseFloat(asset.style.top)/100*rect.height;
+  const angle=parseFloat(asset.style.transform.match(/rotate\\(([-+\\d.]+)deg\\)/)?.[1]||0)*Math.PI/180;
+  const width=asset.offsetWidth,height=asset.offsetHeight;
+  const points={opaque:null,transparent:null};
+  for(let v=.08;v<.92;v+=.02)for(let u=.08;u<.92;u+=.02){
+   const alpha=data[(Math.floor(v*c.height)*c.width+Math.floor(u*c.width))*4+3];
+   const dx=(u-.5)*width,dy=(v-.5)*height;
+   const x=cx+dx*Math.cos(angle)-dy*Math.sin(angle);
+   const y=cy+dx*Math.sin(angle)+dy*Math.cos(angle);
+   if(x<5||y<5||x>innerWidth-5||y>innerHeight-5)continue;
+   if(!document.elementFromPoint(x,y)?.closest('[data-atelier-asset="color"]'))continue;
+   if(alpha>=150&&!points.opaque)points.opaque={x,y};
+   if(alpha===0&&!points.transparent)points.transparent={x,y};
+   if(points.opaque&&points.transparent)return points;
+  }
+  return points;
+ });
+ if(!colorPoints.opaque||!colorPoints.transparent)throw Error('Cannot identify painted and transparent Color tap points');
+ const before=await page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
+ await page.mouse.click(colorPoints.transparent.x,colorPoints.transparent.y);
+ await page.waitForTimeout(100);
+ const afterTransparent=await page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
+ if(afterTransparent!==before)throw Error('Color transparent padding incorrectly switched the background');
+ await page.mouse.click(colorPoints.opaque.x,colorPoints.opaque.y);
+ await page.waitForTimeout(100);
+ const afterOpaque=await page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
+ if(afterOpaque===before)throw Error('Color painted pixels did not switch the background');
+
  const results={size:{width:390,height:844},home,atelier,
   pageErrors:errors,missingAssets:unavailable};
  fs.writeFileSync(path.join(release,'browser-smoke.json'),JSON.stringify(results,null,2)+'\n');
