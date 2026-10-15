@@ -584,6 +584,10 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onClick={(event) => {
           if (noteIsPassive) return
           event.stopPropagation()
+          // Color's transparent image padding must never switch the background.
+          // The rendered asset uses rotation, so reuse the existing pixel-accurate hit test.
+          if (!tuneMode && key === 'color' && event.detail !== 0 &&
+              !assetOpaqueAt('color', event.clientX, event.clientY)) return
           handleNormalAssetClick(key)
         }}
         onKeyDown={(event) => {
