@@ -51,6 +51,30 @@ function isOpaqueAt(
 ) {
   if (!image.complete || !image.naturalWidth || !image.naturalHeight) return false
 
+  // Color has no rotation: sample against the rendered image rectangle directly.
+  // This also handles percentage sizing and scaled mobile viewports correctly.
+  if (control === image && image.getAttribute('aria-label') === 'Change Atelier background') {
+    const rect = image.getBoundingClientRect()
+    if (!rect.width || !rect.height) return false
+    const nx = (clientX - rect.left) / rect.width
+    const ny = (clientY - rect.top) / rect.height
+    if (nx < 0 || nx >= 1 || ny < 0 || ny >= 1) return false
+    try {
+      sampleCanvas ??= document.createElement('canvas')
+      sampleCanvas.width = sampleCanvas.height = 1
+      const context = sampleCanvas.getContext('2d', { willReadFrequently: true })
+      if (!context) return false
+      context.clearRect(0, 0, 1, 1)
+      context.drawImage(image,
+        Math.min(image.naturalWidth - 1, Math.floor(nx * image.naturalWidth)),
+        Math.min(image.naturalHeight - 1, Math.floor(ny * image.naturalHeight)),
+        1, 1, 0, 0, 1, 1)
+      return context.getImageData(0, 0, 1, 1).data[3] >= ALPHA_THRESHOLD
+    } catch {
+      return false
+    }
+  }
+
   const stageRect = stage.getBoundingClientRect()
   const computed = window.getComputedStyle(control)
   const left = Number.parseFloat(computed.left)
