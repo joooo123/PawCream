@@ -496,8 +496,8 @@ export default function InstaxTinBox({
               左右滑一滑，翻翻收好的每一张 ♡
             </div>
           )}
-          {syncStatus && <div role="status" style={{ fontSize: 12, color: textColor, marginTop: 6 }}>{syncStatus}</div>}
-          {photos.some(photo => !photo.cloudSynced) && (
+          {isPawCreamApiEnabled() && syncStatus && <div role="status" style={{ fontSize: 12, color: textColor, marginTop: 6 }}>{syncStatus}</div>}
+          {isPawCreamApiEnabled() && photos.some(photo => !photo.cloudSynced) && (
             <button type="button" disabled={syncBusy} onClick={() => void onRetrySync()}
               style={{ marginTop: 6, ...themedButton, fontSize: 13, minHeight: 32 }}>
               {syncBusy ? '同步中…' : '重试同步到 OSS'}
@@ -601,7 +601,7 @@ export default function InstaxTinBox({
               <div style={{ fontSize: mobile ? 14 : 16, color: textColor, opacity: .72 }}>
                 {activeIndex + 1} / {views.length}
                 {active ? ` · ${new Date(active.createdAt).toLocaleDateString('zh-CN')}` : ''}
-                {active && !active.cloudSynced ? ' · 尚待云端同步' : ''}
+                {isPawCreamApiEnabled() && active && !active.cloudSynced ? ' · 尚待云端同步' : ''}
                 {sourceSlots.length ? ` · ${sourceSlots.length} 张原图` : ''}
               </div>
 
@@ -878,8 +878,8 @@ export default function InstaxTinBox({
         <div style={{ marginTop: 4, fontSize: mobile ? 14 : 16, color: textColor, opacity: .7 }}>
           {dropDone ? '收好啦 ♡' : '轻轻放进去…'}
         </div>
-        {syncStatus && <div role="status" style={{ marginTop: 5, fontSize: 12, color: textColor }}>{syncStatus}</div>}
-        {photos.some(photo => !photo.cloudSynced) && (
+        {isPawCreamApiEnabled() && syncStatus && <div role="status" style={{ marginTop: 5, fontSize: 12, color: textColor }}>{syncStatus}</div>}
+        {isPawCreamApiEnabled() && photos.some(photo => !photo.cloudSynced) && (
           <button type="button" disabled={syncBusy} onClick={() => void onRetrySync()}
             style={{ marginTop: 6, border: `1px solid ${panelBorder}`,
               borderRadius: 999, padding: '5px 12px', background: panelBg, color: textColor, cursor: 'pointer' }}>
