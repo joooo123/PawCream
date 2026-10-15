@@ -50,46 +50,52 @@ try{
   }))
  }));
  await page.screenshot({path:path.join(release,'mobile-atelier.png')});
- // Regression: Color has a large transparent canvas. A tap in that padding
- // must not cycle the background, while a tap on painted pixels must.
- const colorPoints=await page.evaluate(()=>{
-  const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
-  const asset=stage?.querySelector('[data-atelier-asset="color"]');
-  const image=asset?.querySelector('img');
-  if(!stage||!asset||!image?.complete||!image.naturalWidth)throw Error('Color asset unavailable');
-  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
-  const context=c.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);
-  const data=context.getImageData(0,0,c.width,c.height).data;
-  const rect=stage.getBoundingClientRect();
-  const cx=rect.left+parseFloat(asset.style.left)/100*rect.width;
-  const cy=rect.top+parseFloat(asset.style.top)/100*rect.height;
-  const angle=parseFloat(asset.style.transform.match(/rotate\(([-+\d.]+)deg\)/)?.[1]||0)*Math.PI/180;
-  const width=asset.offsetWidth,height=asset.offsetHeight;
-  const points={opaque:null,transparent:null};
-  for(let v=.08;v<.92;v+=.02)for(let u=.08;u<.92;u+=.02){
-   const alpha=data[(Math.floor(v*c.height)*c.width+Math.floor(u*c.width))*4+3];
-   const dx=(u-.5)*width,dy=(v-.5)*height;
-   const x=cx+dx*Math.cos(angle)-dy*Math.sin(angle);
-   const y=cy+dx*Math.sin(angle)+dy*Math.cos(angle);
-   if(x<5||y<5||x>innerWidth-5||y>innerHeight-5)continue;
-   if(!document.elementFromPoint(x,y)?.closest('[data-atelier-asset="color"]'))continue;
-   if(alpha>=150&&!points.opaque)points.opaque={x,y};
-   if(alpha===0&&!points.transparent)points.transparent={x,y};
-   if(points.opaque&&points.transparent)return points;
-  }
-  return points;
- });
- if(!colorPoints.opaque||!colorPoints.transparent)throw Error('Cannot identify painted and transparent Color tap points');
- const before=await page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
- await page.mouse.click(colorPoints.transparent.x,colorPoints.transparent.y);
- await page.waitForTimeout(100);
- const afterTransparent=await page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
- if(afterTransparent!==before)throw Error('Color transparent padding incorrectly switched the background');
- await page.mouse.click(colorPoints.opaque.x,colorPoints.opaque.y);
- await page.waitForTimeout(100);
- const afterOpaque=await page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
- if(afterOpaque===before)throw Error('Color painted pixels did not switch the background');
 
+ // The center 10% is interactive; the rest of Color's oversized artboard is not.
+ const colorArea=await page.evaluate(()=>{
+  const asset=document.querySelector('[data-atelier-asset="color"]');
+  if(!asset)throw Error('Color control unavailable');
+  const r=asset.getBoundingClientRect();
+  const center={x:r.left+r.width/2,y:r.top+r.height/2};
+  const outer={x:center.x-Math.min(r.width*.25,40),y:center.y};
+  if(!document.elementFromPoint(center.x,center.y)?.closest('[data-atelier-asset="color"]'))
+   throw Error('Color center is covered by another element');
+  if(!document.elementFromPoint(outer.x,outer.y)?.closest('[data-atelier-asset="color"]'))
+   throw Error('Color outer target is not hittable in test');
+  return {center,outer};
+ });
+ const backgroundIndex=()=>page.evaluate(()=>localStorage.getItem('pawcream-atelier-background-v1'));
+ const before=await backgroundIndex();
+ await page.mouse.click(colorArea.outer.x,colorArea.outer.y);
+ await page.waitForTimeout(90);
+ if(await backgroundIndex()!==before)throw Error('Color outer 90% still switches the background');
+ await page.mouse.click(colorArea.center.x,colorArea.center.y);
+ await page.waitForTimeout(90);
+ if(await backgroundIndex()===before)throw Error('Color central 10% cannot switch the background');
+
+ // Open the sticky-note wall and verify the actual mobile card does not
+ // overlap the XHS header or phone home indicator.
+ await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
+ await page.waitForTimeout(100);
+ await page.evaluate(()=>{
+  const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
+  const note=stage.querySelector('[data-atelier-asset="note"]');
+  const r=note.getBoundingClientRect();
+  stage.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,
+   clientX:r.left+r.width/2,clientY:r.top+r.height/2}));
+ });
+ await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
+ const assertNotesBounds=async(width,height)=>{
+  const r=await page.locator('.pawcream-notes-card').boundingBox();
+  if(!r||r.y<76||r.x<10||r.x+r.width>width-10||r.y+r.height>height-35)
+   throw Error('Sticky-note panel overlaps phone chrome at '+width+'x'+height+': '+JSON.stringify(r));
+  if(r.width>342)throw Error('Sticky-note card too wide: '+r.width);
+ };
+ await assertNotesBounds(390,844);
+ await page.setViewportSize({width:320,height:700});
+ await page.waitForTimeout(100);
+ await assertNotesBounds(320,700);
+ await page.setViewportSize({width:390,height:844});
  const results={size:{width:390,height:844},home,atelier,
   pageErrors:errors,missingAssets:unavailable};
  fs.writeFileSync(path.join(release,'browser-smoke.json'),JSON.stringify(results,null,2)+'\n');
