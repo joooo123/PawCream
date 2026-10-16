@@ -164,10 +164,12 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     }
   }
   if(args.path.endsWith(path.sep+'AtelierWithMusic.tsx')){
-    const oldValue="padding: mobile ? '22px 64px 4px 22px' : 0,";
-    const newValue="padding: mobile ? '22px 64px 4px 22px' : 0,\n                height: mobile ? 106 : undefined,\n                boxSizing: 'border-box' as const,";
-    if(!source.includes(oldValue))throw Error('XHS cone header patch missing');
-    source=source.replace(oldValue,newValue);
+    // The 106px fixed header kept the ice-cream at the *wrapped* position.
+    // Restore the reference layout: a natural-height title + one-line subtitle.
+    const subtitle="style={{ marginTop: 5, fontSize: (mobile ? 11 : 13) + tune.fontBoost, opacity: .72, letterSpacing: '.08em' }}";
+    const replacement="style={{ marginTop: 5, fontSize: (mobile ? 9 : 13) + tune.fontBoost, opacity: .72, letterSpacing: mobile ? 0 : '.08em', whiteSpace: mobile ? 'nowrap' : 'normal', lineHeight: mobile ? '14px' : undefined }}";
+    if(!source.includes(subtitle))throw Error('XHS music status text style changed');
+    source=source.replace(subtitle,replacement);
   }
   if(args.path.endsWith(path.sep+'AtelierWithMusicLayout.tsx')){
     source=source.replace("isPlaying ? 'Pause music' : 'Play music'","isPlaying ? '停止唱针动画' : '旋转唱针'");
@@ -181,7 +183,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     // Three stable text lines physically inside the Note artwork.
     source=source.replace("{copy.notePrompt}", "{language === 'zh' ? <><span style={{display:'block'}}>留下你想对</span><span style={{display:'block'}}>PawCream</span><span style={{display:'block'}}>说的话吧</span></> : copy.notePrompt}");
     source=source.replace("left: '50%', top: '50%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '40%' : '35%', maxWidth: 145",
-      "left: '46%', top: '47%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '48%' : '35%', maxWidth: 145");
+      "left: '50%', top: '47%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '48%' : '35%', maxWidth: 145");
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
     source=source.replace(/^.*background4\.png.*\r?\n/m,'');
   }
@@ -261,14 +263,14 @@ const lines=[
 '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
 '<meta name="theme-color" content="#fbf5f8">','<title>PawCream 工作室</title>',
 '<link rel="stylesheet" href="./pawcream.css">',
-'<link rel="stylesheet" href="./offline-hint.css">',
+
 '</head>','<body>','<div id="root"></div>',
-'<div id="xhs-cloud-hint" class="xhs-cloud-hint" role="status" aria-live="polite" hidden>更多功能见工作室网站 ♡<button id="xhs-hint-dismiss" type="button" aria-label="关闭提示">×</button></div>',
+
 '<script src="./pawcream.js"></script>','<script src="./offline-hint.js"></script>',
 '</body>','</html>'
 ];
 fs.writeFileSync(path.join(dist,'index.html'),lines.join('\n')+'\n');
-for(const file of ['offline-hint.css','offline-hint.js'])fs.copyFileSync(path.join(root,file),path.join(dist,file));
+fs.copyFileSync(path.join(root,'offline-hint.js'),path.join(dist,'offline-hint.js'));
 for(const image of ['home/Home_mobile.webp','atelier/background.webp','atelier/instax.webp','signin/打字机.webp','signin/打印机注册.webp','iron_box.webp','姓名贴.webp','instax-transparent/粉白竖1.webp'])
  check(fs.existsSync(path.join(assets,image)),'Missing artwork '+image);
 const bundledJs=fs.readFileSync(jsFile,'utf8');
