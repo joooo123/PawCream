@@ -372,6 +372,48 @@ try{
  await page.waitForTimeout(140);
  await page.mouse.click(windowHit.last.x,windowHit.last.y);
  await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
+ // Regression for the real mobile failure: the LOWER painted half of the
+ // curtain is covered by Light's transparent DOM box. A lower-half tap must
+ // still open the letter, not only the two upper samples used previously.
+ await page.locator('.pawcream-letter-close').click();
+ await page.waitForTimeout(150);
+ const lowerWindowHit=await page.evaluate(()=>{
+  const windowArt=document.querySelector('[data-atelier-asset="window"]');
+  const img=windowArt?.querySelector('img');
+  if(!img?.naturalWidth)return null;
+  const rect=windowArt.getBoundingClientRect();
+  const canvas=document.createElement('canvas');
+  canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(img,0,0);
+  const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  let paintedLower=null,coveredLower=null;
+  for(let y=Math.max(100,Math.ceil(rect.top+rect.height*.53));
+      y<Math.min(innerHeight-90,rect.top+rect.height*.80);y+=3){
+   for(let x=Math.max(14,Math.ceil(rect.left));x<Math.min(innerWidth-12,rect.right);x+=3){
+    const u=(x-rect.left)/rect.width,v=(y-rect.top)/rect.height;
+    if(u<0||u>=1||v<.53||v>.80)continue;
+    const px=Math.floor(u*canvas.width),py=Math.floor(v*canvas.height);
+    if(pixels[(py*canvas.width+px)*4+3]<1)continue;
+    const top=document.elementFromPoint(x,y)?.closest('[data-atelier-asset]');
+    const topKey=top?.getAttribute('data-atelier-asset')||'stage';
+    if(topKey==='window'&&!paintedLower)paintedLower={x,y,topKey};
+    if(topKey==='light'&&!coveredLower)coveredLower={x,y,topKey};
+   }
+  }
+  return {paintedLower,coveredLower};
+ });
+ if(!lowerWindowHit?.coveredLower)
+  throw Error('No lower-half Window pixels overlapped by transparent Light were tested: '+JSON.stringify(lowerWindowHit));
+ await page.mouse.click(lowerWindowHit.coveredLower.x,lowerWindowHit.coveredLower.y);
+ await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
+ await page.locator('.pawcream-letter-close').click();
+ if(lowerWindowHit.paintedLower){
+  await page.waitForTimeout(150);
+  await page.mouse.click(lowerWindowHit.paintedLower.x,lowerWindowHit.paintedLower.y);
+  await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
+ }
+
 
  // Preview mode renders the complete paragraph immediately for clipping checks.
  await page.goto(base+'/?scene=atelier&letterTune=1',{waitUntil:'domcontentloaded'});
