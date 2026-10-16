@@ -166,30 +166,39 @@ try{
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="music"]',{timeout:15000});
  await page.waitForTimeout(700);
- // Real spoon interaction: playback state must follow the visual animation.
+ // All nine CD previews must have distinct moods and consistent lifecycle.
  await page.locator('[data-atelier-asset="music"]').click();
  await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
- await page.locator('.pawcream-music-slot-button').first().click();
- await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]',{timeout:5000});
- await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
- await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='playing' &&
-  document.documentElement.dataset.pawcreamAudioDisc==='1',{timeout:5000});
- if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').count())
-  throw Error('CD 1 played without moving the spoon');
- await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').click();
- await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
- await page.waitForTimeout(700);
- await page.locator('.pawcream-music-slot-button').nth(1).click();
- await page.waitForTimeout(950);
- await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
- await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='playing' &&
-  document.documentElement.dataset.pawcreamAudioDisc==='2',{timeout:5000});
+ const moods=['糖果流行','轻盈电子','缓拍梦境','独立民谣','柔和律动',
+              '俏皮节拍','温柔木吉他','夏日海风','雨夜钢琴'];
+ for(let disc=0;disc<moods.length;disc++){
+  await page.locator('.pawcream-music-slot-button').nth(disc).click();
+  await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]',{timeout:5000});
+  await page.waitForTimeout(850);
+  if(disc===0 && !await page.getByText('更多音乐见工作室网站',{exact:false}).count())
+   throw Error('Requested studio-site music hint missing');
+  await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
+  await page.waitForFunction(({disc,mood})=>{
+   const html=document.documentElement;
+   return html.dataset.pawcreamAudioState==='playing' &&
+    html.dataset.pawcreamAudioDisc===String(disc+1) && html.dataset.pawcreamAudioMood===mood;
+  },{disc,mood:moods[disc]},{timeout:5000});
+  if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').count())
+   throw Error('Spoon animation is not aligned to CD '+(disc+1));
+  if(disc===0){
+   await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').click();
+   await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
+   await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
+   await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='playing',{timeout:5000});
+  }
+ }
  await page.locator('[data-pawcream-current-disc-return="1"]').click();
  await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
- if(await page.evaluate(()=>document.documentElement.hasAttribute('data-pawcream-audio-disc')))
-  throw Error('Web Audio kept a selected disc after leaving the music page');
+ if(await page.evaluate(()=>document.documentElement.hasAttribute('data-pawcream-audio-disc')||
+   document.documentElement.hasAttribute('data-pawcream-audio-mood')))
+  throw Error('Web Audio kept active track metadata after music exit');
 
  // Real file input activation: the offline photo editor must open the
  // system file chooser on a visible, user-tapped gallery control.
