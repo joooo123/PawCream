@@ -387,7 +387,8 @@ try{
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   ctx.drawImage(img,0,0);
   const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  let paintedLower=null,coveredLower=null;
+  let paintedLower=null,coveredLower=null,paintedPixels=0;
+  const byTop={};
   for(let y=Math.max(100,Math.ceil(rect.top+rect.height*.53));
       y<Math.min(innerHeight-90,rect.top+rect.height*.80);y+=3){
    for(let x=Math.max(14,Math.ceil(rect.left));x<Math.min(innerWidth-12,rect.right);x+=3){
@@ -403,7 +404,7 @@ try{
     if(topKey==='light'&&!coveredLower)coveredLower={x,y,topKey};
    }
   }
-  return {paintedLower,coveredLower};
+  return {paintedLower,coveredLower,paintedPixels,byTop,rect:rect.toJSON(),natural:{width:img.naturalWidth,height:img.naturalHeight}};
  });
  if(!lowerWindowHit?.coveredLower)
   throw Error('No lower-half Window pixels overlapped by transparent Light were tested: '+JSON.stringify(lowerWindowHit));
