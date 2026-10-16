@@ -162,17 +162,28 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     }
   }
   if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
+    // On small screens the six tall size buttons used to set the entire
+    // grid height, leaving a large empty strip below the photo preview.
+    // Slightly widen the card, shrink the left options, and let the larger
+    // right preview determine the grid height. Keep photo selection intact.
     const patches=[
-      ["'min(410px, calc(100vw - 20px))'","'min(350px, calc(100vw - 52px))'"],
-      ["maxHeight: 'calc(100svh - 20px)'","maxHeight: mobile ? 'calc(100svh - 94px)' : 'calc(100svh - 20px)'"],
-      ["padding: mobile ? '26px 18px 22px'","padding: mobile ? '20px 14px 17px'"],
-      ["paddingTop: mobile && step !== 'boxing' ? 70","paddingTop: mobile && step !== 'boxing' ? 60"],
+      ["'min(410px, calc(100vw - 20px))'","'min(376px, calc(100vw - 20px))'"],
+      ["maxHeight: 'calc(100svh - 20px)'","maxHeight: mobile ? 'calc(100svh - 68px)' : 'calc(100svh - 20px)'"],
+      ["padding: mobile ? '26px 18px 22px'","padding: mobile ? '17px 12px 14px'"],
+      ["paddingTop: mobile && step !== 'boxing' ? 70","paddingTop: mobile && step !== 'boxing' ? 53"],
       ["fontSize: mobile ? 29 : 32","fontSize: mobile ? 25 : 32"],
       ["fontSize: 20,\n                      color: theme.selectedText","fontSize: mobile ? 16 : 20,\n                      color: theme.selectedText"],
-      ["gridTemplateColumns: mobile ? '86px minmax(0,1fr)'","gridTemplateColumns: mobile ? '76px minmax(0,1fr)'"],
-      ["gap: mobile ? 14 : 22","gap: mobile ? 10 : 22"],
-      ["minHeight: mobile ? 380 : 430","minHeight: mobile ? 330 : 430"],
-      ["maxHeight: mobile ? '355px' : '405px'","maxHeight: mobile ? '310px' : '405px'"],
+      ["<div style={{ textAlign: 'center', marginBottom: 18 }}>","<div style={{ textAlign: 'center', marginBottom: mobile ? 11 : 18 }}>"],
+      ["gridTemplateColumns: mobile ? '86px minmax(0,1fr)'","gridTemplateColumns: mobile ? '64px minmax(0,1fr)'"],
+      ["gap: mobile ? 14 : 22","gap: mobile ? 8 : 22"],
+      ["<div style={{ display: 'grid', gap: 8, paddingTop: 44 }}>","<div style={{ display: 'grid', gap: mobile ? 6 : 8, paddingTop: mobile ? 36 : 44, alignContent: 'start' }}>"],
+      ["minHeight: 44,\n                            padding: '6px 9px'","minHeight: mobile ? 42 : 44,\n                            padding: mobile ? '5px 6px' : '6px 9px'"],
+      ["<span style={{ display: 'block', fontSize: 21, fontWeight: 720 }}>{option.label}</span>","<span style={{ display: 'block', fontSize: mobile ? 16 : 21, fontWeight: 720, whiteSpace: 'nowrap' }}>{option.label}</span>"],
+      ["<span style={{ display: 'block', marginTop: 2, fontSize: 18, opacity: .72 }}>{option.hint}</span>","<span style={{ display: 'block', marginTop: 2, fontSize: mobile ? 11 : 18, opacity: .72, whiteSpace: 'nowrap' }}>{option.hint}</span>"],
+      ["gap: mobile ? 9 : 12","gap: mobile ? 7 : 12"],
+      ["minHeight: mobile ? 380 : 430","minHeight: mobile ? 340 : 430"],
+      ["maxHeight: mobile ? '355px' : '405px'","maxHeight: mobile ? '328px' : '405px'"],
+      ["<div style={{ display: 'flex', justifyContent: 'center', marginTop: 18 }}>","<div style={{ display: 'flex', justifyContent: 'center', marginTop: mobile ? 11 : 18 }}>"],
     ];
     for(const [oldValue,newValue] of patches){
       if(!source.includes(oldValue))throw Error('XHS Instax patch missing '+oldValue);
