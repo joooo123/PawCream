@@ -126,6 +126,45 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       source=source.slice(0,a)+replacement+source.slice(b);
     }
   }
+  // XHS-only responsive overrides: keep the public site untouched.
+  if(args.path.endsWith(path.sep+'AtelierWithSignin.tsx')){
+    const patches=[
+      ["(mobile && registerPaper ? 0.90 : 1)","(mobile ? 0.90 : 1)"],
+      ["Math.min(tune.fontBoost, 2)","Math.min(tune.fontBoost, 7)"],
+      ["height: mobile && registerPaper ? 23 : mobile ? 27 : 32","height: mobile && registerPaper ? 29 : mobile ? 27 : 32"],
+      ["height: mobile && registerPaper ? 24 : mobile ? 28 : 32","height: mobile && registerPaper ? 29 : mobile ? 28 : 32"],
+      ["fontSize: (mobile ? 9 : 10) + formFontBoost,","fontSize: mobile && registerPaper ? 12 : (mobile ? 9 : 10) + formFontBoost,\n    whiteSpace: 'nowrap' as const, padding: mobile && registerPaper ? '0 2px' : undefined,\n    flex: mobile && registerPaper ? '1 1 0' : undefined, boxSizing: 'border-box' as const,"],
+      ["minHeight: mobile ? 22 : 27,\n                   marginTop: mobile ? 6 : 8,","minHeight: status ? (mobile ? 18 : 27) : 0,\n                   marginTop: status ? (mobile ? 3 : 8) : 0,"],
+    ];
+    for(const [oldValue,newValue] of patches){
+      if(!source.includes(oldValue))throw Error('XHS signin patch missing '+oldValue);
+      source=source.replace(oldValue,newValue);
+    }
+  }
+  if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
+    const patches=[
+      ["'min(410px, calc(100vw - 20px))'","'min(350px, calc(100vw - 52px))'"],
+      ["maxHeight: 'calc(100svh - 20px)'","maxHeight: mobile ? 'calc(100svh - 94px)' : 'calc(100svh - 20px)'"],
+      ["padding: mobile ? '26px 18px 22px'","padding: mobile ? '20px 14px 17px'"],
+      ["paddingTop: mobile && step !== 'boxing' ? 70","paddingTop: mobile && step !== 'boxing' ? 60"],
+      ["fontSize: mobile ? 29 : 32","fontSize: mobile ? 25 : 32"],
+      ["fontSize: 20,\n                      color: theme.selectedText","fontSize: mobile ? 16 : 20,\n                      color: theme.selectedText"],
+      ["gridTemplateColumns: mobile ? '86px minmax(0,1fr)'","gridTemplateColumns: mobile ? '76px minmax(0,1fr)'"],
+      ["gap: mobile ? 14 : 22","gap: mobile ? 10 : 22"],
+      ["minHeight: mobile ? 380 : 430","minHeight: mobile ? 330 : 430"],
+      ["maxHeight: mobile ? '355px' : '405px'","maxHeight: mobile ? '310px' : '405px'"],
+    ];
+    for(const [oldValue,newValue] of patches){
+      if(!source.includes(oldValue))throw Error('XHS Instax patch missing '+oldValue);
+      source=source.replace(oldValue,newValue);
+    }
+  }
+  if(args.path.endsWith(path.sep+'AtelierWithMusic.tsx')){
+    const oldValue="padding: mobile ? '22px 64px 4px 22px' : 0,";
+    const newValue="padding: mobile ? '22px 64px 4px 22px' : 0,\n                height: mobile ? 106 : undefined,\n                boxSizing: 'border-box' as const,";
+    if(!source.includes(oldValue))throw Error('XHS cone header patch missing');
+    source=source.replace(oldValue,newValue);
+  }
   if(args.path.endsWith(path.sep+'AtelierWithMusicLayout.tsx')){
     source=source.replace("isPlaying ? 'Pause music' : 'Play music'","isPlaying ? '停止唱针动画' : '旋转唱针'");
   }
@@ -133,6 +172,12 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     source=source.replace('离线试听 20 秒','更多音乐见工作室网站');
   }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
+    // Give sewing a real interactive hit surface from initial render.
+    source=source.replace("key === 'people')","key === 'people' || key === 'sewing')");
+    // Three stable text lines physically inside the Note artwork.
+    source=source.replace("{copy.notePrompt}", "{language === 'zh' ? <><span style={{display:'block'}}>留下你想对</span><span style={{display:'block'}}>PawCream</span><span style={{display:'block'}}>说的话吧</span></> : copy.notePrompt}");
+    source=source.replace("left: '50%', top: '50%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '40%' : '35%', maxWidth: 145",
+      "left: '46%', top: '47%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '48%' : '35%', maxWidth: 145");
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
     source=source.replace(/^.*background4\.png.*\r?\n/m,'');
   }
@@ -164,7 +209,26 @@ fs.writeFileSync(jsFile,transpiled.code);
 let css=fs.readFileSync(cssFile,'utf8');
 css=css.replace(/url\((['"]?)\/assets\/font\//g,'url($1./assets/font/');
 css=css.replace(/,\s*url\((['"]?)\.\/assets\/font\/[^)]*\.ttf(['"]?)\)\s*format\(['"]truetype['"]\)/g,'');
-css=css.replace(/\.png\b/g,'.webp');fs.writeFileSync(cssFile,css);
+css=css.replace(/\.png\b/g,'.webp');
+
+// XHS-only override: polka-overlays.css has a blanket !important selector
+// that was forcing blue chips and 17px fonts onto both prompt systems.
+css += [
+  'section[aria-label^="PawCream Atelier Room"] div[aria-label="房间功能提示"] > span,',
+  'section[aria-label^="PawCream Atelier Room"] div[aria-label="Room feature guide"] > span {',
+  'background:transparent!important;background-color:transparent!important;',
+  'border:0!important;border-radius:0!important;box-shadow:none!important;',
+  'color:#fff!important;font-size:12px!important;line-height:1.3!important;',
+  'padding:0!important;text-shadow:0 1px 5px rgba(0,0,0,.88)!important;',
+  '}',
+  'section[aria-label^="PawCream Atelier Room"] div[data-atelier-asset="note"] > span {',
+  'background:transparent!important;background-color:transparent!important;',
+  'border:0!important;border-radius:0!important;box-shadow:none!important;',
+  'color:#617b8b!important;font-size:12px!important;line-height:1.3!important;',
+  'padding:0!important;white-space:normal!important;',
+  '}',
+].join('\n');
+fs.writeFileSync(cssFile,css);
 // Copy all original visual resources after reducing to mobile resolution.
 let num=0;
 for(const relative of walk(sourceAssets)){
