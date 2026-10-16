@@ -395,8 +395,10 @@ try{
     if(u<0||u>=1||v<.53||v>.80)continue;
     const px=Math.floor(u*canvas.width),py=Math.floor(v*canvas.height);
     if(pixels[(py*canvas.width+px)*4+3]<1)continue;
+    paintedPixels++;
     const top=document.elementFromPoint(x,y)?.closest('[data-atelier-asset]');
     const topKey=top?.getAttribute('data-atelier-asset')||'stage';
+    byTop[topKey]=(byTop[topKey]||0)+1;
     if(topKey==='window'&&!paintedLower)paintedLower={x,y,topKey};
     if(topKey==='light'&&!coveredLower)coveredLower={x,y,topKey};
    }
