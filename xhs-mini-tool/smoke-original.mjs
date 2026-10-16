@@ -334,6 +334,65 @@ try{
   Math.abs(paperDimensions.y+paperDimensions.height-loginDimensions.y-loginDimensions.height)>2)
   throw Error('Register/login printer base misaligned: '+JSON.stringify({paperDimensions,loginDimensions}));
 
+
+ // Verify Window/PawCream pixels can open the letter, including outer artwork.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="window"] img',{timeout:5000});
+ await page.waitForTimeout(500);
+ const windowHit=await page.evaluate(()=>{
+  const el=document.querySelector('[data-atelier-asset="window"]'),img=el?.querySelector('img');
+  if(!img?.naturalWidth)return null;
+  const rect=el.getBoundingClientRect(),c=document.createElement('canvas');
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(img,0,0);
+  const data=ctx.getImageData(0,0,c.width,c.height).data;
+  let first=null,last=null,blank=null;
+  for(let y=Math.max(85,rect.top);y<Math.min(innerHeight-130,rect.bottom);y+=3)
+   for(let x=Math.max(8,rect.left);x<Math.min(innerWidth-8,rect.right);x+=3){
+    if(document.elementFromPoint(x,y)?.closest('[data-atelier-asset]')!==el)continue;
+    const px=Math.floor((x-rect.left)/rect.width*c.width),py=Math.floor((y-rect.top)/rect.height*c.height);
+    if(px<0||px>=c.width||py<0||py>=c.height)continue;
+    if(data[(py*c.width+px)*4+3]>0){first??={x,y};if(!last||last.x<x)last={x,y};}
+    else blank??={x,y};
+   }
+  return {first,last,blank};
+ });
+ if(!windowHit?.first||!windowHit.last||windowHit.last.x-windowHit.first.x<24)
+  throw Error('Window visible pixels cannot be reached: '+JSON.stringify(windowHit));
+ if(windowHit.blank){
+  await page.mouse.click(windowHit.blank.x,windowHit.blank.y);
+  await page.waitForTimeout(100);
+  if(await page.locator('.pawcream-letter-overlay').count())
+   throw Error('Transparent Window pixel opened the letter');
+ }
+ await page.mouse.click(windowHit.first.x,windowHit.first.y);
+ await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
+ await page.locator('.pawcream-letter-close').click();
+ await page.waitForTimeout(140);
+ await page.mouse.click(windowHit.last.x,windowHit.last.y);
+ await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
+
+ // Preview mode renders the complete paragraph immediately for clipping checks.
+ await page.goto(base+'/?scene=atelier&letterTune=1',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('.pawcream-paper-copy',{timeout:5000});
+ await page.waitForTimeout(260);
+ const fit=await page.evaluate(()=>{
+  const el=document.querySelector('.pawcream-paper-copy'),title=el?.querySelector('h2'),body=el?.querySelector('p');
+  const paper=document.querySelector('.pawcream-envelope-paper-wrap');
+  if(!el||!title||!body||!paper)return null;
+  const a=el.getBoundingClientRect(),b=paper.getBoundingClientRect();
+  return {font:parseFloat(getComputedStyle(body).fontSize),
+   titleFont:parseFloat(getComputedStyle(title).fontSize),
+   top:parseFloat(el.style.top),margin:parseFloat(getComputedStyle(body).marginTop),
+   h:el.clientHeight,scroll:el.scrollHeight,
+   textLength:body.textContent.length,inside:a.top>=b.top-2&&a.bottom<=b.bottom+2};
+ });
+ if(!fit||fit.font!==10.5||fit.titleFont!==19||fit.top>12||fit.margin>5||
+  fit.scroll>fit.h+2||fit.textLength<65||!fit.inside)
+  throw Error('Letter text clipped or outside paper: '+JSON.stringify(fit));
+ await page.screenshot({path:path.join(release,'mobile-letter.png')});
+
  const results={size:{width:390,height:844},home,atelier,
   pageErrors:errors,missingAssets:unavailable};
  fs.writeFileSync(path.join(release,'browser-smoke.json'),JSON.stringify(results,null,2)+'\n');
