@@ -146,18 +146,32 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     }
   }
   if(args.path.endsWith(path.sep+'AtelierWithLetter.tsx')){
-    // Only XHS mobile: keep original font sizes, lift the full letter copy,
-    // reduce the blank heading/body gap and allow the complete paragraph to fit.
+    // XHS-only: the actual PawCream brand story, typed on the white paper.
+    // Preserve the existing font sizes (19px title, 10.5px body on mobile).
+    // A single newline separates each paragraph without wasting a blank line.
+    const zhBody='你好呀，欢迎来到 PawCream。\\n这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。\\n甜蜜不止一点点，可爱也不止今天。';
+    const enBody='Hello, welcome to PawCream.\\nThis is a little shop full of sweet doll clothes. We love sewing girlish colors, sugary ideas and a touch of fairy-tale magic into every tiny outfit.\\nMay each change of clothes feel like opening a long-awaited box of treats. Hide in a little sweetness and escape the noisy grown-up world for a while.\\nThe sweetness never ends, and neither does the cuteness.';
+    const oldZh="PawCream 是一间收集柔软日常的小小工作室。我们喜欢纸张、照片、旧物和那些来不及一下子说完的话，也相信每一点细小心情，都值得被温柔保存。希望你来到这里时，可以慢一点，也留下属于自己的痕迹。";
+    const oldEn="PawCream is a tiny atelier for soft everyday moments. We love paper, photographs, old objects, and thoughts that do not need to be said all at once. We believe even the smallest feelings deserve to be kept gently. We hope this little room lets you slow down and leave a trace of your own.";
     const letterPatches=[
-      ["    textLeft: 19.5,","    textLeft: 17.0,"],
-      ["    textTop: 16.5,","    textTop: 10.5,"],
-      ["    textWidth: 64.5,","    textWidth: 69.0,"],
-      ["    textHeight: 56,","    textHeight: 75,"],
-      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.48,"],
-      ["margin: 11px 0 0;","margin: 3px 0 0;"],
+      ["title: '关于 PawCream'","title: '关于PawCream'"],
+      [oldZh,zhBody],
+      [oldEn,enBody],
+      ["    endY: -16,","    endY: -34,"],
+      ["    textLeft: 19.5,","    textLeft: 16.5,"],
+      ["    textTop: 16.5,","    textTop: 9.5,"],
+      ["    textWidth: 64.5,","    textWidth: 71.0,"],
+      ["    textHeight: 56,","    textHeight: 78,"],
+      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.24,"],
+      ["margin: 11px 0 0;","margin: 2px 0 0;\\n                white-space: pre-line;"],
+      ["              .pawcream-paper-signature {","              .pawcream-paper-signature {\\n                display: none;"],
+      ["              .pawcream-paper-body {",
+       "              .pawcream-paper-slogan { margin: 0; text-align: center; font-family: 'PawCream EN', sans-serif; font-size: 8px; line-height: 1.15; font-style: italic; color: #66869e; letter-spacing: -.02em; }\\n              .pawcream-paper-body {"],
+      ["                  <p\\n                    className=\"pawcream-paper-body\"",
+       "                  {visibleTitle === copy.title && <p className=\"pawcream-paper-slogan\">made with a little sugar & lots of love ♡</p>}\\n\\n                  <p\\n                    className=\"pawcream-paper-body\""],
     ];
     for(const [from,to] of letterPatches){
-      if(!source.includes(from))throw Error('XHS Letter layout token missing: '+from);
+      if(!source.includes(from))throw Error('XHS brand letter patch missing '+from);
       source=source.replace(from,to);
     }
   }
