@@ -273,9 +273,29 @@ try{
  await page.waitForTimeout(500);
  await page.locator('[data-atelier-asset="instax"]').click();
  await page.waitForSelector('.pawcream-instax-maker-card',{timeout:5000});
- const instaxBounds=await page.locator('.pawcream-instax-maker-card').boundingBox();
- if(!instaxBounds||instaxBounds.width>355||instaxBounds.y<20||instaxBounds.y+instaxBounds.height>822)
-  throw Error('Instax maker did not shrink: '+JSON.stringify(instaxBounds));
+ const instaxLayout=await page.evaluate(()=>{
+  const card=document.querySelector('.pawcream-instax-maker-card');
+  const buttons=[...card.querySelectorAll('.pawcream-instax-size')];
+  const grid=buttons[0]?.parentElement?.parentElement;
+  const preview=grid?.children[1]?.children[1];
+  const ok=[...card.querySelectorAll('button')].find(x=>x.textContent.trim()==='ok!');
+  if(!card||!grid||!preview||!ok||buttons.length!==6)return null;
+  const rect=el=>{const {x,y,width,height,bottom}=el.getBoundingClientRect();return {x,y,width,height,bottom}};
+  return {card:rect(card),grid:rect(grid),preview:rect(preview),ok:rect(ok),
+    button:rect(buttons[0]),
+    labelFont:parseFloat(getComputedStyle(buttons[0].firstElementChild).fontSize),
+    hintFont:parseFloat(getComputedStyle(buttons[0].lastElementChild).fontSize),
+    gap:ok.getBoundingClientRect().top-preview.getBoundingClientRect().bottom,
+    scrollHeight:card.scrollHeight,clientHeight:card.clientHeight};
+ });
+ if(!instaxLayout||instaxLayout.card.width<355||instaxLayout.card.width>378||
+    instaxLayout.card.height>685||instaxLayout.card.y<30||
+    instaxLayout.card.bottom>810||instaxLayout.button.width>67||
+    instaxLayout.labelFont>17||instaxLayout.hintFont>12||
+    instaxLayout.preview.width<238||instaxLayout.preview.height<335||
+    instaxLayout.gap<7||instaxLayout.gap>37)
+  throw Error('Instax mobile proportions / preview-to-OK spacing wrong: '+JSON.stringify(instaxLayout));
+ await page.screenshot({path:path.join(release,'mobile-instax-select.png')});
  await page.getByRole('button',{name:'ok!'}).click();
  await page.getByRole('button',{name:/第 1 格，选择照片/}).click();
  await page.waitForSelector('input[aria-label="从图库选择照片"]',{state:'attached',timeout:4000});
