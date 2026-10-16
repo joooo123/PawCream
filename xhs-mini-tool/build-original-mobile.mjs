@@ -145,6 +145,22 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       source=source.replace(oldValue,newValue);
     }
   }
+  if(args.path.endsWith(path.sep+'AtelierWithLetter.tsx')){
+    // Only XHS mobile: keep original font sizes, lift the full letter copy,
+    // reduce the blank heading/body gap and allow the complete paragraph to fit.
+    const letterPatches=[
+      ["    textLeft: 19.5,","    textLeft: 17.0,"],
+      ["    textTop: 16.5,","    textTop: 10.5,"],
+      ["    textWidth: 64.5,","    textWidth: 69.0,"],
+      ["    textHeight: 56,","    textHeight: 75,"],
+      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.48,"],
+      ["margin: 11px 0 0;","margin: 3px 0 0;"],
+    ];
+    for(const [from,to] of letterPatches){
+      if(!source.includes(from))throw Error('XHS Letter layout token missing: '+from);
+      source=source.replace(from,to);
+    }
+  }
   if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
     const patches=[
       ["'min(410px, calc(100vw - 20px))'","'min(350px, calc(100vw - 52px))'"],
