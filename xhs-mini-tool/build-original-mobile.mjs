@@ -38,9 +38,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
    source=source.replace("return window.localStorage.getItem(PREVIEW_AUTH_STORAGE_KEY) === '1'","return false");
    source=source.replace("window.localStorage.setItem(PREVIEW_AUTH_STORAGE_KEY, signedIn ? '1' : '0')","void signedIn");
   }
-  // Offline XHS cannot package or stream MP3. Keep CD and spoon visuals.
+  // Replace only the offline music engine; the website keeps its MP3 player.
   if(args.path.endsWith(path.sep+'AtelierWithMusicAudio.tsx')){
-    return {contents:"import AtelierWithMusicReturn from './AtelierWithMusicReturn'; export default AtelierWithMusicReturn;",loader:'tsx'};
+    return {contents:fs.readFileSync(path.join(root,'AtelierWithMusicWebAudio.tsx'),'utf8'),loader:'tsx'};
   }
   if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
     // Keep the original Instax and tin-box React UIs, but replace their cloud
@@ -130,7 +130,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     source=source.replace("isPlaying ? 'Pause music' : 'Play music'","isPlaying ? '停止唱针动画' : '旋转唱针'");
   }
   if(args.path.endsWith(path.sep+'AtelierWithMusic.tsx')){
-    source=source.replace('离线试听 20 秒','离线唱片演示 · 无音频');
+    source=source.replace('离线试听 20 秒','原创旋律 · 点击勺子播放');
   }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
