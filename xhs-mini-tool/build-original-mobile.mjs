@@ -38,6 +38,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
    source=source.replace("return window.localStorage.getItem(PREVIEW_AUTH_STORAGE_KEY) === '1'","return false");
    source=source.replace("window.localStorage.setItem(PREVIEW_AUTH_STORAGE_KEY, signedIn ? '1' : '0')","void signedIn");
   }
+  if(args.path.endsWith(path.sep+'atelierAlphaHit.ts')){
+    return {contents:fs.readFileSync(path.join(root,'atelierAlphaHitXhs.ts'),'utf8'),loader:'ts'};
+  }
   // Replace only the offline music engine; the website keeps its MP3 player.
   if(args.path.endsWith(path.sep+'AtelierWithMusicAudio.tsx')){
     return {contents:fs.readFileSync(path.join(root,'AtelierWithMusicWebAudio.tsx'),'utf8'),loader:'tsx'};
