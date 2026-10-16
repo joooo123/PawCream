@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PawCream 声音兼容性测试</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; padding: 46px 18px 34px; background: #fcf4f9; color: #7b6478; font-family: system-ui, -apple-system, sans-serif; }
+main { max-width: 410px; margin: 0 auto; }
+h1 { font-size: 23px; margin: 0 0 12px; font-weight: 600; }
+p { font-size: 14px; line-height: 1.75; margin: 10px 0; }
+.panel { background: #fffdfd; border: 1px solid #f0dbe7; border-radius: 21px; padding: 17px; margin: 16px 0; }
+button { width: 100%; padding: 13px 11px; min-height: 48px; margin: 6px 0; border: 1px solid #eac8db; border-radius: 15px; background: #fff0f8; color: #795b71; font: inherit; font-size: 15px; cursor: pointer; }
+button:active { background: #efd9e7; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; color: #655665; }
+small { font-size: 12px; line-height: 1.5; display: block; }
+</style>
+</head>
+<body>
+<main>
+<h1>pawcream · 声音小实验 ♡</h1>
+<p>这是独立的兼容性测试，不会更改 PawCream 的原播放器。请<strong>打开手机声音、关闭静音</strong>，分别点击下面两个按钮，听是否有声音。</p>
+<section class="panel">
+<strong>测试 A：Web Audio 振荡器</strong>
+<button id="osc" type="button">播放 1 秒轻柔提示音</button>
+<small>直接合成声音，不需要 MP3、网络或媒体 URL。</small>
+</section>
+<section class="panel">
+<strong>测试 B：内存 PCM 音频</strong>
+<button id="buffer" type="button">播放原创四音小旋律</button>
+<small>JS 生成 AudioBuffer，通过 AudioBufferSourceNode 播放。</small>
+</section>
+<section class="panel">
+<button id="stop" type="button">停止声音</button>
+<strong>运行诊断</strong>
+<pre id="log" role="status" aria-live="polite">准备检查…</pre>
+</section>
+<p>如果按钮显示播放成功但听不见，记录手机型号、系统和小红书版本，并截图诊断信息。浏览器播放成功<strong>不代表</strong>小红书容器一定能播放。</p>
+</main>
+<script src="./app.js"></script>
+</body>
+</html>
