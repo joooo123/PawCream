@@ -78,6 +78,11 @@ try{
  await page.mouse.click(colorHits.transparent.x,colorHits.transparent.y);
  await page.waitForTimeout(95);
  if(await backgroundIndex()!==before)throw Error('Color transparent pixel changed background');
+ // Transparent Color areas can correctly pass through to the underlying
+ // sewing machine. Reset the room before the independent painted-pixel test.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="color"]',{timeout:5000});
+ await page.waitForTimeout(480);
  await page.mouse.click(colorHits.opaque.x,colorHits.opaque.y);
  await page.waitForTimeout(95);
  if(await backgroundIndex()===before)throw Error('Color painted pixel did not change background: '+JSON.stringify(colorHits));
