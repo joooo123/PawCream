@@ -130,7 +130,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     source=source.replace("isPlaying ? 'Pause music' : 'Play music'","isPlaying ? '停止唱针动画' : '旋转唱针'");
   }
   if(args.path.endsWith(path.sep+'AtelierWithMusic.tsx')){
-    source=source.replace('离线试听 20 秒','原创旋律 · 点击勺子播放');
+    source=source.replace('离线试听 20 秒','更多音乐见工作室网站');
   }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
