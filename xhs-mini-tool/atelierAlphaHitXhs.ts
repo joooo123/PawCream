@@ -62,10 +62,16 @@ function routeToVisibleArt(stage: HTMLElement, originalKey: string | null,
   // controls did not accept the tap, and only for painted pixels.
   for (const key of ['light', 'sewing', 'window']) {
     if (key === originalKey) continue
-    // A transparent lamp/sewing/color wrapper must not open the Window
-    // behind it. Route Window only from the empty stage, or handle it directly
-    // when Window itself is the actual DOM target.
-    if (key === 'window' && originalKey !== null) continue
+    // The Window sits behind the transparent rectangular Light/Cabinet art.
+    // Its lower painted half was unreachable because we blocked forwarding
+    // from these overlaid wrappers. Preserve the upper-half lamp behavior,
+    // but allow the lower painted half of Window to receive the click.
+    if (key === 'window' && originalKey !== null) {
+      const windowArt = stage.querySelector<HTMLElement>('[data-atelier-asset="window"]')
+      if (!windowArt) continue
+      const bounds = windowArt.getBoundingClientRect()
+      if (event.clientY < bounds.top + bounds.height * 0.48) continue
+    }
     const control = stage.querySelector<HTMLElement>('[data-atelier-asset="' + key + '"]')
     const image = control && imageFor(control)
     if (!control || !image || !isPainted(control, image, key, event.clientX, event.clientY)) continue
