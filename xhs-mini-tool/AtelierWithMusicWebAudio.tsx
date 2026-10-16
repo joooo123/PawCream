@@ -82,7 +82,7 @@ type Props = {
 
  function currentDiscIndex() {
    const disc = document.querySelector<HTMLImageElement>('.pawcream-music-current-disc')
-   const match = disc?.alt.match(/^CD\\s+(\\d+)$/i)
+   const match = disc?.alt.match(/^CD\s+(\d+)$/i)
    const index = match ? Number(match[1]) - 1 : -1
    return index >= 0 && index < MOODS.length ? index : null
  }
