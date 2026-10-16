@@ -391,6 +391,7 @@ try{
  if(!fit||fit.font!==10.5||fit.titleFont!==19||fit.top>12||fit.margin>5||
   fit.scroll>fit.h+2||fit.textLength<65||!fit.inside)
   throw Error('Letter text clipped or outside paper: '+JSON.stringify(fit));
+ await page.addStyleTag({content:'.pawcream-letter-tune-panel { display: none !important; }'});
  await page.screenshot({path:path.join(release,'mobile-letter.png')});
 
  const results={size:{width:390,height:844},home,atelier,
