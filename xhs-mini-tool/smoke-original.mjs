@@ -121,6 +121,11 @@ try{
   throw Error('Missing component feature hints in night mode');
  if(await page.locator('[aria-label="房间功能提示"] span').count()<5)
   throw Error('Night component guide is incomplete');
+ const chip=await page.locator('[aria-label="房间功能提示"] > span').first().evaluate(el=>{
+  const c=getComputedStyle(el);return {bg:c.backgroundColor,color:c.color,pad:c.padding};
+ });
+ if(chip.bg!=='rgba(0, 0, 0, 0)'||chip.color!=='rgb(255, 255, 255)'||chip.pad!=='0px')
+  throw Error('Night guide still has a tinted chip: '+JSON.stringify(chip));
  await page.mouse.click(lampPoints.transparent.x,lampPoints.transparent.y);
  await page.waitForTimeout(280);
  if(!await night())throw Error('Transparent lamp padding closes night mode');
@@ -143,6 +148,11 @@ try{
  // overlap the XHS header or phone home indicator.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
  await page.waitForTimeout(100);
+ const notePrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
+  const css=getComputedStyle(el);return {lines:el.querySelectorAll('span').length,bg:css.backgroundColor};
+ });
+ if(notePrompt.lines!==3||notePrompt.bg!=='rgba(0, 0, 0, 0)')
+  throw Error('Note prompt needs three transparent lines: '+JSON.stringify(notePrompt));
  await page.evaluate(()=>{
   const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
   const note=stage.querySelector('[data-atelier-asset="note"]');
@@ -169,10 +179,16 @@ try{
  // All nine CD previews must have distinct moods and consistent lifecycle.
  await page.locator('[data-atelier-asset="music"]').click();
  await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
+ const coneInitial=await page.locator('section[aria-label="Current music disc"] > div').first().boundingBox();
  const moods=['糖果流行','轻盈电子','缓拍梦境','独立民谣','柔和律动',
               '俏皮节拍','温柔木吉他','夏日海风','雨夜钢琴'];
  for(let disc=0;disc<moods.length;disc++){
   await page.locator('.pawcream-music-slot-button').nth(disc).click();
+  await page.waitForTimeout(120);
+  const coneNow=await page.locator('section[aria-label="Current music disc"] > div').first().boundingBox();
+  if(!coneNow||!coneInitial||Math.abs(coneNow.width-coneInitial.width)>2||
+     Math.abs(coneNow.y-coneInitial.y)>2||Math.abs(coneNow.x-coneInitial.x)>2)
+   throw Error('Ice-cream cone shifted when inserting disc: '+JSON.stringify({coneInitial,coneNow,disc}));
   await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]',{timeout:5000});
   await page.waitForTimeout(850);
   if(disc===0 && !await page.getByText('更多音乐见工作室网站',{exact:false}).count())
@@ -207,6 +223,9 @@ try{
  await page.waitForTimeout(500);
  await page.locator('[data-atelier-asset="instax"]').click();
  await page.waitForSelector('.pawcream-instax-maker-card',{timeout:5000});
+ const instaxBounds=await page.locator('.pawcream-instax-maker-card').boundingBox();
+ if(!instaxBounds||instaxBounds.width>355||instaxBounds.y<20||instaxBounds.y+instaxBounds.height>822)
+  throw Error('Instax maker did not shrink: '+JSON.stringify(instaxBounds));
  await page.getByRole('button',{name:'ok!'}).click();
  await page.getByRole('button',{name:/第 1 格，选择照片/}).click();
  await page.waitForSelector('input[aria-label="从图库选择照片"]',{state:'attached',timeout:4000});
@@ -253,6 +272,16 @@ try{
  });
  if(registerFit.overflow==='auto'||!registerFit.sendInside)
   throw Error('Registration paper still scrolls or verification button exceeds boundaries: '+JSON.stringify(registerFit));
+ const registrationFont=await page.locator('.pawcream-signin-drop input[type="email"]').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+ if(registrationFont<14)throw Error('Registration input font too small: '+registrationFont);
+ const paperDimensions=await page.locator('.pawcream-signin-drop').boundingBox();
+ await page.evaluate(()=>window.dispatchEvent(new CustomEvent('pawcream:open-signin',{detail:{mode:'login'}})));
+ await page.waitForTimeout(420);
+ const loginDimensions=await page.locator('.pawcream-signin-drop').boundingBox();
+ if(!paperDimensions||!loginDimensions||
+  Math.abs(paperDimensions.width-loginDimensions.width)>2||
+  Math.abs(paperDimensions.y+paperDimensions.height-loginDimensions.y-loginDimensions.height)>2)
+  throw Error('Register/login printer base misaligned: '+JSON.stringify({paperDimensions,loginDimensions}));
 
  const results={size:{width:390,height:844},home,atelier,
   pageErrors:errors,missingAssets:unavailable};
