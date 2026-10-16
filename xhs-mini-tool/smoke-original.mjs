@@ -149,6 +149,36 @@ try{
  await page.waitForTimeout(250);
  if(await night())throw Error('detail=0 transparent touch still opens night mode');
 
+ // Sewing must open from a genuinely painted part, not only its center.
+ const sewingPoint=await page.evaluate(()=>{
+  const control=document.querySelector('[data-atelier-asset="sewing"]');
+  const image=control?.querySelector('img');
+  if(!image?.naturalWidth)return null;
+  const rect=control.getBoundingClientRect();
+  const canvas=document.createElement('canvas');
+  canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(image,0,0);
+  const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  for(let y=Math.max(120,rect.top);y<Math.min(innerHeight-120,rect.bottom);y+=8){
+   for(let x=Math.max(10,rect.left);x<Math.min(innerWidth-10,rect.right);x+=8){
+    const u=(x-rect.left)/rect.width,v=(y-rect.top)/rect.height;
+    if(u<0||u>1||v<0||v>1)continue;
+    const px=Math.min(canvas.width-1,Math.floor(u*canvas.width));
+    const py=Math.min(canvas.height-1,Math.floor(v*canvas.height));
+    if(data[(py*canvas.width+px)*4+3]<175)continue;
+    const top=document.elementFromPoint(x,y)?.closest('[data-atelier-asset]');
+    if(top?.getAttribute('data-atelier-asset')==='sewing')return {x,y};
+   }
+  }
+  return null;
+ });
+ if(!sewingPoint)throw Error('Cannot find a painted sewing-machine touch target');
+ await page.mouse.click(sewingPoint.x,sewingPoint.y);
+ await page.waitForSelector('.pawcream-lookbook-overlay',{timeout:5000});
+ await page.locator('.pawcream-lookbook-overlay').click({position:{x:4,y:4}});
+ await page.waitForTimeout(180);
+
  // Open the sticky-note wall and verify the actual mobile card does not
  // overlap the XHS header or phone home indicator.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
@@ -279,6 +309,7 @@ try{
   throw Error('Registration paper still scrolls or verification button exceeds boundaries: '+JSON.stringify(registerFit));
  const registrationFont=await page.locator('.pawcream-signin-drop input[type="email"]').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
  if(registrationFont<14)throw Error('Registration input font too small: '+registrationFont);
+ await page.waitForTimeout(420);
  const paperDimensions=await page.locator('.pawcream-signin-drop').boundingBox();
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('pawcream:open-signin',{detail:{mode:'login'}})));
  await page.waitForTimeout(420);
