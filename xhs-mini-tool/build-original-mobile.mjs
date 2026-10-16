@@ -167,8 +167,8 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["              .pawcream-paper-signature {","              .pawcream-paper-signature {\\n                display: none;"],
       ["              .pawcream-paper-body {",
        "              .pawcream-paper-slogan { margin: 0; text-align: center; font-family: 'PawCream EN', sans-serif; font-size: 8px; line-height: 1.15; font-style: italic; color: #66869e; letter-spacing: -.02em; }\\n              .pawcream-paper-body {"],
-      ["                  <p\\n                    className=\"pawcream-paper-body\"",
-       "                  {visibleTitle === copy.title && <p className=\"pawcream-paper-slogan\">made with a little sugar & lots of love ♡</p>}\\n\\n                  <p\\n                    className=\"pawcream-paper-body\""],
+      ["                  <p\n                    className=\"pawcream-paper-body\"",
+       "                  {visibleTitle === copy.title && <p className=\"pawcream-paper-slogan\">made with a little sugar & lots of love ♡</p>}\n\n                  <p\n                    className=\"pawcream-paper-body\""],
     ];
     for(const [from,to] of letterPatches){
       if(!source.includes(from))throw Error('XHS brand letter patch missing '+from);
