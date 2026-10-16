@@ -1,9 +1,9 @@
 // XHS-only per-pixel hit testing. React assets are layered absolute images,
 // not native alpha-aware hit regions. Pass through transparent overlaid art to
-// the underlying lamp / sewing machine while keeping Color's proven behavior.
+// the underlying lamp / sewing machine / window while keeping Color's behavior.
 const ALPHA_THRESHOLD = 40
 const SOFT_HIT = new Set(['light', 'sewing'])
-const UNCHANGED = new Set(['bear', 'cabinet', 'note', 'window', 'pawcream'])
+const UNCHANGED = new Set(['bear', 'cabinet', 'note', 'pawcream'])
 const fakeEvents = new WeakSet<Event>()
 let canvas: HTMLCanvasElement | null = null
 
@@ -40,7 +40,9 @@ function isPainted(control: HTMLElement, image: HTMLImageElement, key: string, x
         [-radius * .65, -radius * .65], [radius * .65, radius * .65],
         [-radius * .65, radius * .65], [radius * .65, -radius * .65]]
       : [[0, 0]]
-    const threshold = SOFT_HIT.has(key) ? 12 : ALPHA_THRESHOLD
+    // Window/PawCream lettering and illustration are pale: every nonzero-alpha
+    // pixel must count, rather than the generic alpha >= 40 threshold.
+    const threshold = key === 'window' ? 1 : SOFT_HIT.has(key) ? 12 : ALPHA_THRESHOLD
     for (const [ox, oy] of checks) {
       const px = Math.max(0, Math.min(image.naturalWidth - 1,
         Math.floor((u + ox / width) * image.naturalWidth)))
@@ -56,7 +58,9 @@ function isPainted(control: HTMLElement, image: HTMLImageElement, key: string, x
 
 function routeToVisibleArt(stage: HTMLElement, originalKey: string | null,
                            event: MouseEvent) {
-  for (const key of ['light', 'sewing']) {
+  // Window is drawn behind other art: route to it only when the closer
+  // controls did not accept the tap, and only for painted pixels.
+  for (const key of ['light', 'sewing', 'window']) {
     if (key === originalKey) continue
     const control = stage.querySelector<HTMLElement>('[data-atelier-asset="' + key + '"]')
     const image = control && imageFor(control)
