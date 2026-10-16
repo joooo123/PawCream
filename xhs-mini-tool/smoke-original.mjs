@@ -446,19 +446,34 @@ try{
  await page.waitForSelector('.pawcream-paper-copy',{timeout:5000});
  await page.waitForTimeout(260);
  const fit=await page.evaluate(()=>{
-  const el=document.querySelector('.pawcream-paper-copy'),title=el?.querySelector('h2'),body=el?.querySelector('p');
+  const el=document.querySelector('.pawcream-paper-copy'),title=el?.querySelector('h2'),body=el?.querySelector('.pawcream-paper-body');
   const paper=document.querySelector('.pawcream-envelope-paper-wrap');
-  if(!el||!title||!body||!paper)return null;
-  const a=el.getBoundingClientRect(),b=paper.getBoundingClientRect();
+  const slogan=el?.querySelector('.pawcream-paper-slogan');
+  const signature=el?.querySelector('.pawcream-paper-signature');
+  if(!el||!title||!body||!paper||!slogan)return null;
+  const a=el.getBoundingClientRect(),b=paper.getBoundingClientRect(),c=body.getBoundingClientRect();
   return {font:parseFloat(getComputedStyle(body).fontSize),
    titleFont:parseFloat(getComputedStyle(title).fontSize),
    top:parseFloat(el.style.top),margin:parseFloat(getComputedStyle(body).marginTop),
-   h:el.clientHeight,scroll:el.scrollHeight,
-   textLength:body.textContent.length,inside:a.top>=b.top-2&&a.bottom<=b.bottom+2};
+   h:el.clientHeight,scroll:el.scrollHeight,bodyHeight:c.height,
+   text:body.textContent,heading:title.textContent,slogan:slogan.textContent,
+   signatureHidden:getComputedStyle(signature).display==='none',
+   whiteSpace:getComputedStyle(body).whiteSpace,
+   inside:a.top>=b.top-2&&a.bottom<=b.bottom+2};
  });
+ const expected=[
+  '你好呀，欢迎来到 PawCream。',
+  '这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。',
+  '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
+  '甜蜜不止一点点，可爱也不止今天。',
+ ];
  if(!fit||fit.font!==10.5||fit.titleFont!==19||fit.top>12||fit.margin>5||
-  fit.scroll>fit.h+2||fit.textLength<65||!fit.inside)
-  throw Error('Letter text clipped or outside paper: '+JSON.stringify(fit));
+  fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
+  fit.slogan!=='made with a little sugar & lots of love ♡'||
+  !fit.signatureHidden||fit.whiteSpace!=='pre-line'||
+  fit.text!==expected.join('\n'))
+  throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));
+ console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true}));
  await page.addStyleTag({content:'.pawcream-letter-tune-panel { display: none !important; }'});
  await page.screenshot({path:path.join(release,'mobile-letter.png')});
 
