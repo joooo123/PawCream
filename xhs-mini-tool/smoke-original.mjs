@@ -137,6 +137,8 @@ try{
  await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
  await page.waitForTimeout(280);
  if(await night())throw Error('Opaque lamp cannot close night mode');
+ if(await page.locator('#xhs-cloud-hint').count())
+  throw Error('Removed bottom website prompt still exists');
  if(await page.locator('[aria-label="房间功能提示"]').count())
   throw Error('Component hints remain after closing night mode');
 
@@ -188,6 +190,8 @@ try{
  });
  if(notePrompt.lines!==3||notePrompt.bg!=='rgba(0, 0, 0, 0)')
   throw Error('Note prompt needs three transparent lines: '+JSON.stringify(notePrompt));
+ const noteOffset=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>el.style.left);
+ if(noteOffset!=='50%')throw Error('Note prompt was not shifted right: '+noteOffset);
  await page.evaluate(()=>{
   const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
   const note=stage.querySelector('[data-atelier-asset="note"]');
@@ -215,10 +219,21 @@ try{
  await page.locator('[data-atelier-asset="music"]').click();
  await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
  const coneInitial=await page.locator('section[aria-label="Current music disc"] > div').first().boundingBox();
+ const headerInitial=await page.locator('.pawcream-music-panel header').first().boundingBox();
+ if(!headerInitial||headerInitial.height>85)throw Error('Music header retains old extra height: '+JSON.stringify(headerInitial));
  const moods=['糖果流行','轻盈电子','缓拍梦境','独立民谣','柔和律动',
               '俏皮节拍','温柔木吉他','夏日海风','雨夜钢琴'];
  for(let disc=0;disc<moods.length;disc++){
   await page.locator('.pawcream-music-slot-button').nth(disc).click();
+  const status=await page.locator('.pawcream-music-panel header > div').nth(1).evaluate(el=>{
+   const style=getComputedStyle(el);
+   return {nowrap:style.whiteSpace==='nowrap',height:el.getBoundingClientRect().height,
+     text:el.textContent,visibleWidth:el.clientWidth,scrollWidth:el.scrollWidth};
+  });
+  const currentHeader=await page.locator('.pawcream-music-panel header').first().boundingBox();
+  if(!status.nowrap||status.height>17||status.scrollWidth>status.visibleWidth+1||
+     !currentHeader||!headerInitial||Math.abs(currentHeader.height-headerInitial.height)>1)
+   throw Error('Music status wraps or shifts the cone: '+JSON.stringify({status,headerInitial,currentHeader}));
   await page.waitForTimeout(120);
   const coneNow=await page.locator('section[aria-label="Current music disc"] > div').first().boundingBox();
   if(!coneNow||!coneInitial||Math.abs(coneNow.width-coneInitial.width)>2||
