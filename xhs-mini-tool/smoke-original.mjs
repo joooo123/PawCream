@@ -166,19 +166,29 @@ try{
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="music"]',{timeout:15000});
  await page.waitForTimeout(700);
- // Verify touchable spoon animation without unsupported audio.
+ // Real spoon interaction: playback state must follow the visual animation.
  await page.locator('[data-atelier-asset="music"]').click();
  await page.waitForSelector('.pawcream-music-slot-button',{timeout:5000});
  await page.locator('.pawcream-music-slot-button').first().click();
  await page.waitForSelector('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]',{timeout:5000});
  await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
- await page.waitForTimeout(900);
+ await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='playing' &&
+  document.documentElement.dataset.pawcreamAudioDisc==='1',{timeout:5000});
  if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').count())
-  throw Error('Tapping spoon failed to rotate');
+  throw Error('CD 1 played without moving the spoon');
  await page.locator('section[aria-label="Current music disc"] button[aria-label="停止唱针动画"]').click();
- await page.waitForTimeout(200);
- if(!await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').count())
-  throw Error('Spoon animation did not stop');
+ await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
+ await page.waitForTimeout(700);
+ await page.locator('.pawcream-music-slot-button').nth(1).click();
+ await page.waitForTimeout(950);
+ await page.locator('section[aria-label="Current music disc"] button[aria-label="旋转唱针"]').click();
+ await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='playing' &&
+  document.documentElement.dataset.pawcreamAudioDisc==='2',{timeout:5000});
+ await page.locator('[data-pawcream-current-disc-return="1"]').click();
+ await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ if(await page.evaluate(()=>document.documentElement.hasAttribute('data-pawcream-audio-state')))
+  throw Error('Web Audio engine leaked beyond the music page');
 
  // Real file input activation: the offline photo editor must open the
  // system file chooser on a visible, user-tapped gallery control.
