@@ -387,8 +387,8 @@ try{
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   ctx.drawImage(img,0,0);
   const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  let paintedLower=null,coveredLower=null,paintedPixels=0;
-  const byTop={};
+  let paintedLower=null,paintedPixels=0;
+  const byTop={},coveredBy={};
   for(let y=Math.max(100,Math.ceil(rect.top+rect.height*.53));
       y<Math.min(innerHeight-90,rect.top+rect.height*.80);y+=3){
    for(let x=Math.max(14,Math.ceil(rect.left));x<Math.min(innerWidth-12,rect.right);x+=3){
@@ -401,22 +401,25 @@ try{
     const topKey=top?.getAttribute('data-atelier-asset')||'stage';
     byTop[topKey]=(byTop[topKey]||0)+1;
     if(topKey==='window'&&!paintedLower)paintedLower={x,y,topKey};
-    if(topKey==='light'&&!coveredLower)coveredLower={x,y,topKey};
+    if(['music','color'].includes(topKey) && !coveredBy[topKey])
+     coveredBy[topKey]={x,y,topKey};
    }
   }
-  return {paintedLower,coveredLower,paintedPixels,byTop,rect:rect.toJSON(),natural:{width:img.naturalWidth,height:img.naturalHeight}};
+  return {paintedLower,coveredBy,paintedPixels,byTop,rect:rect.toJSON(),natural:{width:img.naturalWidth,height:img.naturalHeight}};
  });
- if(!lowerWindowHit?.coveredLower)
-  throw Error('No lower-half Window pixels overlapped by transparent Light were tested: '+JSON.stringify(lowerWindowHit));
- await page.mouse.click(lowerWindowHit.coveredLower.x,lowerWindowHit.coveredLower.y);
- await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
- await page.locator('.pawcream-letter-close').click();
+ if(!lowerWindowHit?.coveredBy?.music||!lowerWindowHit?.coveredBy?.color)
+  throw Error('Missing covered lower Window pixels for Music and Color: '+JSON.stringify(lowerWindowHit));
+ for(const topKey of ['music','color']){
+  const hit=lowerWindowHit.coveredBy[topKey];
+  await page.mouse.click(hit.x,hit.y);
+  await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
+  await page.locator('.pawcream-letter-close').click();
+  await page.waitForTimeout(180);
+ }
  if(lowerWindowHit.paintedLower){
-  await page.waitForTimeout(150);
   await page.mouse.click(lowerWindowHit.paintedLower.x,lowerWindowHit.paintedLower.y);
   await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
  }
-
 
  // Preview mode renders the complete paragraph immediately for clipping checks.
  await page.goto(base+'/?scene=atelier&letterTune=1',{waitUntil:'domcontentloaded'});
