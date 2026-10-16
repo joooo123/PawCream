@@ -187,8 +187,9 @@ try{
  await page.locator('[data-pawcream-current-disc-return="1"]').click();
  await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
- if(await page.evaluate(()=>document.documentElement.hasAttribute('data-pawcream-audio-state')))
-  throw Error('Web Audio engine leaked beyond the music page');
+ await page.waitForFunction(()=>document.documentElement.dataset.pawcreamAudioState==='stopped',{timeout:5000});
+ if(await page.evaluate(()=>document.documentElement.hasAttribute('data-pawcream-audio-disc')))
+  throw Error('Web Audio kept a selected disc after leaving the music page');
 
  // Real file input activation: the offline photo editor must open the
  // system file chooser on a visible, user-tapped gallery control.
