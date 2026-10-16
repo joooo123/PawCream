@@ -137,7 +137,8 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["height: mobile && registerPaper ? 23 : mobile ? 27 : 32","height: mobile && registerPaper ? 29 : mobile ? 27 : 32"],
       ["height: mobile && registerPaper ? 24 : mobile ? 28 : 32","height: mobile && registerPaper ? 29 : mobile ? 28 : 32"],
       ["fontSize: (mobile ? 9 : 10) + formFontBoost,","fontSize: mobile && registerPaper ? 12 : (mobile ? 9 : 10) + formFontBoost,\n    whiteSpace: 'nowrap' as const, padding: mobile && registerPaper ? '0 2px' : undefined,\n    flex: mobile && registerPaper ? '1 1 0' : undefined, boxSizing: 'border-box' as const,"],
-      ["minHeight: mobile ? 22 : 27,\n                   marginTop: mobile ? 6 : 8,","minHeight: status ? (mobile ? 18 : 27) : 0,\n                   marginTop: status ? (mobile ? 3 : 8) : 0,"],
+      ["minHeight: mobile ? 22 : 27,","minHeight: status ? (mobile ? 18 : 27) : 0,"],
+      ["marginTop: mobile ? 6 : 8,","marginTop: status ? (mobile ? 3 : 8) : 0,"],
     ];
     for(const [oldValue,newValue] of patches){
       if(!source.includes(oldValue))throw Error('XHS signin patch missing '+oldValue);
