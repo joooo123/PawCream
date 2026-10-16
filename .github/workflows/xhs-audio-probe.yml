@@ -1,0 +1,53 @@
+name: XHS Web Audio compatibility probe
+on:
+  push:
+    branches: [feat/xiaohongshu-mini-tool]
+    paths:
+      - 'xhs-mini-tool/audio-probe/**'
+      - '.github/workflows/xhs-audio-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audio-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate offline test source
+        run: |
+          node --check xhs-mini-tool/audio-probe/app.js
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('xhs-mini-tool/audio-probe/index.html').read_text()
+          js = Path('xhs-mini-tool/audio-probe/app.js').read_text()
+          assert '<script src="./app.js"></script>' in html
+          assert 'AudioContext' in js and 'createBufferSource' in js
+          for word in ('http://', 'https://', '.mp3', 'eval(', 'new Function(', 'WebAssembly'):
+              assert word not in js, word
+          PY
+      - name: Package upload-ready ZIP
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          root = Path('xhs-mini-tool/audio-probe')
+          output_dir = Path('xhs-mini-tool/audio-probe-release')
+          output_dir.mkdir(exist_ok=True)
+          path = output_dir / 'PawCream-XHS-WebAudio-Probe.zip'
+          with ZipFile(path, 'w', ZIP_DEFLATED) as z:
+              for name in ('index.html', 'app.js'):
+                  z.write(root / name, arcname=name)
+          with ZipFile(path) as z:
+              assert z.namelist() == ['index.html', 'app.js']
+              assert z.testzip() is None
+          assert path.stat().st_size < 50000
+          print('PASS:', path, path.stat().st_size, 'bytes')
+          PY
+      - name: Upload the standalone mini-tool ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: pawcream-xhs-web-audio-probe
+          path: xhs-mini-tool/audio-probe-release/PawCream-XHS-WebAudio-Probe.zip
+          retention-days: 14
