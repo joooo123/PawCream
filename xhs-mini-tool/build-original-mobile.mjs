@@ -161,18 +161,18 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // patch paperLeft/Top/Width/Height/Scale or endY (-16).
       // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
       ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw + 24px))'"],
-      ["right: mobile ? -1 : 4","right: mobile ? 22 : 4"],
+      ["right: mobile ? -1 : 4","right: mobile ? 42 : 4"],
       ["    textLeft: 19.5,","    textLeft: 14.5,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
       ["    textWidth: 64.5,","    textWidth: 75.0,"],
       ["    textHeight: 56,","    textHeight: 73,"],
-      ["    titleSize: 19,","    titleSize: 20.0,"],
-      ["    bodySize: 10.5,","    bodySize: 10.8,"],
+      ["    titleSize: 19,","    titleSize: 20.5,"],
+      ["    bodySize: 10.5,","    bodySize: 11.0,"],
       ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.24,"],
       ["margin: 11px 0 0;","margin: 2px 0 0;\\n                white-space: pre-line;"],
       ["              .pawcream-paper-signature {","              .pawcream-paper-signature {\\n                display: none;"],
       ["              .pawcream-paper-body {",
-       "              .pawcream-paper-slogan { margin: 0; text-align: center; font-family: 'PawCream EN', sans-serif; font-size: 10px; line-height: 1.2; font-style: italic; color: #66869e; letter-spacing: -.02em; }\\n              .pawcream-paper-body {"],
+       "              .pawcream-paper-slogan { margin: 0; text-align: center; font-family: 'PawCream EN', sans-serif; font-size: 11px; line-height: 1.2; font-style: italic; color: #58768e; letter-spacing: -.02em; }\\n              .pawcream-paper-body {"],
       ["                  <p\n                    className=\"pawcream-paper-body\"",
        "                  {visibleTitle === copy.title && <p className=\"pawcream-paper-slogan\">made with a little sugar & lots of love ♡</p>}\n\n                  <p\n                    className=\"pawcream-paper-body\""],
     ];
