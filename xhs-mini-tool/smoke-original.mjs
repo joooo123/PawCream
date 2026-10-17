@@ -480,7 +480,8 @@ try{
  if(!fit||fit.font!==11||fit.titleFont!==20.5||fit.sloganFont!==11||
   fit.closeRect.left<3||fit.closeRect.right>fit.viewportWidth-3||
   fit.top<12.5||fit.top>14||fit.margin>5||
-  fit.dialogWidth<405||fit.dialogWidth>425||
+  fit.dialogWidth<375||fit.dialogWidth>390||
+  Math.abs((fit.stageRect.left+fit.stageRect.width/2)-fit.viewportWidth/2)>5||
   fit.paperRel.left!=='14%'||fit.paperRel.top!=='5.5%'||
   fit.paperRel.width!=='75.5%'||fit.paperRel.height!=='84%'||
   !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
