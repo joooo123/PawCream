@@ -162,17 +162,17 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
       ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
       ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
-      // Center the opaque envelope artwork rather than its transparent PNG
-      // canvas. Enlarge the whole stage (including the paper) until its
-      // painted edges sit about 18px from either side on a 390px phone.
+      // Keep the stage geometry measured in the passing mobile screenshot:
+      // the visible painted envelope has ~13px margins on each side at 390px.
+      // Only increase copy inset and text sizing inside the original paper.
       ["            <div className=\"pawcream-envelope-stage\">",
-       "            <div style={{ transform: mobile ? 'translateX(-36px) scale(1.50)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
+       "            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
       ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"",
        "            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
       ["    textLeft: 19.5,","    textLeft: 20.0,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
       ["    textWidth: 64.5,","    textWidth: 60.0,"],
-      ["    textHeight: 56,","    textHeight: 73,"],
+      ["    textHeight: 56,","    textHeight: 77,"],
       ["    titleSize: 19,","    titleSize: 22.0,"],
       ["    bodySize: 10.5,","    bodySize: 12.0,"],
       ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.14,"],
