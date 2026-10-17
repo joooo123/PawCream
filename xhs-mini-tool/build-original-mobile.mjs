@@ -162,25 +162,27 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
       ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
       ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
-      // Scale a wrapper instead of overflowing the dialog: visually centered,
-      // without changing the relative position of the paper in the envelope.
+      // The envelope artwork is horizontally centered in its own PNG (alpha
+      // bounds 82..767 of 850px). Do not translate the wrapper sideways.
+      // Scale the whole stage so the visible edges approach equal mobile insets;
+      // paper/envelope geometry and letter animation stay synchronized.
       ["            <div className=\"pawcream-envelope-stage\">",
-       "            <div style={{ transform: mobile ? 'translateX(-6px) scale(1.085)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
+       "            <div style={{ transform: mobile ? 'scale(1.18)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
       ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"",
        "            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
-      ["    textLeft: 19.5,","    textLeft: 14.5,"],
+      ["    textLeft: 19.5,","    textLeft: 17.0,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
-      ["    textWidth: 64.5,","    textWidth: 75.0,"],
+      ["    textWidth: 64.5,","    textWidth: 66.0,"],
       ["    textHeight: 56,","    textHeight: 73,"],
-      ["    titleSize: 19,","    titleSize: 20.5,"],
-      ["    bodySize: 10.5,","    bodySize: 10.8,"],
-      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.10,"],
-      ["letterSpacing: language === 'zh' ? '.015em' : '.005em'","letterSpacing: language === 'zh' ? '-.06em' : '.005em'"],
+      ["    titleSize: 19,","    titleSize: 22.0,"],
+      ["    bodySize: 10.5,","    bodySize: 11.5,"],
+      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.14,"],
+      ["letterSpacing: language === 'zh' ? '.015em' : '.005em'","letterSpacing: language === 'zh' ? '-.025em' : '.005em'"],
       ["color: #648198;","color: #4c7188;"],
       ["margin: 11px 0 0;","margin: 2px 0 0;\\n                white-space: pre-line;"],
       ["              .pawcream-paper-signature {","              .pawcream-paper-signature {\\n                display: none;"],
       ["              .pawcream-paper-body {",
-       "              .pawcream-paper-slogan { margin: 0; text-align: center; font-family: 'PawCream EN', sans-serif; font-size: 11px; line-height: 1.2; font-style: italic; color: #58768e; letter-spacing: -.02em; }\\n              .pawcream-paper-body {"],
+       "              .pawcream-paper-slogan { margin: 0; text-align: center; font-family: 'PawCream EN', sans-serif; font-size: 12px; line-height: 1.2; font-style: italic; color: #58768e; letter-spacing: -.02em; }\\n              .pawcream-paper-body {"],
       ["                  <p\n                    className=\"pawcream-paper-body\"",
        "                  {visibleTitle === copy.title && <p className=\"pawcream-paper-slogan\">made with a little sugar & lots of love ♡</p>}\n\n                  <p\n                    className=\"pawcream-paper-body\""],
     ];
