@@ -494,8 +494,8 @@ try{
   '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
   '甜蜜不止一点点，可爱也不止今天。',
  ];
- if(!fit||fit.font!==11.5||fit.titleFont!==22||fit.sloganFont!==12||
-  fit.copyLeft!==17||fit.copyWidth!==66||
+ if(!fit||fit.font!==12||fit.titleFont!==22||fit.sloganFont!==12||
+  fit.copyLeft!==20||fit.copyWidth!==60||
   fit.paintedMargins.left<8||fit.paintedMargins.right<8||
   fit.paintedMargins.left>25||fit.paintedMargins.right>25||
   Math.abs(fit.paintedMargins.left-fit.paintedMargins.right)>5||

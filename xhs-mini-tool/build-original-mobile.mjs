@@ -162,21 +162,19 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
       ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
       ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
-      // The 850px PNG has internal alpha gutters and the centered dialog is
-      // displaced ~6px by the overlay layout. At the 390px mobile viewport,
-      // the measured painted margins were 36.2px left / 13.1px right.
-      // A synchronized 1.26x scale plus -12px X offset makes the painted
-      // envelope margins ~13px on both sides, without retuning the paper.
+      // Center the opaque envelope artwork rather than its transparent PNG
+      // canvas. Enlarge the whole stage (including the paper) until its
+      // painted edges sit about 18px from either side on a 390px phone.
       ["            <div className=\"pawcream-envelope-stage\">",
-       "            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
+       "            <div style={{ transform: mobile ? 'translateX(-36px) scale(1.50)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
       ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"",
        "            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
-      ["    textLeft: 19.5,","    textLeft: 17.0,"],
+      ["    textLeft: 19.5,","    textLeft: 20.0,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
-      ["    textWidth: 64.5,","    textWidth: 66.0,"],
+      ["    textWidth: 64.5,","    textWidth: 60.0,"],
       ["    textHeight: 56,","    textHeight: 73,"],
       ["    titleSize: 19,","    titleSize: 22.0,"],
-      ["    bodySize: 10.5,","    bodySize: 11.5,"],
+      ["    bodySize: 10.5,","    bodySize: 12.0,"],
       ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.14,"],
       ["letterSpacing: language === 'zh' ? '.015em' : '.005em'","letterSpacing: language === 'zh' ? '-.025em' : '.005em'"],
       ["color: #648198;","color: #4c7188;"],
