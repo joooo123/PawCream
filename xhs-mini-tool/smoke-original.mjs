@@ -454,7 +454,24 @@ try{
   const a=el.getBoundingClientRect(),b=paper.getBoundingClientRect(),c=body.getBoundingClientRect();
   const stage=document.querySelector('.pawcream-envelope-stage');
   const dialog=document.querySelector('.pawcream-envelope-dialog');
-  return {font:parseFloat(getComputedStyle(body).fontSize),
+  const front=document.querySelector('.pawcream-envelope-front');
+  // Measure the actual painted envelope, not the transparent PNG bounding box.
+  // The original front asset has transparent gutters (850px-wide canvas).
+  const cv=document.createElement('canvas');
+  cv.width=front.naturalWidth;cv.height=front.naturalHeight;
+  const cx=cv.getContext('2d',{willReadFrequently:true});
+  cx.drawImage(front,0,0);
+  const pixels=cx.getImageData(0,0,cv.width,cv.height).data;
+  let minX=cv.width,maxX=-1;
+  for(let y=0;y<cv.height;y+=2)for(let x=0;x<cv.width;x+=2){
+   if(pixels[(y*cv.width+x)*4+3]>30){minX=Math.min(minX,x);maxX=Math.max(maxX,x);}
+  }
+  const sr=stage.getBoundingClientRect();
+  const frontLeft=sr.left+minX/cv.width*sr.width;
+  const frontRight=sr.left+(maxX+1)/cv.width*sr.width;
+  return {paintedMargins:{left:frontLeft,right:innerWidth-frontRight}, 
+   copyLeft:parseFloat(el.style.left),copyWidth:parseFloat(el.style.width),
+   font:parseFloat(getComputedStyle(body).fontSize),
    titleFont:parseFloat(getComputedStyle(title).fontSize),
    sloganFont:parseFloat(getComputedStyle(slogan).fontSize),
    top:parseFloat(el.style.top),margin:parseFloat(getComputedStyle(body).marginTop),
@@ -477,7 +494,11 @@ try{
   '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
   '甜蜜不止一点点，可爱也不止今天。',
  ];
- if(!fit||fit.font!==10.8||fit.titleFont!==20.5||fit.sloganFont!==11||
+ if(!fit||fit.font!==11.5||fit.titleFont!==22||fit.sloganFont!==12||
+  fit.copyLeft!==17||fit.copyWidth!==66||
+  fit.paintedMargins.left<8||fit.paintedMargins.right<8||
+  fit.paintedMargins.left>25||fit.paintedMargins.right>25||
+  Math.abs(fit.paintedMargins.left-fit.paintedMargins.right)>5||
   fit.closeRect.left<3||fit.closeRect.right>fit.viewportWidth-3||
   fit.top<12.5||fit.top>14||fit.margin>5||
   fit.dialogWidth<375||fit.dialogWidth>390||
@@ -490,7 +511,7 @@ try{
   !fit.signatureHidden||fit.whiteSpace!=='pre-line'||
   fit.text!==expected.join('\n'))
   throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));
- console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,bodyBottom:fit.bodyBottom,stageTop:fit.stageRect.top,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true}));
+ console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,bodyBottom:fit.bodyBottom,stageTop:fit.stageRect.top,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true,paintedMargins:fit.paintedMargins,copyMargins:{left:fit.copyLeft,right:100-fit.copyLeft-fit.copyWidth}}));
  await page.addStyleTag({content:'.pawcream-letter-tune-panel { display: none !important; }'});
  await page.screenshot({path:path.join(release,'mobile-letter.png')});
 
