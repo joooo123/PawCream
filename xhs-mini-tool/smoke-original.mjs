@@ -463,6 +463,8 @@ try{
    signatureHidden:getComputedStyle(signature).display==='none',
    whiteSpace:getComputedStyle(body).whiteSpace,
    dialogWidth:dialog.getBoundingClientRect().width,
+   closeRect:document.querySelector('.pawcream-letter-close').getBoundingClientRect().toJSON(),
+   viewportWidth:window.innerWidth,
    paperRel:{left:paper.style.left,top:paper.style.top,width:paper.style.width,
       height:paper.style.height,transform:paper.style.transform},
    stageRect:stage.getBoundingClientRect().toJSON(),
@@ -475,7 +477,8 @@ try{
   '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
   '甜蜜不止一点点，可爱也不止今天。',
  ];
- if(!fit||fit.font!==10.8||fit.titleFont!==20||fit.sloganFont!==10||
+ if(!fit||fit.font!==11||fit.titleFont!==20.5||fit.sloganFont!==11||
+  fit.closeRect.left<3||fit.closeRect.right>fit.viewportWidth-3||
   fit.top<12.5||fit.top>14||fit.margin>5||
   fit.dialogWidth<405||fit.dialogWidth>425||
   fit.paperRel.left!=='14%'||fit.paperRel.top!=='5.5%'||
