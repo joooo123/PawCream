@@ -162,12 +162,13 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
       ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
       ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
-      // The envelope artwork is horizontally centered in its own PNG (alpha
-      // bounds 82..767 of 850px). Do not translate the wrapper sideways.
-      // Scale the whole stage so the visible edges approach equal mobile insets;
-      // paper/envelope geometry and letter animation stay synchronized.
+      // The 850px PNG has internal alpha gutters and the centered dialog is
+      // displaced ~6px by the overlay layout. At the 390px mobile viewport,
+      // the measured painted margins were 36.2px left / 13.1px right.
+      // A synchronized 1.26x scale plus -12px X offset makes the painted
+      // envelope margins ~13px on both sides, without retuning the paper.
       ["            <div className=\"pawcream-envelope-stage\">",
-       "            <div style={{ transform: mobile ? 'scale(1.18)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
+       "            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
       ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"",
        "            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
       ["    textLeft: 19.5,","    textLeft: 17.0,"],
