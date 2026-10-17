@@ -452,14 +452,22 @@ try{
   const signature=el?.querySelector('.pawcream-paper-signature');
   if(!el||!title||!body||!paper||!slogan)return null;
   const a=el.getBoundingClientRect(),b=paper.getBoundingClientRect(),c=body.getBoundingClientRect();
+  const stage=document.querySelector('.pawcream-envelope-stage');
+  const dialog=document.querySelector('.pawcream-envelope-dialog');
   return {font:parseFloat(getComputedStyle(body).fontSize),
    titleFont:parseFloat(getComputedStyle(title).fontSize),
+   sloganFont:parseFloat(getComputedStyle(slogan).fontSize),
    top:parseFloat(el.style.top),margin:parseFloat(getComputedStyle(body).marginTop),
    h:el.clientHeight,scroll:el.scrollHeight,bodyHeight:c.height,
    text:body.textContent,heading:title.textContent,slogan:slogan.textContent,
    signatureHidden:getComputedStyle(signature).display==='none',
    whiteSpace:getComputedStyle(body).whiteSpace,
-   inside:a.top>=b.top-2&&a.bottom<=b.bottom+2};
+   dialogWidth:dialog.getBoundingClientRect().width,
+   paperRel:{left:paper.style.left,top:paper.style.top,width:paper.style.width,
+      height:paper.style.height,transform:paper.style.transform},
+   stageRect:stage.getBoundingClientRect().toJSON(),
+   inside:a.top>=b.top-2&&a.bottom<=b.bottom+2,
+   titleGap:title.getBoundingClientRect().top-b.top};
  });
  const expected=[
   '你好呀，欢迎来到 PawCream。',
@@ -467,7 +475,12 @@ try{
   '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
   '甜蜜不止一点点，可爱也不止今天。',
  ];
- if(!fit||fit.font!==10.5||fit.titleFont!==19||fit.top>12||fit.margin>5||
+ if(!fit||fit.font!==10.8||fit.titleFont!==20||fit.sloganFont!==10||
+  fit.top<12.5||fit.top>14||fit.margin>5||
+  fit.dialogWidth<405||fit.dialogWidth>425||
+  fit.paperRel.left!=='14%'||fit.paperRel.top!=='5.5%'||
+  fit.paperRel.width!=='75.5%'||fit.paperRel.height!=='84%'||
+  !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
   fit.slogan!=='made with a little sugar & lots of love ♡'||
   !fit.signatureHidden||fit.whiteSpace!=='pre-line'||
