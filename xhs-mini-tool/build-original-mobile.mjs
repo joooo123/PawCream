@@ -160,8 +160,13 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // Restore the original paper-to-envelope position and scale: do NOT
       // patch paperLeft/Top/Width/Height/Scale or endY (-16).
       // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
-      ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw + 24px))'"],
-      ["right: mobile ? -1 : 4","right: mobile ? 42 : 4"],
+      ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
+      // Scale a wrapper instead of overflowing the dialog: visually centered,
+      // without changing the relative position of the paper in the envelope.
+      ["            <div className=\"pawcream-envelope-stage\">",
+       "            <div style={{ transform: mobile ? 'scale(1.085)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
+      ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"",
+       "            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
       ["    textLeft: 19.5,","    textLeft: 14.5,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
       ["    textWidth: 64.5,","    textWidth: 75.0,"],
