@@ -4,6 +4,7 @@ import {
   OPEN_SIGNIN_EVENT,
   isPawCreamApiEnabled,
   registerPawCream,
+  sendPawCreamEmailCode,
   signInPawCream,
 } from '../pawcreamApi'
 import AtelierWithCollection from './AtelierWithCollection'
@@ -90,6 +91,8 @@ export default function AtelierWithSignin(props: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [inviteCode, setInviteCode] = useState('')
+  const [emailCode, setEmailCode] = useState('')
+  const [sendingCode, setSendingCode] = useState(false)
   const [status, setStatus] = useState('')
   const [tuneByDevice, setTuneByDevice] = useState<SigninTuneByDevice>(readTuneByDevice)
   const [copied, setCopied] = useState(false)
@@ -104,6 +107,11 @@ export default function AtelierWithSignin(props: Props) {
         email: '邮箱',
         password: '密码',
         invite: '邀请码',
+        emailCode: '邮箱验证码',
+        sendCode: '发送验证码',
+        sendingCode: '正在发送验证码…',
+        sentCode: '验证码已发送，请检查邮箱（10 分钟内有效）',
+        badCode: '请输入邮箱收到的 6 位数字',
         login: '登入',
         register: '注册',
         close: '关闭登入',
@@ -120,6 +128,11 @@ export default function AtelierWithSignin(props: Props) {
         email: 'Email',
         password: 'Password',
         invite: 'Invite code',
+        emailCode: 'Email verification code',
+        sendCode: 'Send code',
+        sendingCode: 'Sending verification code…',
+        sentCode: 'Code sent. Check your email (valid for 10 minutes).',
+        badCode: 'Enter the six-digit code from your email',
         login: 'Sign in',
         register: 'Register',
         close: 'Close sign in',
@@ -254,6 +267,33 @@ export default function AtelierWithSignin(props: Props) {
     setStatus('')
   }
 
+  const requestEmailCode = async () => {
+    if (sendingCode) return
+    const normalizedEmail = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setStatus(copy.badEmail)
+      return
+    }
+    if (!inviteCode.trim()) {
+      setStatus(copy.badInvite)
+      return
+    }
+    if (!isPawCreamApiEnabled()) {
+      setStatus(copy.preview)
+      return
+    }
+    setSendingCode(true)
+    setStatus(copy.sendingCode)
+    try {
+      await sendPawCreamEmailCode(normalizedEmail, inviteCode.trim())
+      setStatus(copy.sentCode)
+    } catch (error) {
+      setStatus(error instanceof Error && error.message ? error.message : copy.failed)
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const normalizedEmail = email.trim()
@@ -271,6 +311,10 @@ export default function AtelierWithSignin(props: Props) {
       setStatus(copy.badInvite)
       return
     }
+    if (mode === 'register' && !/^\d{6}$/.test(emailCode.trim())) {
+      setStatus(copy.badCode)
+      return
+    }
     if (!isPawCreamApiEnabled()) {
       setStatus(copy.preview)
       return
@@ -281,7 +325,7 @@ export default function AtelierWithSignin(props: Props) {
       if (mode === 'login') {
         await signInPawCream(normalizedEmail, password)
       } else {
-        await registerPawCream(normalizedEmail, password, inviteCode.trim())
+        await registerPawCream(normalizedEmail, password, inviteCode.trim(), emailCode.trim())
       }
 
       setStatus(copy.success)
@@ -290,6 +334,7 @@ export default function AtelierWithSignin(props: Props) {
         setOpen(false)
         setPassword('')
         setInviteCode('')
+        setEmailCode('')
       }, 420)
     } catch (error) {
       setStatus(error instanceof Error && error.message ? error.message : copy.failed)
@@ -456,7 +501,7 @@ export default function AtelierWithSignin(props: Props) {
                   className="pawcream-signin-input"
                   type="email"
                   value={email}
-                  onChange={(event) => { setEmail(event.currentTarget.value); setStatus('') }}
+                  onChange={(event) => { setEmail(event.currentTarget.value); setEmailCode(''); setStatus('') }}
                   autoComplete="email"
                   style={inputStyle}
                 />
@@ -475,17 +520,45 @@ export default function AtelierWithSignin(props: Props) {
               </label>
 
               {mode === 'register' && (
-                <label style={labelStyle}>
-                  <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.invite}</span>
-                  <input
-                    className="pawcream-signin-input"
-                    type="text"
-                    value={inviteCode}
-                    onChange={(event) => { setInviteCode(event.currentTarget.value); setStatus('') }}
-                    autoComplete="off"
-                    style={inputStyle}
-                  />
-                </label>
+                <>
+                  <label style={labelStyle}>
+                    <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.invite}</span>
+                    <input
+                      className="pawcream-signin-input"
+                      type="text"
+                      value={inviteCode}
+                      onChange={(event) => { setInviteCode(event.currentTarget.value.toUpperCase()); setStatus('') }}
+                      autoComplete="off"
+                      placeholder="PC-XXXX-XXXX"
+                      style={inputStyle}
+                    />
+                  </label>
+
+                  <label style={labelStyle}>
+                    <span style={{ display: 'block', marginBottom: mobile ? 3 : 4 }}>{copy.emailCode}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: mobile ? 5 : 7 }}>
+                      <input
+                        className="pawcream-signin-input"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        value={emailCode}
+                        onChange={(event) => { setEmailCode(event.currentTarget.value.replace(/\D/g, '')); setStatus('') }}
+                        style={{ ...inputStyle, minWidth: 0, flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        className="pawcream-signin-action"
+                        disabled={sendingCode}
+                        onClick={requestEmailCode}
+                        style={{ ...actionStyle, minWidth: 0, whiteSpace: 'nowrap', padding: mobile ? '0 6px' : '0 9px', opacity: sendingCode ? 0.6 : 1 }}
+                      >
+                        {copy.sendCode}
+                      </button>
+                    </div>
+                  </label>
+                </>
               )}
 
               <div style={{ display: 'flex', gap: mobile ? 7 : 9, marginTop: mobile ? 8 : 10 }}>
