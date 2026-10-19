@@ -327,7 +327,7 @@ const lines=[
 ];
 fs.writeFileSync(path.join(dist,'index.html'),lines.join('\n')+'\n');
 fs.copyFileSync(path.join(root,'offline-hint.js'),path.join(dist,'offline-hint.js'));
-for(const image of ['home/Home_mobile.webp','atelier/background.webp','atelier/instax.webp','signin/打字机.webp','signin/打印机注册.webp','iron_box.webp','姓名贴.webp','instax-transparent/粉白竖1.webp'])
+for(const image of ['home/Home_mobile.webp','atelier/background.webp','atelier/instax.webp','signin/打字机.webp','signin/打印机注册.webp','iron_box.webp','姓名贴.webp','instax-transparent/粉白竖1.webp','collection/浅蓝雾屿A款.webp','collection/浅蓝雾屿B款.webp','collection/海盐舒芙蕾A款.webp','collection/海盐舒芙蕾B款.webp'])
  check(fs.existsSync(path.join(assets,image)),'Missing artwork '+image);
 const bundledJs=fs.readFileSync(jsFile,'utf8');
 for(const [re,name] of [[/\bfetch\s*\(/,'network fetch'],[/\bXMLHttpRequest\b/,'network XHR'],[/\bnew\s+Function\s*\(/,'dynamic Function'],[/\beval\s*\(/,'eval'],[/\bimport\s*\(/,'dynamic import']])

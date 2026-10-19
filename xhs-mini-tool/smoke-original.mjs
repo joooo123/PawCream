@@ -178,6 +178,29 @@ try{
  if(!sewingPoint)throw Error('Cannot find a painted sewing-machine touch target');
  await page.mouse.click(sewingPoint.x,sewingPoint.y);
  await page.waitForSelector('.pawcream-lookbook-overlay',{timeout:5000});
+ const collectionCases=[
+  {counter:'01 / 06',alt:'青空小蓓 海报'},
+  {counter:'02 / 06',alt:'夏日海盐波波 海报'},
+  {counter:'03 / 06',alt:'浅蓝雾屿 A款 海报'},
+  {counter:'04 / 06',alt:'浅蓝雾屿 B款 海报'},
+  {counter:'05 / 06',alt:'海盐舒芙蕾 A款 海报'},
+  {counter:'06 / 06',alt:'海盐舒芙蕾 B款 海报'},
+ ];
+ for(let i=0;i<collectionCases.length;i++){
+  const item=collectionCases[i];
+  await page.waitForFunction(({counter,alt})=>{
+   const img=document.querySelector('.pawcream-lookbook-base');
+   const label=document.querySelector('.pawcream-lookbook-counter');
+   return !!img&&img.alt===alt&&img.complete&&img.naturalWidth>0&&label?.textContent?.trim()===counter;
+  },item,{timeout:8000});
+  const src=await page.locator('.pawcream-lookbook-base').evaluate(img=>img.currentSrc);
+  if(!src.endsWith('.webp'))throw Error('Collection poster was not converted to WebP: '+src);
+  if(i>=2){
+   const name=['lanwu-a','lanwu-b','shufulei-a','shufulei-b'][i-2];
+   await page.screenshot({path:path.join(release,'mobile-collection-'+name+'.png')});
+  }
+  if(i<collectionCases.length-1)await page.locator('.pawcream-lookbook-arrow.is-next').click();
+ }
  await page.locator('.pawcream-lookbook-overlay').click({position:{x:4,y:4}});
  await page.waitForTimeout(180);
 
