@@ -193,6 +193,7 @@ try{
    const label=document.querySelector('.pawcream-lookbook-counter');
    return !!img&&img.alt===alt&&img.complete&&img.naturalWidth>0&&label?.textContent?.trim()===counter;
   },item,{timeout:8000});
+  await page.waitForTimeout(500);
   const src=await page.locator('.pawcream-lookbook-base').evaluate(img=>img.currentSrc);
   if(!src.endsWith('.webp'))throw Error('Collection poster was not converted to WebP: '+src);
   if(i>=2){
