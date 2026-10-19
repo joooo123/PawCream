@@ -51,6 +51,7 @@ const collectionAsset = (folder: string, name: string) =>
   `${BASE_URL}assets/collection/${encodeURIComponent(folder)}/${encodeURIComponent(name)}`
 const qingkongAsset = (name: string) => collectionAsset('青空小蓓', name)
 const summerAsset = (name: string) => collectionAsset('夏日海盐波波', name)
+const collectionPosterAsset = (name: string) => `${BASE_URL}assets/collection/${encodeURIComponent(name)}`
 const COLLECTION_TUNE_STORAGE_KEY = 'pawcream-collection-tune-v1'
 
 const LOOKBOOK_ITEMS: LookbookItem[] = [
@@ -103,6 +104,30 @@ const LOOKBOOK_ITEMS: LookbookItem[] = [
     id: 'summer-sea-salt-bobo',
     title: '夏日海盐波波',
     base: summerAsset('海盐夏日波波.png'),
+    slots: [],
+  },
+  {
+    id: 'lanwu-a',
+    title: '浅蓝雾屿 A款',
+    base: collectionPosterAsset('浅蓝雾屿A款.png'),
+    slots: [],
+  },
+  {
+    id: 'lanwu-b',
+    title: '浅蓝雾屿 B款',
+    base: collectionPosterAsset('浅蓝雾屿B款.png'),
+    slots: [],
+  },
+  {
+    id: 'shufulei-a',
+    title: '海盐舒芙蕾 A款',
+    base: collectionPosterAsset('海盐舒芙蕾A款.png'),
+    slots: [],
+  },
+  {
+    id: 'shufulei-b',
+    title: '海盐舒芙蕾 B款',
+    base: collectionPosterAsset('海盐舒芙蕾B款.png'),
     slots: [],
   },
 ]
