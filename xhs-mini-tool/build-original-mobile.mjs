@@ -310,6 +310,27 @@ for(const relative of walk(sourceAssets)){
  const q=returnPhoto?50:(paper||opening)?65:bg?57:studio?61:66;
  cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',input,'-o',output]);optimizedImages++;
 }
+// Pack the 40 return photos into the app bundle so the upload stays under the
+// platform's 200-file limit without dropping any photos or frame assets.
+const returnPhotoSource=path.join(sourceAssets,'return_photo');
+check(fs.existsSync(returnPhotoSource),'Missing return_photo source directory');
+const returnPhotoFiles=walk(returnPhotoSource).filter(relative=>/\.(?:png|jpe?g|webp)$/i.test(relative));
+check(returnPhotoFiles.length===40,'Expected 40 return photos, found '+returnPhotoFiles.length);
+const returnPhotoSourceBytes=returnPhotoFiles.reduce((sum,relative)=>sum+fs.statSync(path.join(returnPhotoSource,relative)).size,0);
+let returnPhotoOptimizedBytes=0;
+const returnPhotoData={};
+for(const relative of returnPhotoFiles){
+ const optimizedRelative=relative.replace(/\.(?:png|jpe?g)$/i,'.webp');
+ const optimizedPath=path.join(assets,'return_photo',optimizedRelative);
+ check(fs.existsSync(optimizedPath),'Missing optimized return photo '+optimizedRelative);
+ const image=fs.readFileSync(optimizedPath);
+ returnPhotoOptimizedBytes+=image.length;
+ returnPhotoData[path.basename(optimizedRelative)]='data:image/webp;base64,'+image.toString('base64');
+ fs.unlinkSync(optimizedPath);
+}
+fs.rmSync(path.join(assets,'return_photo'),{recursive:true,force:true});
+check(Object.keys(returnPhotoData).length===40,'Return photo pack must contain 40 photos');
+fs.writeFileSync(jsFile,'window.__PAWCREAM_RETURN_PHOTOS__='+JSON.stringify(returnPhotoData)+String.fromCharCode(59,10)+fs.readFileSync(jsFile,'utf8'));
 // No audio files: the XHS upload whitelist rejects MP3.
 for(const font of ['pawcream-en.woff2','pawcream-cn.woff2']){
  const input=path.join(sourceAssets,'font',font);
@@ -329,17 +350,11 @@ const lines=[
 ];
 fs.writeFileSync(path.join(dist,'index.html'),lines.join('\n')+'\n');
 fs.copyFileSync(path.join(root,'offline-hint.js'),path.join(dist,'offline-hint.js'));
-for(const image of ['home/Home_mobile.webp','atelier/background.webp','atelier/instax.webp','signin/打字机.webp','signin/打印机注册.webp','iron_box.webp','姓名贴.webp','instax-transparent/粉白竖1.webp','collection/浅蓝雾屿A款.webp','collection/浅蓝雾屿B款.webp','collection/海盐舒芙蕾A款.webp','collection/海盐舒芙蕾B款.webp','return_photo/0f8351c6eeeac02e8ef16fe839076192.webp'])
+for(const image of ['home/Home_mobile.webp','atelier/background.webp','atelier/instax.webp','signin/打字机.webp','signin/打印机注册.webp','iron_box.webp','姓名贴.webp','instax-transparent/粉白竖1.webp','collection/浅蓝雾屿A款.webp','collection/浅蓝雾屿B款.webp','collection/海盐舒芙蕾A款.webp','collection/海盐舒芙蕾B款.webp'])
  check(fs.existsSync(path.join(assets,image)),'Missing artwork '+image);
-const returnPhotoSource=path.join(sourceAssets,'return_photo');
-check(fs.existsSync(returnPhotoSource),'Missing return_photo source directory');
-const returnPhotoFiles=walk(returnPhotoSource).filter(relative=>/\.(?:png|jpe?g|webp)$/i.test(relative));
-check(returnPhotoFiles.length===40,'Expected 40 return photos, found '+returnPhotoFiles.length);
-for(const relative of returnPhotoFiles){
- const optimizedRelative=relative.replace(/\.(?:png|jpe?g)$/i,'.webp');
- check(fs.existsSync(path.join(assets,'return_photo',optimizedRelative)),'Missing optimized return photo '+optimizedRelative);
-}
+check(fs.existsSync(path.join(assets,'return_photo'))===false,'Individual return photo files were not packed');
 const bundledJs=fs.readFileSync(jsFile,'utf8');
+check(bundledJs.includes('window.__PAWCREAM_RETURN_PHOTOS__='),'Missing inline return photo pack');
 for(const [re,name] of [[/\bfetch\s*\(/,'network fetch'],[/\bXMLHttpRequest\b/,'network XHR'],[/\bnew\s+Function\s*\(/,'dynamic Function'],[/\beval\s*\(/,'eval'],[/\bimport\s*\(/,'dynamic import']])
  check(!re.test(bundledJs),'Unsupported JavaScript: '+name);
 for(const file of [jsFile,path.join(dist,'offline-hint.js')])cmd('node',['--check',file]);
@@ -347,6 +362,8 @@ fs.rmSync(zip,{force:true});cmd('zip',['-q','-X','-9','-r',zip,'.'],{cwd:dist});
 const zipBytes=fs.statSync(zip).size;
 check(zipBytes<=10*1048576,'ZIP TOO LARGE: '+(zipBytes/1048576).toFixed(2)+' MiB');
 const entries=cmd('unzip',['-Z','-1',zip]).trim().split('\n');
+const packagedFiles=entries.filter(entry=>!entry.endsWith('/'));
+check(packagedFiles.length<200,'ZIP contains '+packagedFiles.length+' files; must be under 200');
 check(entries.includes('index.html'),'Missing ZIP root index.html');
 const allowed=new Set(['jpg','css','gif','svg','png','js','jpeg','json','html','woff2','webp','woff']);
 const forbidden=entries.filter(entry=>!entry.endsWith('/')&&!allowed.has(path.extname(entry).slice(1).toLowerCase()));
@@ -356,7 +373,7 @@ const official=path.join(repo,'.skill/minitool-zip-builder/scripts/audit_artifac
 const directoryAudit=cmd('python3',[official,dist]).trim(),zipAudit=cmd('python3',[official,zip]).trim();
 const summary={status:'STATIC_PASS_DEVICE_PENDING',architecture:'ORIGINAL_REACT_COMPONENTS',
  originalSiteEntry:'src/main.tsx',sourceWebsiteChanged:false,networkRequestsRemoved:true,
- runtime:'classic JS IIFE, Chrome61+',zipBytes,assetCount:entries.length,optimizedRasterImages:optimizedImages,returnPhotoCount:returnPhotoFiles.length,returnPhotoSourceBytes:returnPhotoFiles.reduce((sum,relative)=>sum+fs.statSync(path.join(returnPhotoSource,relative)).size,0),returnPhotoOptimizedBytes:returnPhotoFiles.reduce((sum,relative)=>sum+fs.statSync(path.join(assets,'return_photo',relative.replace(/\.(?:png|jpe?g)$/i,'.webp'))).size,0),
+ runtime:'classic JS IIFE, Chrome61+',zipBytes,assetCount:entries.length,fileCount:packagedFiles.length,optimizedRasterImages:optimizedImages,returnPhotoCount:returnPhotoFiles.length,returnPhotoSourceBytes,returnPhotoOptimizedBytes,
  simulator:'PENDING',android:'PENDING',ios:'PENDING',directoryAudit,zipAudit};
 fs.writeFileSync(path.join(release,'validation-summary.json'),JSON.stringify(summary,null,2)+'\n');
 console.log('PawCream ORIGINAL mobile UI bundle PASS');

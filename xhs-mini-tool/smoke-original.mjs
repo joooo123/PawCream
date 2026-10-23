@@ -215,7 +215,7 @@ try{
  await returnTiles.evaluateAll(imgs=>imgs.forEach(img=>{img.loading='eager'}));
  await page.waitForFunction(()=>{
   const imgs=Array.from(document.querySelectorAll('.pawcream-public-wall-tile img'));
-  return imgs.length===40&&imgs.every(img=>img.complete&&img.naturalWidth>0&&(img.currentSrc||img.src).endsWith('.webp'));
+  return imgs.length===40&&imgs.every(img=>img.complete&&img.naturalWidth>0&&(img.currentSrc||img.src).startsWith('data:image/webp;base64,'));
  },null,{timeout:20000});
  await page.screenshot({path:path.join(release,'mobile-return-wall.png')});
  await page.locator('.pawcream-public-wall-tile').first().click();
