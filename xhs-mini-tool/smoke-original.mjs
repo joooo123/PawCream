@@ -205,6 +205,31 @@ try{
  await page.locator('.pawcream-lookbook-overlay').click({position:{x:4,y:4}});
  await page.waitForTimeout(180);
 
+ // Open the public return wall and verify all bundled photos are optimized and usable.
+ await page.evaluate(()=>document.querySelector('[data-atelier-asset="people"]').click());
+ await page.waitForSelector('.pawcream-public-wall',{timeout:5000});
+ const wallText=await page.locator('.pawcream-public-wall').innerText();
+ if(!wallText.includes('离线返图展示 · 40 张实拍返图'))throw Error('Return wall count label missing: '+wallText.slice(0,180));
+ const returnTiles=page.locator('.pawcream-public-wall-tile img');
+ if(await returnTiles.count()!==40)throw Error('Expected 40 return photos, got '+await returnTiles.count());
+ await returnTiles.evaluateAll(imgs=>imgs.forEach(img=>{img.loading='eager'}));
+ await page.waitForFunction(()=>{
+  const imgs=Array.from(document.querySelectorAll('.pawcream-public-wall-tile img'));
+  return imgs.length===40&&imgs.every(img=>img.complete&&img.naturalWidth>0&&(img.currentSrc||img.src).endsWith('.webp'));
+ },null,{timeout:20000});
+ await page.screenshot({path:path.join(release,'mobile-return-wall.png')});
+ await page.locator('.pawcream-public-wall-tile').first().click();
+ await page.waitForSelector('.pawcream-public-wall-mobile-sheet img',{timeout:5000});
+ const firstPreviewSrc=await page.locator('.pawcream-public-wall-mobile-sheet img').getAttribute('src');
+ await page.locator('.pawcream-public-wall-mobile-sheet button[aria-label="下一张相纸"]').click();
+ await page.waitForFunction((previousSrc)=>{
+  const img=document.querySelector('.pawcream-public-wall-mobile-sheet img');
+  return !!img&&img.src!==previousSrc&&img.complete&&img.naturalWidth>0;
+ },firstPreviewSrc,{timeout:5000});
+ await page.getByRole('button',{name:'收起'}).click();
+ await page.locator('.pawcream-public-wall > header .pawcream-public-wall-close').click();
+ await page.waitForSelector('.pawcream-public-wall',{state:'detached',timeout:5000});
+
  // Open the sticky-note wall and verify the actual mobile card does not
  // overlap the XHS header or phone home indicator.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());

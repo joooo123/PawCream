@@ -9,22 +9,61 @@ import {
 type Props = { mobile: boolean; onClose: () => void }
 const PAGE_SIZE = 24
 
-// Visual-only samples. They never leave this component or enter any photo storage.
-type DisplayPhoto = PawCreamPublicPhoto & { ratio?: string; paper?: string }
-const SAMPLE_RATIOS = ['3 / 4', '1 / 1', '4 / 3', '2 / 3', '16 / 9', '3 / 5', '5 / 4', '9 / 16']
-const SAMPLE_PAPERS = ['#e8edf0', '#f1e2e9', '#e8efdf', '#f5e9d8', '#e5e7f3', '#f3e8e0']
-const DEMO_PHOTOS: DisplayPhoto[] = Array.from({ length: 32 }, (_, index) => ({
-  id: `sample-${index + 1}`,
-  authorName: 'demo',
-  frameName: '空白相纸',
-  createdAt: '2026-01-01T00:00:00Z',
-  ratio: SAMPLE_RATIOS[(index * 3 + Math.floor(index / 5)) % SAMPLE_RATIOS.length],
-  paper: SAMPLE_PAPERS[index % SAMPLE_PAPERS.length],
+// Bundled buyer-return photos for the offline mini-tool.
+type DisplayPhoto = PawCreamPublicPhoto & { localSrc?: string }
+const RETURN_PHOTO_FILES = [
+  '0f8351c6eeeac02e8ef16fe839076192.jpg',
+  '140f90a4ac9947706d9aaea85cfb54ad.jpg',
+  '1b45c61d81024c61585f4482efd5eadb.jpg',
+  '21eba6feae6d63e506646c26af832cca.jpg',
+  '28f4dc20d57d7393a9d1971c86f43e7f.jpg',
+  '2cc1223122e04d9cbcdef3ea24ffaee8.jpg',
+  '2e0284be387934df8f30a4bda73e3d6b.jpg',
+  '2eed847cac88ba92a64738fdcef693b9.jpg',
+  '33cdf90413cb951a00a9c89878145160.jpg',
+  '3d253413de887621c183df93bb6bdeac.jpg',
+  '3fbc9cc690ae6fc499012bf111d99ca9.jpg',
+  '4caba4f1404bc7299b69ab1606680a66.jpg',
+  '4fabc128cac96f6ef39b8db970c6a789.jpg',
+  '5018c1efc5679dbf0492ef923483aac9.jpg',
+  '5542212a304236319dfc4cb8c7234a00.jpg',
+  '59c720be29aab7fddf2f457b9146ce80.jpg',
+  '5d9e98157d385c178ef947492719f8f0.jpg',
+  '6698ff521e8fa2af3833f967d1e88c7b.jpg',
+  '743e004c87f582548fb939c947c05000.jpg',
+  '76eb5d03f76304b3729518038b1974b0.jpg',
+  '77dc08aa06862eabd32dfba7a2aa2c73.jpg',
+  '792ec9f1de371853d1f8711a60511be6.jpg',
+  '83d66baa1f607b0c7a9e093d9d27d402.jpg',
+  '88b1e44265d659c390bd1e23442a04a0.jpg',
+  '90da14fb66d4604d1413cb09a017d85c.jpg',
+  '91a92d1912d69bc1493f771833ccb7f0.jpg',
+  '96c8d31b6483dc06abaf1d2d944bacb2.jpg',
+  'a1e72167678464c24dbf52be695b7dcb.jpg',
+  'a2fff4824b0555321abcfa53204ecbdd.jpg',
+  'a99a32d2c63e9157c4ae5b07c152ee62.jpg',
+  'ae74e949f0d9c8c06b084beceefd83aa.jpg',
+  'b2a99ed730e5d90082b5c87580312ea6.jpg',
+  'bf547e0963239d8ae2d9db1b704eb185.jpg',
+  'c28671766321134089a55b67f3c814de.jpg',
+  'd5890ef40c9e6cdf3390c4cccecbd2a6.jpg',
+  'dd43ae972a05025e885311a96ed34978.jpg',
+  'e15835259feda9bae05d8eb838f473ae.jpg',
+  'fa12ee52ded64e1b44426c8067c8a962.jpg',
+  'fa977a8bebd47d3beff298451a457dfa.jpg',
+  'ff8b5248845e636c38dd9721a71c3e2d.jpg',
+]
+const BUNDLED_RETURN_PHOTOS: DisplayPhoto[] = RETURN_PHOTO_FILES.map((filename, index) => ({
+  id: `return-${index + 1}`,
+  authorName: 'PawCream',
+  frameName: '精选返图',
+  createdAt: '2026-10-23T00:00:00Z',
+  localSrc: `${import.meta.env.BASE_URL}assets/return_photo/${filename}`,
 }))
 
 export default function PublicPhotoWall({ mobile, onClose }: Props) {
-  // Without a backend, show sample paper automatically. The URL flag also forces
-  // a safe animation preview on sites that have a real API configured.
+  // The offline mini-tool shows bundled return photos without making network requests.
+  // The URL flag forces this local gallery for safe previews on API-enabled sites.
   const demoMode = !isPawCreamApiEnabled() ||
     new URLSearchParams(window.location.search).get('wallDemo') === '1'
   const [photos, setPhotos] = useState<PawCreamPublicPhoto[]>([])
@@ -69,8 +108,8 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [detail, mobilePreviewId, onClose])
 
-  const displayedPhotos: DisplayPhoto[] = demoMode ? DEMO_PHOTOS : photos
-  const displayedTotal = demoMode ? DEMO_PHOTOS.length : total
+  const displayedPhotos: DisplayPhoto[] = demoMode ? BUNDLED_RETURN_PHOTOS : photos
+  const displayedTotal = demoMode ? BUNDLED_RETURN_PHOTOS.length : total
   const selected = displayedPhotos.find((photo) => photo.id === focused) ?? displayedPhotos[0]
   const detailPhoto = displayedPhotos.find((photo) => photo.id === detail)
   const mobilePreviewPhoto = displayedPhotos.find((photo) => photo.id === mobilePreviewId)
@@ -89,37 +128,14 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
     if (Math.abs(delta) >= 45) stepMobilePreview(delta < 0 ? 1 : -1)
   }
 
-  const artwork = (photo: DisplayPhoto, size: 'tile' | 'hero' | 'detail') =>
-    demoMode ? (
-      <div
-        className={`pawcream-public-wall-sample pawcream-public-wall-sample-${size}`}
-        style={{
-          '--sample-paper': photo.paper,
-          aspectRatio: photo.ratio,
-          ...(size === 'tile' ? {} : {
-            width: '100%',
-            height: 'auto',
-            maxWidth: (() => {
-              const [w, h] = (photo.ratio || '1 / 1').split('/').map(Number)
-              const scale = w / h
-              return size === 'hero'
-                ? `min(100%, ${52 * scale}vh, ${490 * scale}px)`
-                : `min(100%, 620px, ${65 * scale}dvh)`
-            })(),
-          }),
-        } as CSSProperties}
-        aria-label="演示用空白相纸"
-      >
-        <span aria-hidden="true" />
-      </div>
-    ) : (
-      <img
-        className={size === 'hero' ? 'pawcream-public-wall-hero-image' : undefined}
-        src={publicPhotoImageUrl(photo.id)}
-        alt={size === 'tile' ? '' : photo.frameName}
-        loading={size === 'tile' ? 'lazy' : 'eager'}
-      />
-    )
+  const artwork = (photo: DisplayPhoto, size: 'tile' | 'hero' | 'detail') => (
+    <img
+      className={size === 'hero' ? 'pawcream-public-wall-hero-image' : undefined}
+      src={demoMode ? photo.localSrc : publicPhotoImageUrl(photo.id)}
+      alt={size === 'tile' ? '' : photo.frameName}
+      loading={size === 'tile' ? 'lazy' : 'eager'}
+    />
+  )
 
   const hover = (photo: DisplayPhoto, event: ReactPointerEvent<HTMLButtonElement>) => {
     if (mobile || event.pointerType !== 'mouse') return
@@ -293,7 +309,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
               {mobile ? '轻点照片预览，左右滑动切换' : '将鼠标移近照片，感受磁吸和弹性回弹'}
             </div>
             <div style={{ fontSize: 12, marginTop: 6, opacity: .65 }}>
-              {demoMode ? `交互演示 · ${displayedTotal} 张虚拟空白相纸（非真实返图）` : `${displayedTotal} 张公开返图`}
+              {demoMode ? `离线返图展示 · ${displayedTotal} 张实拍返图` : `${displayedTotal} 张公开返图`}
             </div>
           </div>
           <button type="button" className="pawcream-public-wall-close" onClick={onClose} aria-label="关闭公共返图墙">× 关闭</button>
@@ -311,7 +327,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
                         {artwork(selected, 'hero')}
                       </div>
                       <div style={{ textAlign: 'center', fontSize: 13, marginTop: 8 }}>
-                        {demoMode ? `Sample ${selected.id.replace('sample-', '')} · ${selected.ratio?.replace(' / ', ':')}` : `@${selected.authorName} · ${selected.frameName}`}
+                        {demoMode ? `精选返图 ${selected.id.replace('return-', '')} / ${displayedTotal}` : `@${selected.authorName} · ${selected.frameName}`}
                       </div>
                       <p style={{ textAlign: 'center', fontSize: 12, opacity: .6 }}>悬停浏览 · 点击查看完整返图</p>
                     </>
@@ -322,9 +338,8 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
                     {displayedPhotos.map((photo) => (
                       <button key={photo.id} type="button"
                         className={`pawcream-public-wall-tile${mobilePreviewId === photo.id ? ' is-selected' : ''}`}
-                        style={demoMode ? { aspectRatio: photo.ratio } : undefined}
-                        title={demoMode ? `空白相纸 ${photo.ratio?.replace(' / ', ':')}` : `${photo.authorName} · ${photo.frameName}`}
-                        aria-label={demoMode ? '查看空白相纸演示' : `查看 ${photo.authorName} 的返图`}
+                        title={demoMode ? `精选返图 ${photo.id.replace('return-', '')}` : `${photo.authorName} · ${photo.frameName}`}
+                        aria-label={demoMode ? '查看精选返图' : `查看 ${photo.authorName} 的返图`}
                         onPointerEnter={(event) => hover(photo, event)}
                         onPointerMove={(event) => hover(photo, event)}
                         onPointerLeave={releaseMagnet}
@@ -359,7 +374,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
             {artwork(mobilePreviewPhoto, 'detail')}
             <div style={{ fontSize: 13, color: '#967b90', textAlign: 'center' }}>
               {demoMode
-                ? `Sample ${mobilePreviewPhoto.id.replace('sample-', '')} · ${mobilePreviewPhoto.ratio?.replace(' / ', ':')}`
+                ? `精选返图 ${mobilePreviewPhoto.id.replace('return-', '')} / ${displayedTotal}`
                 : `@${mobilePreviewPhoto.authorName} · ${mobilePreviewPhoto.frameName}`}
             </div>
             <div style={{ fontSize: 12, opacity: .65 }}>左右滑动切换相纸</div>
@@ -384,7 +399,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
               onClick={() => setDetail(null)} style={{ justifySelf: 'end' }}>关闭 ×</button>
             {artwork(detailPhoto, 'detail')}
             <div style={{ textAlign: 'center', color: '#92778c', fontSize: 13 }}>
-              {demoMode ? `演示空白相纸 · ${detailPhoto.ratio?.replace(' / ', ':')}` : `@${detailPhoto.authorName} · ${detailPhoto.frameName} · ${new Date(detailPhoto.createdAt).toLocaleDateString('zh-CN')}`}
+              {demoMode ? `精选返图 ${detailPhoto.id.replace('return-', '')} / ${displayedTotal}` : `@${detailPhoto.authorName} · ${detailPhoto.frameName} · ${new Date(detailPhoto.createdAt).toLocaleDateString('zh-CN')}`}
             </div>
           </div>
         </div>

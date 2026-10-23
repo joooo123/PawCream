@@ -93,5 +93,6 @@ jobs:
             xhs-mini-tool/release/mobile-collection-lanwu-b.png
             xhs-mini-tool/release/mobile-collection-shufulei-a.png
             xhs-mini-tool/release/mobile-collection-shufulei-b.png
+            xhs-mini-tool/release/mobile-return-wall.png
           if-no-files-found: warn
           retention-days: 30
