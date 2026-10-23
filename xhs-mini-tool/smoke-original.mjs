@@ -220,13 +220,13 @@ try{
  await page.screenshot({path:path.join(release,'mobile-return-wall.png')});
  await page.locator('.pawcream-public-wall-tile').first().click();
  await page.waitForSelector('.pawcream-public-wall-mobile-sheet img',{timeout:5000});
- const firstPreviewSrc=await page.locator('.pawcream-public-wall-mobile-sheet img').getAttribute('src');
+ const firstPreviewSrc=await page.locator('.pawcream-public-wall-mobile-sheet img').evaluate(img=>img.currentSrc);
  await page.locator('.pawcream-public-wall-mobile-sheet button[aria-label="下一张相纸"]').click();
  await page.waitForFunction((previousSrc)=>{
   const img=document.querySelector('.pawcream-public-wall-mobile-sheet img');
-  return !!img&&img.src!==previousSrc&&img.complete&&img.naturalWidth>0;
+  return !!img&&img.currentSrc!==previousSrc&&img.complete&&img.naturalWidth>0;
  },firstPreviewSrc,{timeout:5000});
- await page.getByRole('button',{name:'收起'}).click();
+ await page.locator('.pawcream-public-wall-mobile-sheet button.pawcream-public-wall-close').filter({hasText:'收起'}).click();
  await page.locator('.pawcream-public-wall > header .pawcream-public-wall-close').click();
  await page.waitForSelector('.pawcream-public-wall',{state:'detached',timeout:5000});
 
