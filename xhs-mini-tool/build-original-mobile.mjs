@@ -155,6 +155,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     const oldEn="PawCream is a tiny atelier for soft everyday moments. We love paper, photographs, old objects, and thoughts that do not need to be said all at once. We believe even the smallest feelings deserve to be kept gently. We hope this little room lets you slow down and leave a trace of your own.";
     const letterPatches=[
       ["title: '关于 PawCream'","title: '关于PawCream'"],
+      // This is the dedicated debug ZIP: enable the tune panel without requiring
+      // a query string, because the mini-tool host may normalize its entry URL.
+      ["  const letterTuneMode = query.get('letterTune') === '1'","  const letterTuneMode = true"],
       [oldZh,zhBody],
       [oldEn,enBody],
       ["signature: 'soft things · slow days · little keepsakes'","signature: 'made with a little sugar & lots of love ♡'"],

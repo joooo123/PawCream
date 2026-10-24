@@ -491,7 +491,7 @@ try{
  }
 
  // Preview mode renders the complete paragraph immediately for clipping checks.
- await page.goto(base+'/?scene=atelier&letterTune=1',{waitUntil:'domcontentloaded'});
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('.pawcream-paper-copy',{timeout:5000});
  await page.waitForTimeout(260);
  const fit=await page.evaluate(()=>{
