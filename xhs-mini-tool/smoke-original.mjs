@@ -560,7 +560,6 @@ try{
   fit.paperRel.width!=='98.2%'||fit.paperRel.height!=='84%'||
   !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
-  fit.slogan!=='made with a little sugar & lots of love ♡'||
   fit.subtitleDisplay==='none'||fit.subtitle!=='made with a little sugar & lots of love ♡'||
   fit.paperObjectFit!=='fill'||!fit.tunePanelPresent||
   !['纸张宽度（横向）','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
