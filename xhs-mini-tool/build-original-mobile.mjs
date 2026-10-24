@@ -147,7 +147,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
   }
   if(args.path.endsWith(path.sep+'AtelierWithLetter.tsx')){
     // XHS-only: the actual PawCream brand story, typed on the white paper.
-    // Preserve the original paper rise and relative sizing while enlarging the whole stage.
+    // Widen only the mobile letter paper by 30% overall; keep the envelope unchanged.
     // A single newline separates each paragraph without wasting a blank line.
     const zhBody='你好呀，欢迎来到 PawCream。\\n这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。\\n甜蜜不止一点点，可爱也不止今天。';
     const enBody='Hello, welcome to PawCream.\\nThis is a little shop full of sweet doll clothes. We love sewing girlish colors, sugary ideas and a touch of fairy-tale magic into every tiny outfit.\\nMay each change of clothes feel like opening a long-awaited box of treats. Hide in a little sweetness and escape the noisy grown-up world for a while.\\nThe sweetness never ends, and neither does the cuteness.';
@@ -157,18 +157,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["title: '关于 PawCream'","title: '关于PawCream'"],
       [oldZh,zhBody],
       [oldEn,enBody],
-      // Restore the original paper-to-envelope position and scale: do NOT
-      // patch paperLeft/Top/Width/Height/Scale or endY (-16).
-      // Enlarge the ENTIRE envelope stage so their mutual geometry is intact.
-      ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
-      ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
-      // Keep the stage geometry measured in the passing mobile screenshot:
-      // the visible painted envelope has ~13px margins on each side at 390px.
-      // Only increase copy inset and text sizing inside the original paper.
-      ["            <div className=\"pawcream-envelope-stage\">",
-       "            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
-      ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"",
-       "            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
+      // Expand the paper evenly around its center; the envelope stage and close button stay untouched.
+      ["    paperLeft: 14,","    paperLeft: 2.7,"],
+      ["    paperWidth: 75.5,","    paperWidth: 98.2,"],
       ["    textLeft: 19.5,","    textLeft: 20.0,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
       ["    textWidth: 64.5,","    textWidth: 60.0,"],
