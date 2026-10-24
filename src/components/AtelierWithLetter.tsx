@@ -659,6 +659,22 @@ export default function AtelierWithLetter(props: Props) {
                 border-radius: 12px;
               }
               .pawcream-letter-tune-panel legend { padding: 0 5px; font-size: 11px; font-weight: 700; }
+              @media (max-width: 520px) {
+                .pawcream-letter-tune-panel {
+                  top: auto;
+                  right: 8px;
+                  bottom: 8px;
+                  left: 8px;
+                  width: auto;
+                  max-height: 30vh;
+                  max-height: 30svh;
+                  padding: 10px;
+                  border-radius: 14px;
+                }
+                .pawcream-letter-tune-panel h3 { font-size: 13px; }
+                .pawcream-letter-tune-panel p { font-size: 10px; }
+                .pawcream-letter-tune-panel fieldset { margin: 6px 0; padding: 6px; }
+              }
               .pawcream-letter-tune-profile {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
