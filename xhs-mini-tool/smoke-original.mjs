@@ -497,9 +497,11 @@ try{
  const fit=await page.evaluate(()=>{
   const el=document.querySelector('.pawcream-paper-copy'),title=el?.querySelector('h2'),body=el?.querySelector('.pawcream-paper-body');
   const paper=document.querySelector('.pawcream-envelope-paper-wrap');
-  const slogan=el?.querySelector('.pawcream-paper-slogan');
-  const signature=el?.querySelector('.pawcream-paper-signature');
-  if(!el||!title||!body||!paper||!slogan)return null;
+  const subtitle=el?.querySelector('.pawcream-paper-signature');
+  const paperImage=document.querySelector('.pawcream-envelope-paper');
+  const tunePanel=document.querySelector('.pawcream-letter-tune-panel');
+  const tuneLabels=[...(tunePanel?.querySelectorAll('.pawcream-letter-tune-row span')||[])].map(node=>node.textContent?.trim());
+  if(!el||!title||!body||!paper||!subtitle||!paperImage||!tunePanel)return null;
   const a=el.getBoundingClientRect(),b=paper.getBoundingClientRect(),c=body.getBoundingClientRect();
   const stage=document.querySelector('.pawcream-envelope-stage');
   const dialog=document.querySelector('.pawcream-envelope-dialog');
@@ -522,11 +524,13 @@ try{
    copyLeft:parseFloat(el.style.left),copyWidth:parseFloat(el.style.width),
    font:parseFloat(getComputedStyle(body).fontSize),
    titleFont:parseFloat(getComputedStyle(title).fontSize),
-   sloganFont:parseFloat(getComputedStyle(slogan).fontSize),
+   subtitleFont:parseFloat(getComputedStyle(subtitle).fontSize),
    top:parseFloat(el.style.top),margin:parseFloat(getComputedStyle(body).marginTop),
    h:el.clientHeight,scroll:el.scrollHeight,bodyHeight:c.height,bodyBottom:c.bottom,
-   text:body.textContent,heading:title.textContent,slogan:slogan.textContent,
-   signatureHidden:getComputedStyle(signature).display==='none',
+   text:body.textContent,heading:title.textContent,subtitle:subtitle.textContent,
+   subtitleDisplay:getComputedStyle(subtitle).display,
+   paperObjectFit:getComputedStyle(paperImage).objectFit,
+   tunePanelPresent:!!tunePanel,tuneLabels,
    whiteSpace:getComputedStyle(body).whiteSpace,
    dialogWidth:dialog.getBoundingClientRect().width,
    closeRect:document.querySelector('.pawcream-letter-close').getBoundingClientRect().toJSON(),
@@ -543,22 +547,24 @@ try{
   '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
   '甜蜜不止一点点，可爱也不止今天。',
  ];
- if(!fit||fit.font!==12||fit.titleFont!==22||fit.sloganFont!==12||
-  fit.copyLeft!==20||fit.copyWidth!==60||
+ if(!fit||fit.font!==12||fit.titleFont!==22||fit.subtitleFont!==12||
+  fit.copyLeft!==10||fit.copyWidth!==80||
   fit.paintedMargins.left<8||fit.paintedMargins.right<8||
   fit.paintedMargins.left>25||fit.paintedMargins.right>25||
   Math.abs(fit.paintedMargins.left-fit.paintedMargins.right)>5||
   fit.closeRect.left<3||fit.closeRect.right>fit.viewportWidth-3||
   fit.top<12.5||fit.top>14||fit.margin>5||
-  fit.dialogWidth<375||fit.dialogWidth>390||
+  fit.dialogWidth<360||fit.dialogWidth>375||
   // PNG alpha-painted pixels, not the transparent stage box, must be centered.
   fit.paperRel.left!=='2.7%'||fit.paperRel.top!=='5.5%'||
   fit.paperRel.width!=='98.2%'||fit.paperRel.height!=='84%'||
   !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
   fit.slogan!=='made with a little sugar & lots of love ♡'||
-  !fit.signatureHidden||fit.whiteSpace!=='pre-line'||
-  fit.text!==expected.join('\n'))
+  fit.subtitleDisplay==='none'||fit.subtitle!=='made with a little sugar & lots of love ♡'||
+  fit.paperObjectFit!=='fill'||!fit.tunePanelPresent||
+  !['纸张宽度（横向）','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
+  fit.whiteSpace!=='pre-line'||fit.text!==expected.join('\n'))
   throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));
  console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,bodyBottom:fit.bodyBottom,stageTop:fit.stageRect.top,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true,paintedMargins:fit.paintedMargins,copyMargins:{left:fit.copyLeft,right:100-fit.copyLeft-fit.copyWidth}}));
  await page.addStyleTag({content:'.pawcream-letter-tune-panel { display: none !important; }'});
