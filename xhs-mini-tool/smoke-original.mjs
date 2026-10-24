@@ -563,7 +563,7 @@ try{
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
   fit.subtitleDisplay==='none'||fit.subtitle!=='made with a little sugar & lots of love ♡'||
   fit.paperObjectFit!=='contain'||!fit.paperTransform.includes('scaleX(1.3)')||!fit.tunePanelPresent||
-  !['纸张宽度（横向）','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
+  !['纸张横向拉伸','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
   fit.whiteSpace!=='pre-line'||fit.text!==expected.join('\n'))
   throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));
  console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,bodyBottom:fit.bodyBottom,stageTop:fit.stageRect.top,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true,paintedMargins:fit.paintedMargins,copyMargins:{left:fit.copyLeft,right:100-fit.copyLeft-fit.copyWidth}}));
