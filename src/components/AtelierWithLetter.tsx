@@ -61,7 +61,7 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v1'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -281,7 +281,6 @@ export default function AtelierWithLetter(props: Props) {
   const visibleBody = copy.body.slice(0, Math.max(0, typedChars - titleLength))
   const typingTitle = typedChars > 0 && typedChars < titleLength
   const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
-  const typingDone = typedChars >= totalTypingLength
   const effectiveTypeGapMs = letterTuneMode
     ? tune.typeGapMs
     : Math.min(tune.typeGapMs, FORMAL_TYPE_GAP_MAX_MS)
