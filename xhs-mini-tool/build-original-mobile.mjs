@@ -157,7 +157,14 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["title: '关于 PawCream'","title: '关于PawCream'"],
       [oldZh,zhBody],
       [oldEn,enBody],
-      // Expand the paper evenly around its center; the envelope stage and close button stay untouched.
+      // Preserve the established mobile envelope framing and close-button position.
+      ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
+      ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
+      ["            <div className=\\"pawcream-envelope-stage\\">",
+       "            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\\"pawcream-envelope-stage\\">"],
+      ["            </div>\\n\\n            <button\\n              type=\\"button\\"\\n              className=\\"pawcream-letter-close\\"",
+       "            </div></div>\\n\\n            <button\\n              type=\\"button\\"\\n              className=\\"pawcream-letter-close\\""],
+      // Expand the paper evenly around its center; the envelope stage itself remains at its established size.
       ["    paperLeft: 14,","    paperLeft: 2.7,"],
       ["    paperWidth: 75.5,","    paperWidth: 98.2,"],
       ["    textLeft: 19.5,","    textLeft: 20.0,"],

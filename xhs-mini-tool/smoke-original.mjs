@@ -552,8 +552,8 @@ try{
   fit.top<12.5||fit.top>14||fit.margin>5||
   fit.dialogWidth<375||fit.dialogWidth>390||
   // PNG alpha-painted pixels, not the transparent stage box, must be centered.
-  fit.paperRel.left!=='14%'||fit.paperRel.top!=='5.5%'||
-  fit.paperRel.width!=='75.5%'||fit.paperRel.height!=='84%'||
+  fit.paperRel.left!=='2.7%'||fit.paperRel.top!=='5.5%'||
+  fit.paperRel.width!=='98.2%'||fit.paperRel.height!=='84%'||
   !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
   fit.slogan!=='made with a little sugar & lots of love ♡'||
