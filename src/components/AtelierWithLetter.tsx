@@ -18,6 +18,7 @@ type LetterTune = {
   paperWidth: number
   paperHeight: number
   paperScale: number
+  paperStretchX: number
   paperRotate: number
   startY: number
   endY: number
@@ -106,6 +107,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperWidth: 82,
     paperHeight: 86,
     paperScale: 0.88,
+    paperStretchX: 1,
     paperRotate: 0,
     startY: 35,
     endY: 9,
@@ -119,20 +121,20 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     titleHeight: 18,
     titleSize: 31.5,
     zhBodyLeft: 0,
-    zhBodyTop: 22,
+    zhBodyTop: 29,
     zhBodyWidth: 100,
-    zhBodyHeight: 68,
+    zhBodyHeight: 64,
     zhBodySize: 18.5,
     enBodyLeft: 0,
-    enBodyTop: 22,
+    enBodyTop: 29,
     enBodyWidth: 100,
-    enBodyHeight: 68,
+    enBodyHeight: 64,
     enBodySize: 18.5,
     bodyLineHeight: 1.76,
     subtitleLeft: 0,
-    subtitleTop: 92,
+    subtitleTop: 18,
     subtitleWidth: 100,
-    subtitleHeight: 8,
+    subtitleHeight: 10,
     subtitleSize: 21.5,
     riseMs: 4000,
     typeGapMs: 30,
@@ -145,6 +147,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperWidth: 75.5,
     paperHeight: 84,
     paperScale: 0.88,
+    paperStretchX: 1.0,
     paperRotate: 0,
     startY: 5,
     endY: -16,
@@ -158,20 +161,20 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     titleHeight: 18,
     titleSize: 19,
     zhBodyLeft: 0,
-    zhBodyTop: 22,
+    zhBodyTop: 29,
     zhBodyWidth: 100,
-    zhBodyHeight: 68,
+    zhBodyHeight: 64,
     zhBodySize: 10.5,
     enBodyLeft: 0,
-    enBodyTop: 22,
+    enBodyTop: 29,
     enBodyWidth: 100,
-    enBodyHeight: 68,
+    enBodyHeight: 64,
     enBodySize: 10.5,
     bodyLineHeight: 1.62,
     subtitleLeft: 0,
-    subtitleTop: 92,
+    subtitleTop: 18,
     subtitleWidth: 100,
-    subtitleHeight: 8,
+    subtitleHeight: 10,
     subtitleSize: 8,
     riseMs: 1550,
     typeGapMs: 30,
@@ -566,7 +569,7 @@ export default function AtelierWithLetter(props: Props) {
                 z-index: 1;
                 width: 100%;
                 height: 100%;
-                object-fit: fill;
+                object-fit: contain;
                 user-select: none;
                 pointer-events: none;
               }
@@ -778,6 +781,7 @@ export default function AtelierWithLetter(props: Props) {
                   draggable={false}
                   decoding="async"
                   className="pawcream-envelope-paper"
+                  style={{ transform: `scaleX(${tune.paperStretchX})`, transformOrigin: 'center' }}
                 />
 
                 <div
@@ -809,6 +813,22 @@ export default function AtelierWithLetter(props: Props) {
                     {typingTitle && <span className="pawcream-type-caret" aria-hidden="true" />}
                   </h2>
 
+                  <div
+                    className={`pawcream-paper-signature${visibleTitle === copy.title ? ' is-visible' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      left: `${tune.subtitleLeft}%`,
+                      top: `${tune.subtitleTop}%`,
+                      width: `${tune.subtitleWidth}%`,
+                      height: `${tune.subtitleHeight}%`,
+                      margin: 0,
+                      overflow: 'hidden',
+                      fontSize: tune.subtitleSize,
+                    }}
+                  >
+                    {copy.signature}
+                  </div>
+
                   <p
                     className="pawcream-paper-body"
                     style={{
@@ -828,21 +848,7 @@ export default function AtelierWithLetter(props: Props) {
                     {typingBody && <span className="pawcream-type-caret" aria-hidden="true" />}
                   </p>
 
-                  <div
-                    className={`pawcream-paper-signature${typingDone ? ' is-visible' : ''}`}
-                    style={{
-                      position: 'absolute',
-                      left: `${tune.subtitleLeft}%`,
-                      top: `${tune.subtitleTop}%`,
-                      width: `${tune.subtitleWidth}%`,
-                      height: `${tune.subtitleHeight}%`,
-                      margin: 0,
-                      overflow: 'hidden',
-                      fontSize: tune.subtitleSize,
-                    }}
-                  >
-                    {copy.signature}
-                  </div>
+
                 </div>
               </div>
 
@@ -888,7 +894,7 @@ export default function AtelierWithLetter(props: Props) {
 
           {letterTuneMode && (
             <aside className="pawcream-letter-tune-panel" onClick={(event) => event.stopPropagation()}>
-              <h3>Letter Tune · {activeProfile}</h3>
+              <h3>品牌理念介绍调试板 · {activeProfile}</h3>
               <p>参数按设备端独立保存。纸张宽度只横向拉伸，不改变高度；先选语言预览，再调整字号与位置，最后保存参数。</p>
 
               <div className="pawcream-letter-tune-profile">
@@ -929,7 +935,8 @@ export default function AtelierWithLetter(props: Props) {
                 <legend>纸张 · 横向拉伸与位置</legend>
                 <TuneControl label="纸张左侧" value={tune.paperLeft} min={0} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperLeft', v)} />
                 <TuneControl label="纸张顶部" value={tune.paperTop} min={-20} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperTop', v)} />
-                <TuneControl label="纸张宽度（横向）" value={tune.paperWidth} min={35} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperWidth', v)} />
+                <TuneControl label="纸张区域宽度" value={tune.paperWidth} min={35} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperWidth', v)} />
+                <TuneControl label="纸张横向拉伸" value={tune.paperStretchX} min={0.8} max={1.8} step={0.01} suffix="×" onChange={(v) => updateTune('paperStretchX', v)} />
                 <TuneControl label="纸张高度" value={tune.paperHeight} min={40} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperHeight', v)} />
                 <TuneControl label="整体缩放" value={tune.paperScale} min={0.45} max={1.25} step={0.01} suffix="×" onChange={(v) => updateTune('paperScale', v)} />
                 <TuneControl label="纸张旋转" value={tune.paperRotate} min={-180} max={180} step={1} suffix="°" onChange={(v) => updateTune('paperRotate', v)} />

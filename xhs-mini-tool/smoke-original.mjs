@@ -530,6 +530,7 @@ try{
    text:body.textContent,heading:title.textContent,subtitle:subtitle.textContent,
    subtitleDisplay:getComputedStyle(subtitle).display,
    paperObjectFit:getComputedStyle(paperImage).objectFit,
+   paperTransform:paperImage.style.transform,
    tunePanelPresent:!!tunePanel,tuneLabels,
    whiteSpace:getComputedStyle(body).whiteSpace,
    dialogWidth:dialog.getBoundingClientRect().width,
@@ -548,20 +549,20 @@ try{
   '甜蜜不止一点点，可爱也不止今天。',
  ];
  if(!fit||fit.font!==12||fit.titleFont!==22||fit.subtitleFont!==12||
-  fit.copyLeft!==10||fit.copyWidth!==80||
+  fit.copyLeft!==9.8||fit.copyWidth!==83.9||
   fit.paintedMargins.left<8||fit.paintedMargins.right<8||
   fit.paintedMargins.left>25||fit.paintedMargins.right>25||
   Math.abs(fit.paintedMargins.left-fit.paintedMargins.right)>5||
   fit.closeRect.left<3||fit.closeRect.right>fit.viewportWidth-3||
   fit.top<12.5||fit.top>14||fit.margin>5||
-  fit.dialogWidth<360||fit.dialogWidth>375||
+  fit.dialogWidth<375||fit.dialogWidth>390||
   // PNG alpha-painted pixels, not the transparent stage box, must be centered.
-  fit.paperRel.left!=='2.7%'||fit.paperRel.top!=='5.5%'||
-  fit.paperRel.width!=='98.2%'||fit.paperRel.height!=='84%'||
+  fit.paperRel.left!=='14%'||fit.paperRel.top!=='5.5%'||
+  fit.paperRel.width!=='75.5%'||fit.paperRel.height!=='84%'||
   !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
   fit.subtitleDisplay==='none'||fit.subtitle!=='made with a little sugar & lots of love ♡'||
-  fit.paperObjectFit!=='fill'||!fit.tunePanelPresent||
+  fit.paperObjectFit!=='contain'||!fit.paperTransform.includes('scaleX(1.3)')||!fit.tunePanelPresent||
   !['纸张宽度（横向）','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
   fit.whiteSpace!=='pre-line'||fit.text!==expected.join('\n'))
   throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));

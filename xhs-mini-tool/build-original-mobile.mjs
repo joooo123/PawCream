@@ -159,13 +159,14 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       [oldEn,enBody],
       ["signature: 'soft things · slow days · little keepsakes'","signature: 'made with a little sugar & lots of love ♡'"],
       ["signature: 'soft things · slow days · little keepsakes'","signature: 'made with a little sugar & lots of love ♡'"],
-      // Widen the paper horizontally only. Keep its height, vertical position,
-      // scale and the envelope stage/close button at their original geometry.
-      ["    paperLeft: 14,","    paperLeft: 2.7,"],
-      ["    paperWidth: 75.5,","    paperWidth: 98.2,"],
-      ["    textLeft: 19.5,","    textLeft: 10,"],
+      ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
+      ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
+      ["            <div className=\"pawcream-envelope-stage\">","            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
+      ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"","            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
+      ["    paperStretchX: 1.0,","    paperStretchX: 1.3,"],
+      ["    textLeft: 19.5,","    textLeft: 9.8,"],
       ["    textTop: 16.5,","    textTop: 13.0,"],
-      ["    textWidth: 64.5,","    textWidth: 80.0,"],
+      ["    textWidth: 64.5,","    textWidth: 83.9,"],
       ["    textHeight: 56,","    textHeight: 77,"],
       ["    titleSize: 19,","    titleSize: 22.0,"],
       ["    zhBodySize: 10.5,","    zhBodySize: 12.0,"],
@@ -174,7 +175,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["    subtitleSize: 8,","    subtitleSize: 12,"],
       ["letterSpacing: language === 'zh' ? '.015em' : '.005em'","letterSpacing: language === 'zh' ? '-.025em' : '.005em'"],
       ["color: #648198;","color: #4c7188;"],
-      ["margin: 11px 0 0;","margin: 2px 0 0;\\n                white-space: pre-line;"],
+      ["margin: 11px 0 0;","margin: 2px 0 0;\n                white-space: pre-line;"],
     ];
     for(const [from,to] of letterPatches){
       if(!source.includes(from))throw Error('XHS brand letter patch missing '+from);
