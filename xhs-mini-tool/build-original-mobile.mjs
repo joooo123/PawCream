@@ -158,6 +158,10 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // This is the dedicated debug ZIP: enable the tune panel without requiring
       // a query string, because the mini-tool host may normalize its entry URL.
       ["  const letterTuneMode = query.get('letterTune') === '1'","  const letterTuneMode = true"],
+      // Keep the debug panel enabled in the generated ZIP, but do not auto-open
+      // the letter overlay on app launch. Open the panel only with the letter.
+      ["  useEffect(() => {\n    if (!letterTuneMode) return\n    setLanguage(readLanguage())\n    setPreviewMode('end')\n    setTypedChars(totalTypingLength)\n    setPaperRaised(true)\n    setOpen(true)\n  }, [letterTuneMode, totalTypingLength])",
+       "  useEffect(() => {\n    if (!letterTuneMode || !open) return\n    setLanguage(readLanguage())\n    setPreviewMode('end')\n    setTypedChars(totalTypingLength)\n    setPaperRaised(true)\n  }, [letterTuneMode, open, totalTypingLength])"],
       [oldZh,zhBody],
       [oldEn,enBody],
       ["signature: 'soft things · slow days · little keepsakes'","signature: 'made with a little sugar & lots of love ♡'"],

@@ -490,8 +490,12 @@ try{
   await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
  }
 
- // Preview mode renders the complete paragraph immediately for clipping checks.
+ // Open the letter through the actual window interaction; the debug ZIP
+ // must not auto-open the modal or block the atelier on initial entry.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('section[aria-label^="PawCream Atelier Room"]',{timeout:15000});
+ await page.waitForSelector('[aria-label="Window interaction"]',{timeout:5000});
+ await page.locator('[aria-label="Window interaction"]').click({force:true});
  await page.waitForSelector('.pawcream-paper-copy',{timeout:5000});
  await page.waitForTimeout(260);
  const fit=await page.evaluate(()=>{
