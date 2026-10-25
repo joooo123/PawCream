@@ -1,0 +1,89 @@
+name: Deploy PawCream Letter Debug Preview
+
+on:
+  push:
+    branches: [debug-brand-letter-lab]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production site source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+
+      - name: Checkout letter debug page
+        uses: actions/checkout@v4
+        with:
+          ref: debug-brand-letter-lab
+          path: debug-source
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install image and font tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y webp
+          python3 -m pip install --disable-pip-version-check fonttools brotli
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm install
+
+      - name: Prepare optimized assets
+        working-directory: site
+        run: |
+          npm run optimize:atelier
+          npm run optimize:home
+          python3 scripts/convert-fonts.py
+
+      - name: Build production site
+        working-directory: site
+        run: npm run build:webp
+
+      - name: Add isolated letter debug page
+        run: |
+          mkdir -p site/dist/xhs-letter-debug
+          cp -R debug-source/public/xhs-letter-debug/. site/dist/xhs-letter-debug/
+          test -s site/dist/xhs-letter-debug/index.html
+          test -s site/dist/assets/envelop/back.png
+          test -s site/dist/assets/envelop/paper.png
+          test -s site/dist/assets/envelop/front.png
+          test -s site/dist/assets/font/AaZiTiGuanJiaWanWanTi-2.ttf
+          test -s site/dist/assets/font/Apple-Regular.ttf
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload combined site and debug page
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
