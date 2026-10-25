@@ -202,10 +202,21 @@ try{
   }
   if(i<collectionCases.length-1)await page.locator('.pawcream-lookbook-arrow.is-next').click();
  }
- await page.locator('.pawcream-lookbook-overlay').click({position:{x:4,y:4}});
- await page.waitForTimeout(180);
+ // Closing via the X must not let the same touch/click reach the room behind it.
+ await page.locator('.pawcream-lookbook-close').click();
+ await page.waitForSelector('.pawcream-lookbook-overlay',{state:'detached',timeout:5000});
+ await page.waitForTimeout(80);
  if(await page.locator('.pawcream-public-wall').count()!==0)
-  throw Error('Closing Collection click-through unexpectedly opened the return wall');
+  throw Error('Closing Collection button unexpectedly opened the return wall');
+
+ // The backdrop should also close the lookbook without activating anything behind it.
+ await page.mouse.click(sewingPoint.x,sewingPoint.y);
+ await page.waitForSelector('.pawcream-lookbook-overlay',{timeout:5000});
+ await page.locator('.pawcream-lookbook-overlay').click({position:{x:4,y:4}});
+ await page.waitForSelector('.pawcream-lookbook-overlay',{state:'detached',timeout:5000});
+ await page.waitForTimeout(80);
+ if(await page.locator('.pawcream-public-wall').count()!==0)
+  throw Error('Closing Collection backdrop unexpectedly opened the return wall');
 
  // Open the public return wall and verify all bundled photos are optimized and usable.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="people"]').click());
@@ -231,6 +242,45 @@ try{
  await page.locator('.pawcream-public-wall-mobile-sheet button.pawcream-public-wall-close').filter({hasText:'收起'}).click();
  await page.locator('.pawcream-public-wall > header .pawcream-public-wall-close').click();
  await page.waitForSelector('.pawcream-public-wall',{state:'detached',timeout:5000});
+
+ // A non-central painted Note pixel must open the note board without first
+ // enabling message-move mode.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="note"] img',{timeout:5000});
+ await page.waitForFunction(()=>{
+  const img=document.querySelector('[data-atelier-asset="note"] img');
+  return !!img&&img.complete&&img.naturalWidth>0;
+ },{timeout:5000});
+ const noteOpaquePoint=await page.evaluate(()=>{
+  const note=document.querySelector('[data-atelier-asset="note"]');
+  const image=note?.querySelector('img');
+  if(!note||!image?.naturalWidth)return null;
+  const r=note.getBoundingClientRect(),canvas=document.createElement('canvas');
+  canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  if(!ctx)return null;
+  ctx.drawImage(image,0,0);
+  const alpha=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  for(let v=.08;v<.94;v+=.025){
+   for(let u=.78;u<.99;u+=.015){
+    const x=r.left+u*r.width,y=r.top+v*r.height;
+    if(x<4||x>innerWidth-4||y<4||y>innerHeight-4)continue;
+    const px=Math.min(canvas.width-1,Math.floor(u*canvas.width));
+    const py=Math.min(canvas.height-1,Math.floor(v*canvas.height));
+    if(alpha[(py*canvas.width+px)*4+3]===0)continue;
+    if(document.elementFromPoint(x,y)?.closest('[data-atelier-asset]')!==note)continue;
+    return {x,y,u,v};
+   }
+  }
+  return null;
+ });
+ if(!noteOpaquePoint)throw Error('Could not find a visible off-center painted Note pixel');
+ await page.mouse.click(noteOpaquePoint.x,noteOpaquePoint.y);
+ await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
+
+ // Reset before checking the three-line writing prompt and responsive card bounds.
+ await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+ await page.waitForSelector('[data-atelier-asset="message"]',{timeout:5000});
 
  // Open the sticky-note wall and verify the actual mobile card does not
  // overlap the XHS header or phone home indicator.
