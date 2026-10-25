@@ -151,8 +151,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     // A single newline separates each paragraph without wasting a blank line.
     const zhBody='你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n       躲进糖分里，暂时逃离喧嚣的大人世界。\\n                      甜蜜不止一点点，\\n                      可爱也不止今天。';
     const enBody='Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \\n    change is like unboxing a long-awaited sweet.\\n       Hide in sweetness, escaping the adult world \\n                for a while. Sweetness and \\n                    cuteness linger beyond\\n                             today.\\n';
-    const oldZh="PawCream 是一间收集柔软日常的小小工作室。我们喜欢纸张、照片、旧物和那些来不及一下子说完的话，也相信每一点细小心情，都值得被温柔保存。希望你来到这里时，可以慢一点，也留下属于自己的痕迹。";
-    const oldEn="PawCream is a tiny atelier for soft everyday moments. We love paper, photographs, old objects, and thoughts that do not need to be said all at once. We believe even the smallest feelings deserve to be kept gently. We hope this little room lets you slow down and leave a trace of your own.";
+    const mobileZhBodyLiteral=JSON.stringify(zhBody.replace(/\\n/g,'\n'));
+    const mobileEnBodyLiteral=JSON.stringify(enBody.replace(/\\n/g,'\n'));
+    const mobileCopySource="  const mobileZhBody = "+mobileZhBodyLiteral+"\\n  const mobileEnBody = "+mobileEnBodyLiteral+"\\n  const copy = mobile ? { ...COPY[language], body: language === 'zh' ? mobileZhBody : mobileEnBody, signature: 'made with a little sugar & lots of love ♡' } : COPY[language]";
     const oldCopyOpening = "                <div\n                  className=\"pawcream-paper-copy\"\n                  style={{\n                    left: \`\${tune.textLeft}%\`,\n                    top: \`\${tune.textTop}%\`,\n                    width: \`\${tune.textWidth}%\`,\n                    height: \`\${tune.textHeight}%\`,\n                    fontFamily: language === 'zh'\n                      ? \"'PawCream CN', 'PawCream EN', sans-serif\"\n                      : \"'PawCream EN', sans-serif\",\n                  }}\n                >";
     const newCopyOpening = "              </div>\n              <div className=\"pawcream-envelope-text-wrap\" style={{ position: 'absolute', zIndex: 5, left: tune.paperLeft + '%', top: tune.paperTop + '%', width: tune.paperWidth + '%', height: tune.paperHeight + '%', transform: 'translate3d(0, ' + previewY + '%, 0) rotate(' + tune.paperRotate + 'deg) scale(' + tune.paperScale + ')', transition: previewMode === 'play' ? 'transform ' + tune.riseMs + 'ms cubic-bezier(.2,.76,.28,1)' : 'none' }}>\n                <div className=\"pawcream-paper-copy\" style={{ left: tune.textLeft + '%', top: tune.textTop + '%', width: tune.textWidth + '%', height: tune.textHeight + '%', fontFamily: language === 'zh' ? \"'PawCream CN', 'PawCream EN', sans-serif\" : \"'PawCream EN', sans-serif\" }}>";
     const letterPatches=[
@@ -167,10 +168,8 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       // the letter overlay on app launch. Open the panel only with the letter.
       ["  useEffect(() => {\n    if (!letterTuneMode) return\n    setLanguage(readLanguage())\n    setPreviewMode('end')\n    setTypedChars(totalTypingLength)\n    setPaperRaised(true)\n    setOpen(true)\n  }, [letterTuneMode, totalTypingLength])",
        "  useEffect(() => {\n    if (!letterTuneMode || !open) return\n    setLanguage(readLanguage())\n    setPreviewMode('end')\n    setTypedChars(totalTypingLength)\n    setPaperRaised(true)\n  }, [letterTuneMode, open, totalTypingLength])"],
-      [oldZh,zhBody],
-      [oldEn,enBody],
-      ["signature: 'soft things · slow days · little keepsakes'","signature: 'made with a little sugar & lots of love ♡'"],
-      ["signature: 'soft things · slow days · little keepsakes'","signature: 'made with a little sugar & lots of love ♡'"],
+      ["  const copy = COPY[language]",mobileCopySource],
+      ["    setTypedChars(COPY[nextLanguage].title.length + COPY[nextLanguage].body.length)","    setTypedChars(COPY[nextLanguage].title.length + (mobile ? (nextLanguage === 'zh' ? mobileZhBody : mobileEnBody).length : COPY[nextLanguage].body.length))"],
       ["? 'min(520px, calc(100vw - 18px))'","? 'min(580px, calc(100vw - 8px))'"],
       ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
       ["            <div className=\"pawcream-envelope-stage\">","            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
