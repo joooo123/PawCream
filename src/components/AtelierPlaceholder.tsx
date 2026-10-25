@@ -592,7 +592,7 @@ export default function AtelierPlaceholder({
       if (!context) return true
       context.clearRect(0, 0, 1, 1)
       context.drawImage(image, sourceX, sourceY, 1, 1, 0, 0, 1, 1)
-      return context.getImageData(0, 0, 1, 1).data[3] >= 28
+      return context.getImageData(0, 0, 1, 1).data[3] > 0
     } catch {
       return true
     }
