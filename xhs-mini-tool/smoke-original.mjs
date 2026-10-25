@@ -204,6 +204,8 @@ try{
  }
  await page.locator('.pawcream-lookbook-overlay').click({position:{x:4,y:4}});
  await page.waitForTimeout(180);
+ if(await page.locator('.pawcream-public-wall').count()!==0)
+  throw Error('Closing Collection click-through unexpectedly opened the return wall');
 
  // Open the public return wall and verify all bundled photos are optimized and usable.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="people"]').click());
