@@ -318,8 +318,7 @@ export default function AtelierWithCollection(props: Props) {
   const [selectedSlotId, setSelectedSlotId] = useState(LOOKBOOK_ITEMS[0].slots[0]?.id ?? '')
   const [selectedFace, setSelectedFace] = useState<FaceName>('front')
   const [copyStatus, setCopyStatus] = useState('')
-  const lookbookOpenRef = useRef(open)
-  const pointerDownWhileLookbookOpenRef = useRef(false)
+  const suppressBackgroundClickUntilRef = useRef(0)
 
   const mobile = props.deviceProfile === 'mobile'
   const current = LOOKBOOK_ITEMS[itemIndex]
@@ -330,7 +329,6 @@ export default function AtelierWithCollection(props: Props) {
   const dirty = JSON.stringify(tuning) !== JSON.stringify(savedTuning)
 
   const openLookbook = () => {
-    lookbookOpenRef.current = true
     void preloadCollectionAssets()
     setItemIndex(0)
     setFlipped({})
@@ -341,7 +339,8 @@ export default function AtelierWithCollection(props: Props) {
 
   const closeLookbook = () => {
     if (collectionTuneMode) return
-    lookbookOpenRef.current = false
+    // Prevent a delayed mobile WebView click from activating the room behind the overlay.
+    suppressBackgroundClickUntilRef.current = Date.now() + 450
     setOpen(false)
   }
 
@@ -461,21 +460,8 @@ export default function AtelierWithCollection(props: Props) {
     control.setAttribute('aria-label', 'Sewing lookbook interaction')
     control.style.cursor = 'pointer'
 
-    const onPointerDown = () => {
-      pointerDownWhileLookbookOpenRef.current = mobile && lookbookOpenRef.current
-    }
-
     const onClick = (event: MouseEvent) => {
       const target = event.target as Element | null
-      // If a mobile WebView retargets the closing tap after the overlay unmounts,
-      // suppress that same gesture before it reaches any room control.
-      if (pointerDownWhileLookbookOpenRef.current && !target?.closest('.pawcream-lookbook-overlay')) {
-        pointerDownWhileLookbookOpenRef.current = false
-        event.preventDefault()
-        event.stopPropagation()
-        event.stopImmediatePropagation()
-        return
-      }
       if (!target?.closest('[aria-label="Sewing lookbook interaction"]')) return
       event.preventDefault()
       openLookbook()
@@ -493,12 +479,10 @@ export default function AtelierWithCollection(props: Props) {
       openLookbook()
     }
 
-    document.addEventListener('pointerdown', onPointerDown, true)
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
 
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('click', onClick, true)
       document.removeEventListener('keydown', onKeyDown, true)
       if (oldRole === null) control.removeAttribute('role')
@@ -510,6 +494,19 @@ export default function AtelierWithCollection(props: Props) {
       control.style.cursor = oldCursor
     }
   }, [props.deviceProfile, tuneMode, letterTuneMode, collectionTuneMode, open])
+
+  useEffect(() => {
+    const blockClickThrough = (event: MouseEvent) => {
+      if (Date.now() > suppressBackgroundClickUntilRef.current) return
+      const target = event.target as Element | null
+      if (target?.closest('.pawcream-lookbook-overlay')) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+    }
+    document.addEventListener('click', blockClickThrough, true)
+    return () => document.removeEventListener('click', blockClickThrough, true)
+  }, [])
 
   useEffect(() => {
     if (!open) return
