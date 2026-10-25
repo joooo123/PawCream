@@ -254,8 +254,12 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     source=source.replace('离线试听 20 秒','更多音乐见工作室网站');
   }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
-    // Give sewing a real interactive hit surface from initial render.
-    source=source.replace("key === 'people')","key === 'people' || key === 'sewing')");
+    // Add sewing to the interactive hit surface without changing the separate
+    // People handler. A broad replacement here would make sewing open the wall.
+    const interactiveBefore="const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people' || (mobile && key === 'note'))";
+    const interactiveAfter="const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people' || key === 'sewing' || (mobile && key === 'note'))";
+    if(!source.includes(interactiveBefore))throw Error('XHS sewing interaction marker missing');
+    source=source.replace(interactiveBefore,interactiveAfter);
     // Three stable text lines physically inside the Note artwork.
     source=source.replace("{copy.notePrompt}", "{language === 'zh' ? <><span style={{display:'block'}}>留下你想对</span><span style={{display:'block'}}>PawCream</span><span style={{display:'block'}}>说的话吧</span></> : copy.notePrompt}");
     source=source.replace("left: '50%', top: '50%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '40%' : '35%', maxWidth: 145",
