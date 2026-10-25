@@ -149,15 +149,16 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     // XHS-only: the actual PawCream brand story, typed on the white paper.
     // Widen only the mobile letter paper by 30% overall; keep the envelope unchanged.
     // A single newline separates each paragraph without wasting a blank line.
-    const zhBody='你好呀，欢迎来到 PawCream。\\n这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。\\n甜蜜不止一点点，可爱也不止今天。';
-    const enBody='Hello, welcome to PawCream.\\nThis is a little shop full of sweet doll clothes. We love sewing girlish colors, sugary ideas and a touch of fairy-tale magic into every tiny outfit.\\nMay each change of clothes feel like opening a long-awaited box of treats. Hide in a little sweetness and escape the noisy grown-up world for a while.\\nThe sweetness never ends, and neither does the cuteness.';
+    const zhBody='你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n       躲进糖分里，暂时逃离喧嚣的大人世界。\\n                      甜蜜不止一点点，\\n                      可爱也不止今天。';
+    const enBody='Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \\n    change is like unboxing a long-awaited sweet.\\n       Hide in sweetness, escaping the adult world \\n                for a while. Sweetness and \\n                    cuteness linger beyond\\n                             today.\\n';
     const oldZh="PawCream 是一间收集柔软日常的小小工作室。我们喜欢纸张、照片、旧物和那些来不及一下子说完的话，也相信每一点细小心情，都值得被温柔保存。希望你来到这里时，可以慢一点，也留下属于自己的痕迹。";
     const oldEn="PawCream is a tiny atelier for soft everyday moments. We love paper, photographs, old objects, and thoughts that do not need to be said all at once. We believe even the smallest feelings deserve to be kept gently. We hope this little room lets you slow down and leave a trace of your own.";
     const letterPatches=[
-      ["title: '关于 PawCream'","title: '关于PawCream'"],
+      ["title: '关于 PawCream'","title: '关于 PawCream'"],
       // This is the dedicated debug ZIP: enable the tune panel without requiring
       // a query string, because the mini-tool host may normalize its entry URL.
       ["  const letterTuneMode = query.get('letterTune') === '1'","  const letterTuneMode = true"],
+      ["const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'","const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'"],
       ["  const openLetter = () => {\n    void preloadEnvelopeAssets()\n    replay()\n  }",
        "  const openLetter = () => {\n    void preloadEnvelopeAssets()\n    if (letterTuneMode) {\n      setLanguage(readLanguage())\n      setPreviewMode('end')\n      setTypedChars(totalTypingLength)\n      setPaperRaised(true)\n      setOpen(true)\n      return\n    }\n    replay()\n  }"],
       // Keep the debug panel enabled in the generated ZIP, but do not auto-open
@@ -172,19 +173,35 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["right: mobile ? -1 : 4","right: mobile ? 8 : 4"],
       ["            <div className=\"pawcream-envelope-stage\">","            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className=\"pawcream-envelope-stage\">"],
       ["            </div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\"","            </div></div>\n\n            <button\n              type=\"button\"\n              className=\"pawcream-letter-close\""],
-      ["    paperStretchX: 1.0,","    paperStretchX: 1.3,"],
-      ["    textLeft: 19.5,","    textLeft: 9.8,"],
-      ["    textTop: 16.5,","    textTop: 13.0,"],
-      ["    textWidth: 64.5,","    textWidth: 83.9,"],
-      ["    textHeight: 56,","    textHeight: 77,"],
-      ["    titleSize: 19,","    titleSize: 22.0,"],
-      ["    zhBodySize: 10.5,","    zhBodySize: 12.0,"],
-      ["    enBodySize: 10.5,","    enBodySize: 12.0,"],
-      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.14,"],
-      ["    subtitleSize: 8,","    subtitleSize: 12,"],
+      ["    paperTop: 5.5,","    paperTop: 7.5,"],
+      ["    endY: -16,","    endY: -15,"],
+      ["    paperStretchX: 1.0,","    paperStretchX: 1.31,"],
+      ["    textLeft: 19.5,","    textLeft: 10.5,"],
+      ["    textTop: 16.5,","    textTop: 11,"],
+      ["    textWidth: 64.5,","    textWidth: 81.5,"],
+      ["    textHeight: 56,","    textHeight: 100,"],
+      ["    titleSize: 19,","    titleSize: 21,"],
+      ["    textHeight: 100,\n    titleLeft: 0,\n    titleTop: 0,\n    titleWidth: 100,\n    titleHeight: 18,\n    titleSize: 21,","    textHeight: 100,\n    titleLeft: 0,\n    titleTop: -2.5,\n    titleWidth: 100,\n    titleHeight: 18,\n    titleSize: 21,"],
+      ["    zhBodyTop: 29,","    zhBodyTop: 14,"],
+      ["    zhBodySize: 10.5,","    zhBodySize: 10.5,"],
+      ["    enBodyLeft: 0,","    enBodyLeft: -5.5,"],
+      ["    enBodyTop: 29,","    enBodyTop: 10.5,"],
+      ["    enBodyWidth: 100,","    enBodyWidth: 111.5,"],
+      ["    enBodySize: 10.5,","    enBodySize: 14.5,"],
+      ["    bodyLineHeight: 1.62,","    bodyLineHeight: 1.1,"],
+      ["  bodyLineHeight: number\n  subtitleLeft: number\n  subtitleTop: number","  bodyLineHeight: number\n  zhBodyLineHeight?: number\n  enBodyLineHeight?: number\n  subtitleLeft: number\n  subtitleTop: number\n  zhSubtitleTop?: number\n  enSubtitleTop?: number"],
+      ["    bodyLineHeight: 1.1,\n    subtitleLeft: 0,","    bodyLineHeight: 1.1,\n    zhBodyLineHeight: 1.58,\n    enBodyLineHeight: 1.1,\n    subtitleLeft: 0,"],
+      ["    subtitleLeft: 0,\n    subtitleTop: 18,\n    subtitleWidth: 100,\n    subtitleHeight: 10,\n    subtitleSize: 8,","    subtitleLeft: 0,\n    subtitleTop: 7.5,\n    zhSubtitleTop: 7.5,\n    enSubtitleTop: 5.5,\n    subtitleWidth: 100,\n    subtitleHeight: 9,\n    subtitleSize: 11.5,"],
+
       ["letterSpacing: language === 'zh' ? '.015em' : '.005em'","letterSpacing: language === 'zh' ? '-.025em' : '.005em'"],
       ["color: #648198;","color: #4c7188;"],
       ["margin: 11px 0 0;","margin: 2px 0 0;\n                white-space: pre-line;"],
+      ["lineHeight: tune.bodyLineHeight,","lineHeight: language === 'zh' ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight) : (tune.enBodyLineHeight ?? tune.bodyLineHeight),"],
+      ["top: \`${tune.subtitleTop}%\`,","top: \`${(language === 'zh' ? (tune.zhSubtitleTop ?? tune.subtitleTop) : (tune.enSubtitleTop ?? tune.subtitleTop))}%\`,"],
+      ["<TuneControl label=\\"正文行高\\" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix=\\"×\\" onChange={(v) => updateTune('bodyLineHeight', v)} />",""],
+      ["<TuneControl label=\\"中文字体大小\\" value={tune.zhBodySize} min={6} max={30} step={0.5} suffix=\\"px\\" onChange={(v) => updateTune('zhBodySize', v)} />","<TuneControl label=\\"中文字体大小\\" value={tune.zhBodySize} min={6} max={30} step={0.5} suffix=\\"px\\" onChange={(v) => updateTune('zhBodySize', v)} />\\n                <TuneControl label=\\"中文行高\\" value={tune.zhBodyLineHeight ?? tune.bodyLineHeight} min={0.8} max={2.2} step={0.02} suffix=\\"×\\" onChange={(v) => updateTune('zhBodyLineHeight', v)} />"],
+      ["<TuneControl label=\\"英文字体大小\\" value={tune.enBodySize} min={6} max={30} step={0.5} suffix=\\"px\\" onChange={(v) => updateTune('enBodySize', v)} />","<TuneControl label=\\"英文字体大小\\" value={tune.enBodySize} min={6} max={30} step={0.5} suffix=\\"px\\" onChange={(v) => updateTune('enBodySize', v)} />\\n                <TuneControl label=\\"英文行高\\" value={tune.enBodyLineHeight ?? tune.bodyLineHeight} min={0.8} max={2.2} step={0.02} suffix=\\"×\\" onChange={(v) => updateTune('enBodyLineHeight', v)} />"],
+      ["<TuneControl label=\\"副标题顶部\\" value={tune.subtitleTop} min={0} max={100} step={0.5} suffix=\\"%\\" onChange={(v) => updateTune('subtitleTop', v)} />","<TuneControl label=\\"中文副标题顶部\\" value={tune.zhSubtitleTop ?? tune.subtitleTop} min={0} max={100} step={0.5} suffix=\\"%\\" onChange={(v) => updateTune('zhSubtitleTop', v)} />\\n                <TuneControl label=\\"英文副标题顶部\\" value={tune.enSubtitleTop ?? tune.subtitleTop} min={0} max={100} step={0.5} suffix=\\"%\\" onChange={(v) => updateTune('enSubtitleTop', v)} />"],
     ];
     for(const [from,to] of letterPatches){
       if(!source.includes(from))throw Error('XHS brand letter patch missing '+from);
