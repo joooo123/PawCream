@@ -462,7 +462,7 @@ export default function AtelierWithCollection(props: Props) {
     control.style.cursor = 'pointer'
 
     const onPointerDown = () => {
-      pointerDownWhileLookbookOpenRef.current = lookbookOpenRef.current
+      pointerDownWhileLookbookOpenRef.current = mobile && lookbookOpenRef.current
     }
 
     const onClick = (event: MouseEvent) => {
