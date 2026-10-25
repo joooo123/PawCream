@@ -93,8 +93,28 @@ function webpReferences() {
   }
 }
 
+function letterDebugPreview() {
+  return {
+    name: 'pawcream-letter-debug-preview',
+    configureServer(server: import('vite').ViteDevServer) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url || '/'
+        if (url === '/' || url.startsWith('/?')) {
+          const query = url.includes('?') ? url.slice(url.indexOf('?')) : ''
+          res.statusCode = 302
+          res.setHeader('Location', '/xhs-letter-debug/' + query)
+          res.end()
+          return
+        }
+        next()
+      })
+    },
+  }
+}
+
 export default defineConfig(({ command, mode }) => ({
   plugins: [
+    letterDebugPreview(),
     atelierTuningDefaults(),
     command === 'build' && (mode === 'webp' || mode === 'server-webp') ? webpReferences() : null,
     react(),
@@ -102,7 +122,7 @@ export default defineConfig(({ command, mode }) => ({
   // GitHub Pages uses `webp` mode at `/PawCream/`; server builds use root `/`.
   base: command === 'build' && mode === 'webp' ? '/PawCream/' : '/',
   server: {
-    host: '127.0.0.1',
+    host: '0.0.0.0',
     port: 5173,
   },
 }))
