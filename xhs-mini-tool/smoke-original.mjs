@@ -603,28 +603,29 @@ try{
    titleGap:title.getBoundingClientRect().top-b.top};
  });
  const expected=[
-  '你好呀，欢迎来到 PawCream。',
-  '这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。',
-  '愿每一次换装，都像拆开一盒期待已久的小甜点。躲进糖分里，暂时逃离喧嚣的大人世界。',
-  '甜蜜不止一点点，可爱也不止今天。',
+  '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。',
+  '愿每一次换装，都像拆开一盒期待已久的小甜点。',
+  '       躲进糖分里，暂时逃离喧嚣的大人世界。',
+  '                      甜蜜不止一点点，',
+  '                      可爱也不止今天。',
  ];
- if(!fit||fit.font!==12||fit.titleFont!==22||fit.subtitleFont!==12||
-  fit.copyLeft!==9.8||fit.copyWidth!==83.9||
+ if(!fit||fit.font!==10.5||fit.titleFont!==21||fit.subtitleFont!==11.5||
+  fit.copyLeft!==10.5||fit.copyWidth!==81.5||
   fit.paintedMargins.left<8||fit.paintedMargins.right<8||
   fit.paintedMargins.left>25||fit.paintedMargins.right>25||
   Math.abs(fit.paintedMargins.left-fit.paintedMargins.right)>5||
   fit.closeRect.left<3||fit.closeRect.right>fit.viewportWidth-3||
-  fit.top<12.5||fit.top>14||fit.margin>5||
+  fit.top<10.5||fit.top>11.5||fit.margin>5||
   fit.dialogWidth<375||fit.dialogWidth>390||
   // PNG alpha-painted pixels, not the transparent stage box, must be centered.
-  fit.paperRel.left!=='14%'||fit.paperRel.top!=='5.5%'||
+  fit.paperRel.left!=='14%'||fit.paperRel.top!=='7.5%'||
   fit.paperRel.width!=='75.5%'||fit.paperRel.height!=='84%'||
-  !fit.paperRel.transform.includes('-16%')||!fit.paperRel.transform.includes('scale(0.88)')||
-  fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于PawCream'||
+  !fit.paperRel.transform.includes('-15%')||!fit.paperRel.transform.includes('scale(0.88)')||
+  fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于 PawCream'||
   fit.subtitleDisplay==='none'||fit.subtitle!=='made with a little sugar & lots of love ♡'||
-  fit.paperObjectFit!=='contain'||!fit.paperTransform.includes('scaleX(1.3)')||!fit.tunePanelPresent||
+  fit.paperObjectFit!=='contain'||!fit.paperTransform.includes('scaleX(1.31)')||!fit.tunePanelPresent||
   !['纸张横向拉伸','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
-  fit.whiteSpace!=='pre-line'||fit.text!==expected.join('\n'))
+  fit.whiteSpace!=='pre-wrap'||fit.text!==expected.join('\n'))
   throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));
  console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,bodyBottom:fit.bodyBottom,stageTop:fit.stageRect.top,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true,paintedMargins:fit.paintedMargins,copyMargins:{left:fit.copyLeft,right:100-fit.copyLeft-fit.copyWidth}}));
  await page.addStyleTag({content:'.pawcream-letter-tune-panel { display: none !important; }'});
