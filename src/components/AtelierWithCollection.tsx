@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import AtelierWithLetter from './AtelierWithLetter'
 
 type DeviceProfile = 'desktop' | 'mobile'
@@ -318,6 +318,7 @@ export default function AtelierWithCollection(props: Props) {
   const [selectedSlotId, setSelectedSlotId] = useState(LOOKBOOK_ITEMS[0].slots[0]?.id ?? '')
   const [selectedFace, setSelectedFace] = useState<FaceName>('front')
   const [copyStatus, setCopyStatus] = useState('')
+  const suppressBackgroundClickUntilRef = useRef(0)
 
   const mobile = props.deviceProfile === 'mobile'
   const current = LOOKBOOK_ITEMS[itemIndex]
@@ -338,6 +339,8 @@ export default function AtelierWithCollection(props: Props) {
 
   const closeLookbook = () => {
     if (collectionTuneMode) return
+    // Prevent a delayed mobile WebView click from activating the room behind the overlay.
+    suppressBackgroundClickUntilRef.current = Date.now() + 450
     setOpen(false)
   }
 
@@ -493,6 +496,19 @@ export default function AtelierWithCollection(props: Props) {
   }, [props.deviceProfile, tuneMode, letterTuneMode, collectionTuneMode, open])
 
   useEffect(() => {
+    const blockClickThrough = (event: MouseEvent) => {
+      if (Date.now() > suppressBackgroundClickUntilRef.current) return
+      const target = event.target as Element | null
+      if (target?.closest('.pawcream-lookbook-overlay')) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+    }
+    document.addEventListener('click', blockClickThrough, true)
+    return () => document.removeEventListener('click', blockClickThrough, true)
+  }, [])
+
+  useEffect(() => {
     if (!open) return
     const oldOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -509,7 +525,10 @@ export default function AtelierWithCollection(props: Props) {
         <div
           className="pawcream-lookbook-overlay"
           role="presentation"
-          onClick={closeLookbook}
+          onClick={(event) => {
+            event.stopPropagation()
+            if (event.target === event.currentTarget) closeLookbook()
+          }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -744,7 +763,7 @@ export default function AtelierWithCollection(props: Props) {
             })}
 
             {!collectionTuneMode && (
-              <button type="button" className="pawcream-lookbook-close" aria-label="关闭作品展示册" onClick={closeLookbook}>×</button>
+              <button type="button" className="pawcream-lookbook-close" aria-label="关闭作品展示册" onClick={(event) => { event.preventDefault(); event.stopPropagation(); closeLookbook() }}>×</button>
             )}
 
             <button type="button" className="pawcream-lookbook-arrow is-prev" aria-label="上一件作品" onClick={() => shiftItem(-1)}>‹</button>
