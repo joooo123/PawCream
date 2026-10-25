@@ -212,7 +212,7 @@ try{
  // Wait for the sewing interaction listener to reattach after closing, then reopen.
  await page.waitForTimeout(120);
  await page.waitForSelector('[aria-label="Sewing lookbook interaction"]',{timeout:5000});
- await page.locator('[aria-label="Sewing lookbook interaction"]').click();
+ await page.mouse.click(sewingPoint.x,sewingPoint.y);
  await page.waitForSelector('.pawcream-lookbook-overlay',{timeout:5000});
 
  // The backdrop should also close the lookbook without activating anything behind it.
