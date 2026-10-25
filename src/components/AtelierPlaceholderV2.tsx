@@ -471,7 +471,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         Math.min(image.naturalHeight - 1, Math.floor(ny * image.naturalHeight)),
         1, 1, 0, 0, 1, 1,
       )
-      return ctx.getImageData(0, 0, 1, 1).data[3] >= 40
+      const alpha = ctx.getImageData(0, 0, 1, 1).data[3]
+      return mobile ? alpha > 0 : alpha >= 40
     } catch {
       return false
     }
@@ -568,7 +569,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       : baseLayout
     const selectedAsset = tuneMode && selectedKey === key
     const noteIsPassive = !tuneMode && key === 'note'
-    const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people')
+    const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people' || (mobile && key === 'note'))
     const movingMessage = !tuneMode && key === 'message' && messageMoveMode
     return (
       <div
@@ -582,7 +583,14 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onPointerUp={onAssetPointerUp}
         onPointerCancel={onAssetPointerUp}
         onClick={(event) => {
-          if (noteIsPassive) return
+          if (noteIsPassive) {
+            if (mobile && noteOpaqueAt(event.clientX, event.clientY)) {
+              event.preventDefault()
+              event.stopPropagation()
+              setBoardOpen(true)
+            }
+            return
+          }
           event.stopPropagation()
           // The shared capture listener checks visible alpha for every active
           // artwork component, including rotated Color and the lamp.
@@ -591,7 +599,8 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onKeyDown={(event) => {
           if ((event.key === 'Enter' || event.key === ' ') && (tuneMode || interactive)) {
             event.preventDefault()
-            handleNormalAssetClick(key)
+            if (mobile && key === 'note') setBoardOpen(true)
+            else handleNormalAssetClick(key)
           }
         }}
         style={{
@@ -602,7 +611,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           zIndex: asset.zIndex,
           cursor: tuneMode ? 'grab' : key === 'message' ? (movingMessage ? 'move' : 'grab') : interactive ? 'pointer' : 'default',
           touchAction: tuneMode || key === 'message' ? 'none' : 'auto', userSelect: 'none',
-          pointerEvents: noteIsPassive ? 'none' : undefined,
+          pointerEvents: noteIsPassive && !mobile ? 'none' : undefined,
           outline: selectedAsset ? '1.5px dashed rgba(213, 111, 157, 0.9)' : 'none',
           outlineOffset: selectedAsset ? 6 : 0, borderRadius: selectedAsset ? 10 : 0,
         }}
