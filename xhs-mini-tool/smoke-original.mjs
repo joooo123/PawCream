@@ -274,7 +274,7 @@ try{
     if(x<4||x>innerWidth-4||y<4||y>innerHeight-4)continue;
     const px=Math.min(canvas.width-1,Math.floor(u*canvas.width));
     const py=Math.min(canvas.height-1,Math.floor(v*canvas.height));
-    if(alpha[(py*canvas.width+px)*4+3]===0)continue;
+    if(alpha[(py*canvas.width+px)*4+3]<40)continue;
     if(document.elementFromPoint(x,y)?.closest('[data-atelier-asset]')!==note)continue;
     return {x,y,u,v};
    }
