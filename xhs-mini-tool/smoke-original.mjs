@@ -131,6 +131,9 @@ try{
  });
  if(chip.bg!=='rgba(0, 0, 0, 0)'||chip.color!=='rgb(255, 255, 255)'||chip.pad!=='0px')
   throw Error('Night guide still has a tinted chip: '+JSON.stringify(chip));
+ await page.getByRole('button',{name:'EN',exact:true}).click();
+ const englishHintFont=await page.locator('[aria-label="Room feature guide"] > span').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+ if(englishHintFont!==17)throw Error('English room hints should be 17px after switching to English: '+englishHintFont);
  await page.mouse.click(lampPoints.transparent.x,lampPoints.transparent.y);
  await page.waitForTimeout(280);
  if(!await night())throw Error('Transparent lamp padding closes night mode');
@@ -349,16 +352,19 @@ try{
  // Reset before checking the three-line writing prompt and responsive card bounds.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="message"]',{timeout:5000});
+ await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
+ await page.waitForFunction(()=>document.querySelector('section[aria-label^="PawCream Atelier Room"]')?.querySelector('nav[aria-label="PawCream Atelier toolbar"]')?.style.pointerEvents==='auto',{timeout:3000});
+ await page.getByRole('button',{name:'EN',exact:true}).click();
 
  // Open the sticky-note wall and verify the actual mobile card does not
  // overlap the XHS header or phone home indicator.
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
  await page.waitForTimeout(100);
  const notePrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
-  const css=getComputedStyle(el);return {lines:el.querySelectorAll('span').length,bg:css.backgroundColor};
+  const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
- if(notePrompt.lines!==3||notePrompt.bg!=='rgba(0, 0, 0, 0)')
-  throw Error('Note prompt needs three transparent lines: '+JSON.stringify(notePrompt));
+ if(JSON.stringify(notePrompt.lines)!==JSON.stringify(['Leave a','little note','for PawCream'])||notePrompt.bg!=='rgba(0, 0, 0, 0)')
+  throw Error('English Note prompt must be two words per line across three transparent lines: '+JSON.stringify(notePrompt));
  const noteOffset=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>el.style.left);
  if(noteOffset!=='50%')throw Error('Note prompt was not shifted right: '+noteOffset);
  await page.evaluate(()=>{
@@ -369,6 +375,10 @@ try{
    clientX:r.left+r.width/2,clientY:r.top+r.height/2}));
  });
  await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
+ await page.getByRole('button',{name:'My notes',exact:true}).click();
+ await page.waitForTimeout(100);
+ if(!await page.locator('.pawcream-notes-card').isVisible()||await page.locator('.pawcream-letter-overlay').isVisible().catch(()=>false))
+  throw Error('Tapping My notes navigated to the brand introduction instead of staying in the notes board');
  const assertNotesBounds=async(width,height)=>{
   const r=await page.locator('.pawcream-notes-card').boundingBox();
   if(!r||r.y<76||r.x<10||r.x+r.width>width-10||r.y+r.height>height-35)
@@ -674,9 +684,9 @@ try{
  const expected=[
   '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。',
   '愿每一次换装，都像拆开一盒期待已久的小甜点。',
-  '         躲进糖分里，暂时逃离喧嚣的大人世界。',
-  '                        甜蜜不止一点点，',
-  '                        可爱也不止今天。',
+  '          躲进糖分里，暂时逃避喧嚣的大人世界。',
+  '                            甜蜜不止一点点，',
+  '                            可爱也不止今天。',
  ];
  if(!fit||fit.font!==10.5||fit.titleFont!==21||fit.subtitleFont!==11.5||
   fit.copyLeft!==10.5||fit.copyWidth!==85||
