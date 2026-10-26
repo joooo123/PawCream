@@ -149,7 +149,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     // XHS-only: the actual PawCream brand story, typed on the white paper.
     // Widen only the mobile letter paper by 30% overall; keep the envelope unchanged.
     // A single newline separates each paragraph without wasting a blank line.
-    const zhBody='你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n            躲进糖分里，暂时逃避喧嚣的大人世界。\\n                              甜蜜不止一点点，\\n                              可爱也不止今天。';
+    const zhBody='你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n          躲进糖分里，暂时逃避喧嚣的大人世界。\\n                            甜蜜不止一点点，\\n                            可爱也不止今天。';
     const enBody='Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \\n    change is like unboxing a long-awaited sweet.\\n       Hide in sweetness, escaping the adult world \\n                for a while. Sweetness and \\n                    cuteness linger beyond\\n                             today.\\n';
     const mobileZhBodyLiteral=JSON.stringify(zhBody.replace(/\\n/g,'\n'));
     const mobileEnBodyLiteral=JSON.stringify(enBody.replace(/\\n/g,'\n'));
