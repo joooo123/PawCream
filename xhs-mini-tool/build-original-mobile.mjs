@@ -208,8 +208,8 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     }
     // Strip the tuning controls and their styles from the production bundle,
     // rather than merely leaving the panel hidden behind a false condition.
-    const panelStart=source.indexOf('\\n          {letterTuneMode && (\\n            <aside className="pawcream-letter-tune-panel"');
-    const panelEndToken='\\n          )}';
+    const panelStart=source.indexOf('\n          {letterTuneMode && (\n            <aside className="pawcream-letter-tune-panel"');
+    const panelEndToken='\n          )}';
     const panelEnd=panelStart>=0?source.indexOf(panelEndToken,panelStart):-1;
     if(panelStart<0||panelEnd<0)throw Error('XHS production build could not locate letter tuning panel');
     source=source.slice(0,panelStart)+source.slice(panelEnd+panelEndToken.length);
