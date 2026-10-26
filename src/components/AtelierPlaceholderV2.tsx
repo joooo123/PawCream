@@ -503,7 +503,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
 
     // getBoundingClientRect() is axis-aligned after rotation; invert the
     // element's rotation around its rendered center before mapping to pixels.
-    const matrix = getComputedStyle(control).transform.match(/^matrix\\(([^)]+)\\)$/)
+    const matrix = getComputedStyle(control).transform.match(/^matrix\(([^)]+)\)$/)
     const fields = matrix ? matrix[1].split(',').map(Number) : [1, 0]
     const angle = -Math.atan2(fields[1], fields[0])
     const dx = clientX - (rect.left + rect.width / 2)
