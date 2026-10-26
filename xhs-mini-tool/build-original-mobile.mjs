@@ -206,6 +206,17 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       if(!source.includes(from))throw Error('XHS brand letter patch missing '+from);
       source=source.replace(from,to);
     }
+    // Strip the tuning controls and their styles from the production bundle,
+    // rather than merely leaving the panel hidden behind a false condition.
+    const panelStart=source.indexOf('\\n          {letterTuneMode && (\\n            <aside className="pawcream-letter-tune-panel"');
+    const panelEndToken='\\n          )}';
+    const panelEnd=panelStart>=0?source.indexOf(panelEndToken,panelStart):-1;
+    if(panelStart<0||panelEnd<0)throw Error('XHS production build could not locate letter tuning panel');
+    source=source.slice(0,panelStart)+source.slice(panelEnd+panelEndToken.length);
+    const panelCssStart=source.indexOf('              .pawcream-letter-tune-panel {');
+    const panelCssEnd=panelCssStart>=0?source.indexOf('              @keyframes pawcream-envelope-enter {',panelCssStart):-1;
+    if(panelCssStart<0||panelCssEnd<0)throw Error('XHS production build could not locate letter tuning styles');
+    source=source.slice(0,panelCssStart)+source.slice(panelCssEnd);
   }
   if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
     // On small screens the six tall size buttons used to set the entire
@@ -290,6 +301,7 @@ const transpiled=transformSync(fs.readFileSync(jsFile,'utf8'),{babelrc:false,con
  presets:[['@babel/preset-env',{targets:{chrome:'61',safari:'12'},modules:false}]],compact:true,comments:false});
 check(transpiled && transpiled.code,'Chrome61 Babel transformation failed');
 fs.writeFileSync(jsFile,transpiled.code);
+check(!fs.readFileSync(jsFile,'utf8').includes('pawcream-letter-tune-panel'),'Production bundle still contains letter tuning panel markup');
 let css=fs.readFileSync(cssFile,'utf8');
 css=css.replace(/url\((['"]?)\/assets\/font\//g,'url($1./assets/font/');
 css=css.replace(/,\s*url\((['"]?)\.\/assets\/font\/[^)]*\.ttf(['"]?)\)\s*format\(['"]truetype['"]\)/g,'');
