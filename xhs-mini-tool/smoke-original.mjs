@@ -247,44 +247,105 @@ try{
  await page.locator('.pawcream-public-wall > header .pawcream-public-wall-close').click();
  await page.waitForSelector('.pawcream-public-wall',{state:'detached',timeout:5000});
 
- // A non-central painted Note pixel must open the note board without first
- // enabling message-move mode.
+ // Each visible quadrant of the Note artwork must be clickable, including
+ // pixels under transparent foreground wrappers (not only the lower-left corner).
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="note"] img',{timeout:5000});
  await page.waitForFunction(()=>{
   const img=document.querySelector('[data-atelier-asset="note"] img');
   return !!img&&img.complete&&img.naturalWidth>0;
- },{timeout:5000});
- const noteOpaquePoint=await page.evaluate(()=>{
+ },null,{timeout:5000});
+ const noteOpaquePoints=await page.evaluate(()=>{
   const note=document.querySelector('[data-atelier-asset="note"]');
-  const image=note?.querySelector('img');
-  if(!note||!image?.naturalWidth)return null;
-  const r=note.getBoundingClientRect(),canvas=document.createElement('canvas');
+  const image=note?.querySelector(':scope > img');
+  if(!note||!image?.naturalWidth)return [];
+  const canvas=document.createElement('canvas');
   canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
-  if(!ctx)return null;
+  if(!ctx)return [];
   ctx.drawImage(image,0,0);
   const alpha=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  // Search the whole artwork: its far-right edge can be transparent or covered
-  // by a higher layer, so a fixed right-edge-only scan can fail before testing a tap.
-  for(let v=.08;v<.94;v+=.025){
-   for(let u=.05;u<.96;u+=.02){
-    if(Math.abs(u-.5)<.14&&Math.abs(v-.5)<.14)continue;
-    const x=r.left+u*r.width,y=r.top+v*r.height;
-    if(x<4||x>innerWidth-4||y<4||y>innerHeight-4)continue;
-    const px=Math.min(canvas.width-1,Math.floor(u*canvas.width));
-    const py=Math.min(canvas.height-1,Math.floor(v*canvas.height));
-    if(alpha[(py*canvas.width+px)*4+3]<40)continue;
-    if(document.elementFromPoint(x,y)?.closest('[data-atelier-asset]')!==note)continue;
-    return {x,y,u,v};
+  const sample=document.createElement('canvas');sample.width=sample.height=1;
+  const sampleCtx=sample.getContext('2d',{willReadFrequently:true});
+  if(!sampleCtx)return [];
+  const matrixFor=control=>{
+   const m=getComputedStyle(control).transform.match(/^matrix\(([^)]+)\)$/);
+   return m?m[1].split(',').map(Number):[1,0,0,1,0,0];
+  };
+  const thetaFor=control=>{
+   const m=matrixFor(control);return Math.atan2(m[1],m[0]);
+  };
+  const pointFor=(px,py)=>{
+   const r=note.getBoundingClientRect(),theta=thetaFor(note);
+   const lx=((px+.5)/canvas.width-.5)*note.offsetWidth;
+   const ly=((py+.5)/canvas.height-.5)*note.offsetHeight;
+   return {
+    x:r.left+r.width/2+lx*Math.cos(theta)-ly*Math.sin(theta),
+    y:r.top+r.height/2+lx*Math.sin(theta)+ly*Math.cos(theta)
+   };
+  };
+  const alphaAtControl=(control,x,y)=>{
+   const img=control.querySelector(':scope > img');
+   if(!img?.complete||!img.naturalWidth||!img.naturalHeight)return 255;
+   const w=control.offsetWidth,h=control.offsetHeight,r=control.getBoundingClientRect();
+   if(!w||!h)return 255;
+   const m=matrixFor(control),angle=-Math.atan2(m[1],m[0]);
+   const dx=x-(r.left+r.width/2),dy=y-(r.top+r.height/2);
+   const lx=dx*Math.cos(angle)-dy*Math.sin(angle);
+   const ly=dx*Math.sin(angle)+dy*Math.cos(angle);
+   const u=(lx+w/2)/w,v=(ly+h/2)/h;
+   if(u<0||u>=1||v<0||v>=1)return 0;
+   const sx=Math.min(img.naturalWidth-1,Math.floor(u*img.naturalWidth));
+   const sy=Math.min(img.naturalHeight-1,Math.floor(v*img.naturalHeight));
+   sampleCtx.clearRect(0,0,1,1);
+   sampleCtx.drawImage(img,sx,sy,1,1,0,0,1,1);
+   return sampleCtx.getImageData(0,0,1,1).data[3];
+  };
+  const regions=[
+   {name:'upper-left',x0:.33,x1:.5,y0:.19,y1:.5},
+   {name:'upper-right',x0:.5,x1:.67,y0:.19,y1:.5},
+   {name:'lower-left',x0:.33,x1:.5,y0:.5,y1:.8},
+   {name:'lower-right',x0:.5,x1:.67,y0:.5,y1:.8}
+  ];
+  const points=[];
+  for(const region of regions){
+   let found=null;
+   for(let py=Math.floor(region.y0*canvas.height);py<region.y1*canvas.height&&!found;py+=3){
+    for(let px=Math.floor(region.x0*canvas.width);px<region.x1*canvas.width;px+=3){
+     if(alpha[(py*canvas.width+px)*4+3]<40)continue;
+     const p=pointFor(px,py);
+     if(p.x<2||p.x>innerWidth-2||p.y<2||p.y>innerHeight-2)continue;
+     let reachesNote=false;
+     for(const el of document.elementsFromPoint(p.x,p.y)){
+      const control=el instanceof Element?el.closest('[data-atelier-asset]'):null;
+      if(!control)continue;
+      if(control===note){reachesNote=true;break;}
+      const key=control.dataset.atelierAsset;
+      const threshold=key==='window'||key==='note'?1:(key==='light'||key==='sewing')?12:40;
+      if(alphaAtControl(control,p.x,p.y)>=threshold){reachesNote=false;break;}
+     }
+     if(reachesNote)found={...p,name:region.name,sourceAlpha:alpha[(py*canvas.width+px)*4+3]};
+    }
    }
+   if(found)points.push(found);
   }
-  return null;
+  return points;
  });
- if(!noteOpaquePoint)throw Error('Could not find a visible off-center painted Note pixel');
- await page.mouse.click(noteOpaquePoint.x,noteOpaquePoint.y);
- await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
-
+ if(noteOpaquePoints.length!==4)
+  throw Error('Could not find a visible Note pixel in each quadrant: '+JSON.stringify(noteOpaquePoints));
+ for(let i=0;i<noteOpaquePoints.length;i++){
+  if(i>0){
+   await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
+   await page.waitForSelector('[data-atelier-asset="note"] img',{timeout:5000});
+   await page.waitForFunction(()=>{
+    const img=document.querySelector('[data-atelier-asset="note"] img');
+    return !!img&&img.complete&&img.naturalWidth>0;
+   },null,{timeout:5000});
+  }
+  const point=noteOpaquePoints[i];
+  await page.mouse.click(point.x,point.y);
+  await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
+ }
  // Reset before checking the three-line writing prompt and responsive card bounds.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="message"]',{timeout:5000});
@@ -549,14 +610,18 @@ try{
   await page.waitForSelector('.pawcream-letter-overlay',{timeout:4000});
  }
 
- // Open the letter through the actual window interaction; the debug ZIP
- // must not auto-open the modal or block the atelier on initial entry.
+ // Open the letter through the actual window interaction; the final ZIP
+ // must keep the normal letter animation and omit the debug tuning panel.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('section[aria-label^="PawCream Atelier Room"]',{timeout:15000});
  await page.waitForSelector('[aria-label="Window interaction"]',{timeout:5000});
  await page.locator('[aria-label="Window interaction"]').click({force:true});
  await page.waitForSelector('.pawcream-paper-copy',{timeout:5000});
- await page.waitForTimeout(260);
+ await page.waitForFunction(()=>{
+  const title=document.querySelector('.pawcream-paper-title');
+  const body=document.querySelector('.pawcream-paper-body');
+  return !!title&&!!body&&title.textContent?.includes('关于 PawCream')&&body.textContent?.includes('可爱也不止今天。');
+ },null,{timeout:20000});
  const fit=await page.evaluate(()=>{
   const el=document.querySelector('.pawcream-paper-copy'),title=el?.querySelector('h2'),body=el?.querySelector('.pawcream-paper-body');
   const paper=document.querySelector('.pawcream-envelope-paper-wrap');
@@ -564,7 +629,7 @@ try{
   const paperImage=document.querySelector('.pawcream-envelope-paper');
   const tunePanel=document.querySelector('.pawcream-letter-tune-panel');
   const tuneLabels=[...(tunePanel?.querySelectorAll('.pawcream-letter-tune-row span')||[])].map(node=>node.textContent?.trim());
-  if(!el||!title||!body||!paper||!subtitle||!paperImage||!tunePanel)return null;
+  if(!el||!title||!body||!paper||!subtitle||!paperImage)return null;
   const b=paper.getBoundingClientRect(),c=body.getBoundingClientRect();
   const stage=document.querySelector('.pawcream-envelope-stage');
   const dialog=document.querySelector('.pawcream-envelope-dialog');
@@ -627,12 +692,10 @@ try{
   !fit.paperRel.transform.includes('-15%')||!fit.paperRel.transform.includes('scale(0.88)')||
   fit.scroll>fit.h+2||!fit.inside||fit.heading!=='关于 PawCream'||
   fit.subtitleDisplay==='none'||fit.subtitle!=='made with a little sugar & lots of love ♡'||
-  fit.paperObjectFit!=='contain'||!fit.paperTransform.includes('scaleX(1.31)')||!fit.tunePanelPresent||
-  !['纸张横向拉伸','中文字体大小','英文字体大小','标题字号','副标题字号'].every(label=>fit.tuneLabels.includes(label))||
+  fit.paperObjectFit!=='contain'||!fit.paperTransform.includes('scaleX(1.31)')||fit.tunePanelPresent||
   fit.whiteSpace!=='pre-wrap'||fit.text!==expected.join('\n'))
   throw Error('New doll-clothes letter text clipped, incomplete or malformed: '+JSON.stringify(fit));
  console.log('BRAND_LETTER_LAYOUT='+JSON.stringify({heading:fit.heading,bodyHeight:fit.bodyHeight,bodyBottom:fit.bodyBottom,stageTop:fit.stageRect.top,containerHeight:fit.h,scrollHeight:fit.scroll,fullText:true,paintedMargins:fit.paintedMargins,copyMargins:{left:fit.copyLeft,right:100-fit.copyLeft-fit.copyWidth}}));
- await page.addStyleTag({content:'.pawcream-letter-tune-panel { display: none !important; }'});
  await page.screenshot({path:path.join(release,'mobile-letter.png')});
 
  const results={size:{width:390,height:844},home,atelier,
