@@ -149,7 +149,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     // XHS-only: the actual PawCream brand story, typed on the white paper.
     // Widen only the mobile letter paper by 30% overall; keep the envelope unchanged.
     // A single newline separates each paragraph without wasting a blank line.
-    const zhBody='你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n         躲进糖分里，暂时逃离喧嚣的大人世界。\\n                        甜蜜不止一点点，\\n                        可爱也不止今天。';
+    const zhBody='你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n            躲进糖分里，暂时逃避喧嚣的大人世界。\\n                              甜蜜不止一点点，\\n                              可爱也不止今天。';
     const enBody='Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \\n    change is like unboxing a long-awaited sweet.\\n       Hide in sweetness, escaping the adult world \\n                for a while. Sweetness and \\n                    cuteness linger beyond\\n                             today.\\n';
     const mobileZhBodyLiteral=JSON.stringify(zhBody.replace(/\\n/g,'\n'));
     const mobileEnBodyLiteral=JSON.stringify(enBody.replace(/\\n/g,'\n'));
@@ -267,6 +267,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     source=source.replace('离线试听 20 秒','更多音乐见工作室网站');
   }
   if(args.path.endsWith(path.sep+'AtelierPlaceholderV2.tsx')){
+    source=source.replace('aria-label={`PawCream Atelier Room ${deviceProfile} layout`}', 'aria-label={`PawCream Atelier Room ${deviceProfile} layout`} data-language={language}');
     // Add sewing to the interactive hit surface without changing the separate
     // People handler. A broad replacement here would make sewing open the wall.
     const interactiveBefore="const interactive = !tuneMode && (key === 'message' || key === 'light' || key === 'color' || key === 'people' || (mobile && key === 'note'))";
@@ -274,7 +275,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     if(!source.includes(interactiveBefore))throw Error('XHS sewing interaction marker missing');
     source=source.replace(interactiveBefore,interactiveAfter);
     // Three stable text lines physically inside the Note artwork.
-    source=source.replace("{copy.notePrompt}", "{language === 'zh' ? <><span style={{display:'block'}}>留下你想对</span><span style={{display:'block'}}>PawCream</span><span style={{display:'block'}}>说的话吧</span></> : copy.notePrompt}");
+    source=source.replace("{copy.notePrompt}", "{language === 'zh' ? <><span style={{display:'block'}}>留下你想对</span><span style={{display:'block'}}>PawCream</span><span style={{display:'block'}}>说的话吧</span></> : <><span style={{display:'block'}}>Leave a</span><span style={{display:'block'}}>little note</span><span style={{display:'block'}}>for PawCream</span></>}");
     source=source.replace("left: '50%', top: '50%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '40%' : '35%', maxWidth: 145",
       "left: '50%', top: '47%', transform: `translate(-50%, -50%) rotate(${-layout.rotation}deg)`, width: mobile ? '48%' : '35%', maxWidth: 145");
     for(const [a,b] of tuningFixes)source=source.split(a).join(b);
@@ -322,6 +323,7 @@ css += [
   'color:#fff!important;font-size:12px!important;line-height:1.3!important;',
   'padding:0!important;text-shadow:0 1px 5px rgba(0,0,0,.88)!important;',
   '}',
+  'section[aria-label^="PawCream Atelier Room"][data-language="en"] div[aria-label="Room feature guide"] > span {font-size:17px!important;}',
   'section[aria-label^="PawCream Atelier Room"] div[data-atelier-asset="note"] > span {',
   'background:transparent!important;background-color:transparent!important;',
   'border:0!important;border-radius:0!important;box-shadow:none!important;',
