@@ -506,12 +506,19 @@ export default function AtelierWithCollection(props: Props) {
         suppressBackgroundClickUntilRef.current = null
         return
       }
+      // Programmatic .click() events have detail=0 and no real tap location.
+      if (event.detail === 0) return
       const target = event.target as Element | null
       if (target?.closest('.pawcream-lookbook-overlay')) return
       // Mobile WebViews may deliver a second click after the overlay unmounts.
-      // Match its location so unrelated taps remain responsive immediately.
+      // Suppress only one pointer click at the same location; a different tap
+      // is genuine user input and should immediately clear the guard.
       if (Math.abs(event.clientX - suppression.x) > 32 ||
-          Math.abs(event.clientY - suppression.y) > 32) return
+          Math.abs(event.clientY - suppression.y) > 32) {
+        suppressBackgroundClickUntilRef.current = null
+        return
+      }
+      suppressBackgroundClickUntilRef.current = null
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
