@@ -158,14 +158,12 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     const newCopyOpening = "              </div>\n              <div className=\"pawcream-envelope-text-wrap\" style={{ position: 'absolute', zIndex: 5, left: tune.paperLeft + '%', top: tune.paperTop + '%', width: tune.paperWidth + '%', height: tune.paperHeight + '%', transform: 'translate3d(0, ' + previewY + '%, 0) rotate(' + tune.paperRotate + 'deg) scale(' + tune.paperScale + ')', transition: previewMode === 'play' ? 'transform ' + tune.riseMs + 'ms cubic-bezier(.2,.76,.28,1)' : 'none' }}>\n                <div className=\"pawcream-paper-copy\" style={{ left: tune.textLeft + '%', top: tune.textTop + '%', width: tune.textWidth + '%', height: tune.textHeight + '%', fontFamily: language === 'zh' ? \"'PawCream CN', 'PawCream EN', sans-serif\" : \"'PawCream EN', sans-serif\" }}>";
     const letterPatches=[
       ["title: '关于 PawCream'","title: '关于 PawCream'"],
-      // This is the dedicated debug ZIP: enable the tune panel without requiring
-      // a query string, because the mini-tool host may normalize its entry URL.
-      ["  const letterTuneMode = query.get('letterTune') === '1'","  const letterTuneMode = true"],
+      // Production mini-tool: never expose the letter tuning panel in the release ZIP.
+      ["  const letterTuneMode = query.get('letterTune') === '1'","  const letterTuneMode = false"],
       ["const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'","const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'"],
       ["  const openLetter = () => {\n    void preloadEnvelopeAssets()\n    replay()\n  }",
        "  const openLetter = () => {\n    void preloadEnvelopeAssets()\n    if (letterTuneMode) {\n      setLanguage(readLanguage())\n      setPreviewMode('end')\n      setTypedChars(totalTypingLength)\n      setPaperRaised(true)\n      setOpen(true)\n      return\n    }\n    replay()\n  }"],
-      // Keep the debug panel enabled in the generated ZIP, but do not auto-open
-      // the letter overlay on app launch. Open the panel only with the letter.
+      // Keep the normal letter animation; the production ZIP has no tuning panel.
       ["  useEffect(() => {\n    if (!letterTuneMode) return\n    setLanguage(readLanguage())\n    setPreviewMode('end')\n    setTypedChars(totalTypingLength)\n    setPaperRaised(true)\n    setOpen(true)\n  }, [letterTuneMode, totalTypingLength])",
        "  useEffect(() => {\n    if (!letterTuneMode || !open) return\n    setLanguage(readLanguage())\n    setPreviewMode('end')\n    setTypedChars(totalTypingLength)\n    setPaperRaised(true)\n  }, [letterTuneMode, open, totalTypingLength])"],
       ["  const copy = COPY[language]",mobileCopySource],
