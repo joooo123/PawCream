@@ -490,37 +490,42 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
 
   const noteOpaqueAt = (clientX: number, clientY: number) => {
     const stage = artboardRef.current
-    if (!stage) return false
-    const image = stage.querySelector<HTMLImageElement>('img[alt="Note"]')
-    if (!image || !image.complete || !image.naturalWidth || !image.naturalHeight) return false
+    const control = stage?.querySelector<HTMLElement>('[data-atelier-asset="note"]')
+    const image = control?.querySelector<HTMLImageElement>(':scope > img')
+    if (!control || !image?.complete || !image.naturalWidth || !image.naturalHeight) return false
 
-    const layout = renderTuning.note
-    const rect = stage.getBoundingClientRect()
-    const centerX = rect.left + (layout.x / 100) * rect.width
-    const centerY = rect.top + (layout.y / 100) * rect.height
-    const renderWidth = (layout.width / 100) * rect.width
-    const renderHeight = renderWidth * (image.naturalHeight / image.naturalWidth)
-    const dx = clientX - centerX
-    const dy = clientY - centerY
-    const angle = (-layout.rotation * Math.PI) / 180
+    // Read the actual rendered asset box rather than reconstructing it from
+    // layout percentages. This keeps hit testing aligned with CSS sizing.
+    const width = control.offsetWidth
+    const height = control.offsetHeight
+    const rect = control.getBoundingClientRect()
+    if (!width || !height) return false
+
+    // getBoundingClientRect() is axis-aligned after rotation; invert the
+    // element's rotation around its rendered center before mapping to pixels.
+    const matrix = getComputedStyle(control).transform.match(/^matrix\\(([^)]+)\\)$/)
+    const fields = matrix ? matrix[1].split(',').map(Number) : [1, 0]
+    const angle = -Math.atan2(fields[1], fields[0])
+    const dx = clientX - (rect.left + rect.width / 2)
+    const dy = clientY - (rect.top + rect.height / 2)
     const localX = dx * Math.cos(angle) - dy * Math.sin(angle)
     const localY = dx * Math.sin(angle) + dy * Math.cos(angle)
-    const nx = (localX + renderWidth / 2) / renderWidth
-    const ny = (localY + renderHeight / 2) / renderHeight
-    if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return false
+    const nx = (localX + width / 2) / width
+    const ny = (localY + height / 2) / height
+    if (nx < 0 || nx >= 1 || ny < 0 || ny >= 1) return false
 
     try {
       const canvas = hitCanvasRef.current ?? document.createElement('canvas')
       hitCanvasRef.current = canvas
-      canvas.width = 1
-      canvas.height = 1
+      canvas.width = canvas.height = 1
       const ctx = canvas.getContext('2d', { willReadFrequently: true })
       if (!ctx) return false
-      ctx.clearRect(0, 0, 1, 1)
       const sx = clamp(Math.floor(nx * image.naturalWidth), 0, image.naturalWidth - 1)
       const sy = clamp(Math.floor(ny * image.naturalHeight), 0, image.naturalHeight - 1)
+      ctx.clearRect(0, 0, 1, 1)
       ctx.drawImage(image, sx, sy, 1, 1, 0, 0, 1, 1)
-      return ctx.getImageData(0, 0, 1, 1).data[3] >= 40
+      // A pixel is clickable if it is not fully transparent.
+      return ctx.getImageData(0, 0, 1, 1).data[3] > 0
     } catch {
       return false
     }
