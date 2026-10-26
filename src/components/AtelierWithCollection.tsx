@@ -318,7 +318,7 @@ export default function AtelierWithCollection(props: Props) {
   const [selectedSlotId, setSelectedSlotId] = useState(LOOKBOOK_ITEMS[0].slots[0]?.id ?? '')
   const [selectedFace, setSelectedFace] = useState<FaceName>('front')
   const [copyStatus, setCopyStatus] = useState('')
-  const suppressBackgroundClickUntilRef = useRef(0)
+  const suppressBackgroundClickUntilRef = useRef<{ until: number; x: number; y: number } | null>(null)
 
   const mobile = props.deviceProfile === 'mobile'
   const current = LOOKBOOK_ITEMS[itemIndex]
@@ -337,10 +337,13 @@ export default function AtelierWithCollection(props: Props) {
     setOpen(true)
   }
 
-  const closeLookbook = () => {
+  const closeLookbook = (event?: { clientX: number; clientY: number }) => {
     if (collectionTuneMode) return
-    // Prevent a delayed mobile WebView click from activating the room behind the overlay.
-    suppressBackgroundClickUntilRef.current = Date.now() + 450
+    // Suppress only a delayed duplicate click at the closing tap location.
+    // A time-only guard would also swallow the user's next legitimate room tap.
+    suppressBackgroundClickUntilRef.current = event
+      ? { until: Date.now() + 450, x: event.clientX, y: event.clientY }
+      : null
     setOpen(false)
   }
 
@@ -497,9 +500,18 @@ export default function AtelierWithCollection(props: Props) {
 
   useEffect(() => {
     const blockClickThrough = (event: MouseEvent) => {
-      if (Date.now() > suppressBackgroundClickUntilRef.current) return
+      const suppression = suppressBackgroundClickUntilRef.current
+      if (!suppression) return
+      if (Date.now() > suppression.until) {
+        suppressBackgroundClickUntilRef.current = null
+        return
+      }
       const target = event.target as Element | null
       if (target?.closest('.pawcream-lookbook-overlay')) return
+      // Mobile WebViews may deliver a second click after the overlay unmounts.
+      // Match its location so unrelated taps remain responsive immediately.
+      if (Math.abs(event.clientX - suppression.x) > 32 ||
+          Math.abs(event.clientY - suppression.y) > 32) return
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
@@ -527,7 +539,7 @@ export default function AtelierWithCollection(props: Props) {
           role="presentation"
           onClick={(event) => {
             event.stopPropagation()
-            if (event.target === event.currentTarget) closeLookbook()
+            if (event.target === event.currentTarget) closeLookbook(event)
           }}
           style={{
             position: 'fixed',
@@ -763,7 +775,7 @@ export default function AtelierWithCollection(props: Props) {
             })}
 
             {!collectionTuneMode && (
-              <button type="button" className="pawcream-lookbook-close" aria-label="关闭作品展示册" onClick={(event) => { event.preventDefault(); event.stopPropagation(); closeLookbook() }}>×</button>
+              <button type="button" className="pawcream-lookbook-close" aria-label="关闭作品展示册" onClick={(event) => { event.preventDefault(); event.stopPropagation(); closeLookbook(event) }}>×</button>
             )}
 
             <button type="button" className="pawcream-lookbook-arrow is-prev" aria-label="上一件作品" onClick={() => shiftItem(-1)}>‹</button>
