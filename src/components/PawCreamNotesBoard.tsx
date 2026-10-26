@@ -306,10 +306,11 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
       aria-modal="true"
       aria-label={copy.title}
       onClick={(event) => event.stopPropagation()}
+      onPointerDownCapture={(event) => event.stopPropagation()}
       style={{
         position: 'absolute',
         inset: 0,
-        zIndex: 80,
+        zIndex: 9999,
         display: 'grid',
         placeItems: 'center',
         // Keep space for XHS navigation; avoid CSS max() unsupported by old WebViews.
@@ -366,7 +367,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
 
         <div style={{ display: 'flex', gap: 7, marginTop: 14 }}>
           <button type="button" onClick={() => selectScope('all')} style={pill(scope === 'all')}>{copy.all}</button>
-          <button type="button" onClick={() => selectScope('mine')} style={pill(scope === 'mine')}>{copy.mine}</button>
+          <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); selectScope('mine') }} style={pill(scope === 'mine')}>{copy.mine}</button>
         </div>
 
         {scope === 'all' && (
