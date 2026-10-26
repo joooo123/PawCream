@@ -265,8 +265,11 @@ try{
   if(!ctx)return null;
   ctx.drawImage(image,0,0);
   const alpha=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  // Search the whole artwork: its far-right edge can be transparent or covered
+  // by a higher layer, so a fixed right-edge-only scan can fail before testing a tap.
   for(let v=.08;v<.94;v+=.025){
-   for(let u=.78;u<.99;u+=.015){
+   for(let u=.05;u<.96;u+=.02){
+    if(Math.abs(u-.5)<.14&&Math.abs(v-.5)<.14)continue;
     const x=r.left+u*r.width,y=r.top+v*r.height;
     if(x<4||x>innerWidth-4||y<4||y>innerHeight-4)continue;
     const px=Math.min(canvas.width-1,Math.floor(u*canvas.width));
