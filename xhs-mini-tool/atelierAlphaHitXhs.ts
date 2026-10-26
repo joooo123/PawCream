@@ -3,7 +3,7 @@
 // the underlying lamp / sewing machine / window while keeping Color's behavior.
 const ALPHA_THRESHOLD = 40
 const SOFT_HIT = new Set(['light', 'sewing'])
-const UNCHANGED = new Set(['bear', 'cabinet', 'note', 'pawcream'])
+const UNCHANGED = new Set(['bear', 'cabinet', 'pawcream'])
 const fakeEvents = new WeakSet<Event>()
 let canvas: HTMLCanvasElement | null = null
 
@@ -42,7 +42,7 @@ function isPainted(control: HTMLElement, image: HTMLImageElement, key: string, x
       : [[0, 0]]
     // Window/PawCream lettering and illustration are pale: every nonzero-alpha
     // pixel must count, rather than the generic alpha >= 40 threshold.
-    const threshold = key === 'window' ? 1 : SOFT_HIT.has(key) ? 12 : ALPHA_THRESHOLD
+    const threshold = key === 'window' || key === 'note' ? 1 : SOFT_HIT.has(key) ? 12 : ALPHA_THRESHOLD
     for (const [ox, oy] of checks) {
       const px = Math.max(0, Math.min(image.naturalWidth - 1,
         Math.floor((u + ox / width) * image.naturalWidth)))
@@ -60,7 +60,7 @@ function routeToVisibleArt(stage: HTMLElement, originalKey: string | null,
                            event: MouseEvent) {
   // Window is drawn behind other art: route to it only when the closer
   // controls did not accept the tap, and only for painted pixels.
-  for (const key of ['light', 'sewing', 'window']) {
+  for (const key of ['note', 'light', 'sewing', 'window']) {
     if (key === originalKey) continue
     // The Window sits behind the transparent rectangular Light/Cabinet art.
     // Its lower painted half was unreachable because we blocked forwarding
