@@ -217,8 +217,8 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     const panelCssEnd=panelCssStart>=0?source.indexOf('              @keyframes pawcream-envelope-enter {',panelCssStart):-1;
     if(panelCssStart<0||panelCssEnd<0)throw Error('XHS production build could not locate letter tuning styles');
     source=source.slice(0,panelCssStart)+source.slice(panelCssEnd);
-    const responsivePanelStart=source.indexOf('              @media (max-width: 700px) {\\n                .pawcream-letter-tune-panel {');
-    const responsivePanelEndToken='\\n              }';
+    const responsivePanelStart=source.indexOf('              @media (max-width: 700px) {\n                .pawcream-letter-tune-panel {');
+    const responsivePanelEndToken='\n              }';
     const responsivePanelEnd=responsivePanelStart>=0?source.indexOf(responsivePanelEndToken,responsivePanelStart):-1;
     if(responsivePanelStart<0||responsivePanelEnd<0)throw Error('XHS production build could not locate responsive letter tuning styles');
     source=source.slice(0,responsivePanelStart)+source.slice(responsivePanelEnd+responsivePanelEndToken.length);
