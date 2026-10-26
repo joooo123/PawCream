@@ -379,6 +379,7 @@ try{
  await page.waitForTimeout(100);
  if(!await page.locator('.pawcream-notes-card').isVisible()||await page.locator('.pawcream-letter-overlay').isVisible().catch(()=>false))
   throw Error('Tapping My notes navigated to the brand introduction instead of staying in the notes board');
+ await page.evaluate(()=>localStorage.setItem('pawcream-language-v1','zh'));
  const assertNotesBounds=async(width,height)=>{
   const r=await page.locator('.pawcream-notes-card').boundingBox();
   if(!r||r.y<76||r.x<10||r.x+r.width>width-10||r.y+r.height>height-35)
