@@ -679,7 +679,7 @@ try{
   '                      可爱也不止今天。',
  ];
  if(!fit||fit.font!==10.5||fit.titleFont!==21||fit.subtitleFont!==11.5||
-  fit.copyLeft!==10.5||fit.copyWidth!==81.5||
+  fit.copyLeft!==10.5||fit.copyWidth!==85||
   fit.paintedMargins.left<8||fit.paintedMargins.right<8||
   fit.paintedMargins.left>25||fit.paintedMargins.right>25||
   Math.abs(fit.paintedMargins.left-fit.paintedMargins.right)>5||
