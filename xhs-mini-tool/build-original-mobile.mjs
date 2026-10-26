@@ -177,7 +177,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       ["    paperStretchX: 1.0,","    paperStretchX: 1.31,"],
       ["    textLeft: 19.5,","    textLeft: 10.5,"],
       ["    textTop: 16.5,","    textTop: 11,"],
-      ["    textWidth: 64.5,","    textWidth: 81.5,"],
+      ["    textWidth: 64.5,","    textWidth: 85,"],
       ["    textHeight: 56,","    textHeight: 100,"],
       ["    titleSize: 19,","    titleSize: 21,"],
       ["    textHeight: 100,\n    titleLeft: 0,\n    titleTop: 0,\n    titleWidth: 100,\n    titleHeight: 18,\n    titleSize: 21,","    textHeight: 100,\n    titleLeft: 0,\n    titleTop: -2.5,\n    titleWidth: 100,\n    titleHeight: 18,\n    titleSize: 21,"],
