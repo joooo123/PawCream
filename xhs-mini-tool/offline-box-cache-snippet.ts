@@ -97,9 +97,9 @@ const loadOfflineBoxPhotos = async (): Promise<PawCreamStoredPhoto[]> => {
   const index = await readOfflineBoxIndex()
   const photos: PawCreamStoredPhoto[] = []
   for (const item of index.slice(0, OFFLINE_BOX_MAX_PHOTOS)) {
+    const dataUrl = await readOfflineBoxValue(OFFLINE_BOX_PHOTO_PREFIX + item.id)
+    if (typeof dataUrl !== 'string') continue
     try {
-      const dataUrl = await readOfflineBoxValue(OFFLINE_BOX_PHOTO_PREFIX + item.id)
-      if (typeof dataUrl !== 'string') continue
       photos.push({
         id: item.id,
         ownerId: item.ownerId || 'offline-session',
@@ -111,7 +111,7 @@ const loadOfflineBoxPhotos = async (): Promise<PawCreamStoredPhoto[]> => {
         cloudSynced: false,
       })
     } catch (error) {
-      // Skip one damaged item without hiding the other cached photos.
+      // Skip a malformed image payload without hiding the other cached photos.
     }
   }
   return photos
