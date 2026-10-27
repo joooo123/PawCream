@@ -380,6 +380,11 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   }
 
   const onAssetPointerDown = (key: AssetKey, event: ReactPointerEvent<HTMLDivElement>) => {
+    if (boardOpen && !tuneMode) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
     if (tuneMode) {
       setSelectedKey(key)
       tuneDragRef.current = { key, pointerId: event.pointerId }
@@ -479,6 +484,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   }
 
   const handleStagePointerHover = (event: ReactPointerEvent<HTMLElement>) => {
+    if (boardOpen) { setHoveredAsset(null); return }
     if (mobile || tuneMode || event.pointerType !== 'mouse') return
     const target = event.target
     const blocked = target instanceof Element && target.closest('nav, [role="dialog"]')
@@ -588,6 +594,11 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onPointerUp={onAssetPointerUp}
         onPointerCancel={onAssetPointerUp}
         onClick={(event) => {
+          if (boardOpen && !tuneMode) {
+            event.preventDefault()
+            event.stopPropagation()
+            return
+          }
           if (noteIsPassive) {
             if (mobile && noteOpaqueAt(event.clientX, event.clientY)) {
               event.preventDefault()
@@ -602,6 +613,11 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
           handleNormalAssetClick(key)
         }}
         onKeyDown={(event) => {
+          if (boardOpen && !tuneMode) {
+            event.preventDefault()
+            event.stopPropagation()
+            return
+          }
           if ((event.key === 'Enter' || event.key === ' ') && (tuneMode || interactive)) {
             event.preventDefault()
             if (mobile && key === 'note') setBoardOpen(true)
@@ -673,7 +689,11 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         onPointerMove={onAssetPointerMove}
         onPointerUp={onAssetPointerUp}
         onPointerCancel={onAssetPointerUp}
-        onClick={(event) => { event.stopPropagation(); if (tuneMode) setSelectedKey(showPawcream ? 'pawcream' : 'window') }}
+        onClick={(event) => {
+          event.stopPropagation()
+          if (boardOpen && !tuneMode) { event.preventDefault(); return }
+          if (tuneMode) setSelectedKey(showPawcream ? 'pawcream' : 'window')
+        }}
         style={{
           position: 'absolute', left: `${pairLayout.x}%`, top: `${pairLayout.y}%`, width: `${pairLayout.width}%`,
           transform: `translate(-50%, -50%) rotate(${pairLayout.rotation}deg)`, transformOrigin: '50% 50%',
