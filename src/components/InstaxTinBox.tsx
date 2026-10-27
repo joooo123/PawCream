@@ -33,6 +33,7 @@ type Props = {
   syncBusy: boolean
   onRetrySync: () => Promise<void>
   onDeletePhoto: (photo: PawCreamStoredPhoto) => Promise<void>
+  onSaveToAlbum?: (photo: PawCreamStoredPhoto) => Promise<void>
   onMakeAnother: () => void
   onClose: () => void
 }
@@ -181,6 +182,7 @@ export default function InstaxTinBox({
   syncBusy,
   onRetrySync,
   onDeletePhoto,
+  onSaveToAlbum,
   onMakeAnother,
   onClose,
 }: Props) {
@@ -201,6 +203,9 @@ export default function InstaxTinBox({
   const [deleting, setDeleting] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [albumBusy, setAlbumBusy] = useState(false)
+  const [albumFeedback, setAlbumFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const albumFeedbackTimer = useRef<number | null>(null)
   const [publishStatus, setPublishStatus] = useState('')
   const [publicationError, setPublicationError] = useState('')
   const [pendingPublication, setPendingPublication] = useState<{
@@ -230,6 +235,10 @@ export default function InstaxTinBox({
   useEffect(() => () => {
     originalUrls.forEach(url => URL.revokeObjectURL(url))
   }, [originalUrls])
+
+  useEffect(() => () => {
+    if (albumFeedbackTimer.current !== null) window.clearTimeout(albumFeedbackTimer.current)
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -294,6 +303,28 @@ export default function InstaxTinBox({
       setDeleteError(error instanceof Error ? error.message : '删除失败，请稍后重试')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const showAlbumFeedback = (type: 'success' | 'error', message: string) => {
+    if (albumFeedbackTimer.current !== null) window.clearTimeout(albumFeedbackTimer.current)
+    setAlbumFeedback({ type, message })
+    albumFeedbackTimer.current = window.setTimeout(() => {
+      setAlbumFeedback(null)
+      albumFeedbackTimer.current = null
+    }, 2600)
+  }
+
+  const saveActiveToAlbum = async () => {
+    if (!active || !onSaveToAlbum || albumBusy) return
+    setAlbumBusy(true)
+    try {
+      await onSaveToAlbum(active)
+      showAlbumFeedback('success', '保存成功，已存入相册 ♡')
+    } catch (error) {
+      showAlbumFeedback('error', error instanceof Error ? error.message : '保存到相册失败，请检查权限')
+    } finally {
+      setAlbumBusy(false)
     }
   }
 
@@ -641,6 +672,16 @@ export default function InstaxTinBox({
                   >
                     删除这张
                   </button>
+                  {onSaveToAlbum && (
+                    <button
+                      type="button"
+                      disabled={albumBusy || deleting || syncBusy || publishBusy}
+                      onClick={() => void saveActiveToAlbum()}
+                      style={{ ...themedButton, fontSize: mobile ? 14 : 15, opacity: albumBusy ? .6 : 1 }}
+                    >
+                      {albumBusy ? '保存中…' : '保存到相册'}
+                    </button>
+                  )}
                   {sourceSlotsReady && sourceSlots.length > 0 && (
                     <button type="button" onClick={() => void togglePublished()} disabled={publishBusy || deleting} style={{
                       ...themedButton,
@@ -839,6 +880,32 @@ export default function InstaxTinBox({
                   style={{ color: 'white', background: 'transparent', border: '1px solid #777', borderRadius: 12, padding: '7px 18px' }}>→</button>
               </div>
             )}
+          </div>
+        )}
+        {albumFeedback && (
+          <div
+            role={albumFeedback.type === 'error' ? 'alert' : 'status'}
+            style={{
+              position: 'fixed',
+              left: '50%',
+              bottom: 'calc(24px + env(safe-area-inset-bottom))',
+              transform: 'translateX(-50%)',
+              zIndex: 1000,
+              maxWidth: 'calc(100vw - 32px)',
+              boxSizing: 'border-box',
+              padding: '12px 20px',
+              borderRadius: 999,
+              border: '1px solid rgba(255,255,255,.72)',
+              background: albumFeedback.type === 'success' ? 'rgba(76,108,88,.94)' : 'rgba(142,70,78,.96)',
+              color: '#fff',
+              boxShadow: '0 10px 30px rgba(39,31,35,.22)',
+              fontSize: 14,
+              lineHeight: 1.5,
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            {albumFeedback.message}
           </div>
         )}
       </div>
