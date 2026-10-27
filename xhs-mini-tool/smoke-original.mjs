@@ -415,7 +415,7 @@ try{
  await assertNotesIsolation('My notes');
  // Website-only account actions should keep the sign-in panel behind a clear frosted notice.
  for (const [buttonName, expectedLabel] of [['Sign in', 'This feature is available on the website only'], ['Register', 'This feature is available on the website only']]) {
-  await page.getByRole('button',{name:buttonName,exact:true}).click();
+  await page.locator('.pawcream-notes-card').getByRole('button',{name:buttonName,exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.classList.contains('pawcream-signin-open'),null,{timeout:3000});
   const notice=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>({
    label:getComputedStyle(el,'::after').content,
