@@ -118,11 +118,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
         ? boxPhotos
         : await loadOfflineBoxPhotos().catch(() => boxPhotos)
       let boxPhoto = saved
-      let cacheSaved = false
       let cacheMessage = ''
       try {
         boxPhoto = await saveOfflineBoxPhoto(saved)
-        cacheSaved = true
         cacheMessage = '已缓存到小红书工具；最多保留最近 ' + offlineBoxCacheLimit() + ' 张拍立得'
       } catch (error) {
         cacheMessage = '本次拍立得未能写入工具缓存：' +
@@ -136,30 +134,6 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       setStep('boxing')
       setStatus('')
       setBoxSyncStatus(cacheMessage)
-      const api: any = (window as any).xhs && (window as any).xhs.miniTool
-      if (api && typeof api.saveImageToPhotosAlbum === 'function') {
-        try {
-          const encoded = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onload = () => resolve(String(reader.result))
-            reader.onerror = () => reject(new Error('无法编码照片'))
-            reader.readAsDataURL(blob)
-          })
-          let filePath = encoded
-          if (typeof api.writeTempFile === 'function') {
-            const result = await api.writeTempFile({ data: encoded })
-            if (result && result.filePath) filePath = result.filePath
-          }
-          await api.saveImageToPhotosAlbum({ filePath })
-          setBoxSyncStatus(cacheSaved
-            ? '图片已保存至相册，铁盒也已缓存到小红书工具'
-            : '图片已保存至相册，但铁盒缓存失败；当前页面仍可查看')
-        } catch (error) {
-          setBoxSyncStatus(cacheSaved
-            ? '铁盒已缓存到小红书工具；相册保存未成功，请检查权限'
-            : '铁盒缓存和相册保存均未成功；当前页面仍可查看')
-        }
-      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '生成拍立得失败')
     } finally { setBusy(false) }
@@ -172,6 +146,9 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       if(a<0||b<=a)throw Error('Unable to locate original Instax offline adapter: '+startToken);
       source=source.slice(0,a)+replacement+source.slice(b);
     }
+    const saveAlbumPropMarker = "                onDeletePhoto={deleteBoxPhoto}\n";
+    if(!source.includes(saveAlbumPropMarker))throw Error('Unable to attach explicit save-to-album action');
+    source=source.replace(saveAlbumPropMarker,saveAlbumPropMarker+"                onSaveToAlbum={saveBoxPhotoToAlbum}\n");
     const makeAnotherOld = [
       "onMakeAnother={() => {",
       "                  cleanupPhotos()",
