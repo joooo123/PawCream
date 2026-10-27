@@ -401,6 +401,8 @@ try{
 
  await page.getByRole('button',{name:'EN',exact:true}).click();
  await openNotesBoard();
+ const enFont=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>getComputedStyle(el).fontFamily);
+ if(!enFont.includes('PawCream EN'))throw Error('English notes board lost PawCream EN font: '+enFont);
  const enPrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
   const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
@@ -413,6 +415,8 @@ try{
  await page.getByRole('button',{name:'Close notes',exact:true}).click();
  await page.getByRole('button',{name:'中文',exact:true}).click();
  await openNotesBoard();
+ const zhFont=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>getComputedStyle(el).fontFamily);
+ if(!zhFont.includes('PawCream CN'))throw Error('Chinese notes board lost PawCream CN font: '+zhFont);
  const zhPrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
   const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
