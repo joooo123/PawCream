@@ -417,6 +417,7 @@ try{
  for (const [buttonName, expectedLabel] of [['Sign in', 'This feature is available on the website only'], ['Register', 'This feature is available on the website only']]) {
   await page.locator('.pawcream-notes-card').getByRole('button',{name:buttonName,exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.classList.contains('pawcream-signin-open'),null,{timeout:3000});
+  await page.waitForTimeout(250); // Let the notes card's visibility transition finish.
   const notice=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>({
    label:getComputedStyle(el,'::after').content,
    display:getComputedStyle(el,'::after').display,
