@@ -32,10 +32,17 @@ try{
   const read=()=>{try{return JSON.parse(localStorage.getItem(key)||'{}')}catch{return {}}};
   const write=value=>localStorage.setItem(key,JSON.stringify(value));
   window.xhs=window.xhs||{};
+  window.__pawcreamAlbumSaveCalls=0;
   window.xhs.miniTool={
    getStorage:async ({key})=>({data:read()[key]===undefined?null:read()[key]}),
    setStorage:async ({key,data})=>{const values=read();values[key]=data;write(values);return {errMsg:'setStorage:ok'}},
-   removeStorage:async ({key})=>{const values=read();delete values[key];write(values);return {errMsg:'removeStorage:ok'}}
+   removeStorage:async ({key})=>{const values=read();delete values[key];write(values);return {errMsg:'removeStorage:ok'}},
+   writeTempFile:async ({data})=>({filePath:'mock-temp://instax-'+data.length}),
+   saveImageToPhotosAlbum:async ({filePath})=>{
+    if(!filePath)throw new Error('missing filePath');
+    window.__pawcreamAlbumSaveCalls++;
+    return {errMsg:'saveImageToPhotosAlbum:ok'};
+   }
   };
  });
  const errors=[],unavailable=[];
@@ -584,9 +591,17 @@ try{
 
 
 
- // Completed Instax photos must survive "make another" and a tool-panel reopen.
+ // Album saving is user-triggered only; cached photos survive "make another" and reopen.
  await page.getByRole('button',{name:'放入我的小盒子',exact:true}).click();
  await page.getByText('小盒子里已经有 1 张拍立得',{exact:true}).waitFor({timeout:7000});
+ const autoSaveCount=await page.evaluate(()=>window.__pawcreamAlbumSaveCalls);
+ if(autoSaveCount!==0)throw new Error('Instax was automatically saved to the album');
+ await page.getByRole('button',{name:'全展开看看',exact:true}).click();
+ await page.getByRole('button',{name:'保存到相册',exact:true}).click();
+ await page.getByText('保存成功，已存入相册 ♡',{exact:true}).waitFor({timeout:4000});
+ const manualSaveCount=await page.evaluate(()=>window.__pawcreamAlbumSaveCalls);
+ if(manualSaveCount!==1)throw new Error('Manual album save did not call the mini-tool API exactly once');
+ await page.getByRole('button',{name:'收回盒子里',exact:true}).click();
  await page.getByRole('button',{name:'再做一张',exact:true}).click();
  await page.getByRole('button',{name:'ok!',exact:true}).click();
  await page.getByRole('button',{name:'第 1 格，选择照片',exact:true}).click();
@@ -597,6 +612,8 @@ try{
  await secondChooser.setFiles(path.join(dist,'assets/home/Home_mobile.webp'));
  await page.getByRole('button',{name:'放入我的小盒子',exact:true}).click();
  await page.getByText('小盒子里已经有 2 张拍立得',{exact:true}).waitFor({timeout:7000});
+ const afterSecondCreate=await page.evaluate(()=>window.__pawcreamAlbumSaveCalls);
+ if(afterSecondCreate!==1)throw new Error('Making another Instax triggered an album save');
  await page.locator('.pawcream-instax-maker-card button[aria-label="Close"]').click();
  await page.waitForSelector('.pawcream-instax-maker-card',{state:'detached',timeout:5000});
  await page.locator('[data-atelier-asset="instax"]').click();
