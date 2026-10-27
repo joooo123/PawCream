@@ -27,6 +27,17 @@ try{
   headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,
   isMobile:true,hasTouch:true});
+ await page.addInitScript(()=>{
+  const key='__xhs_minitool_storage_mock__';
+  const read=()=>{try{return JSON.parse(localStorage.getItem(key)||'{}')}catch{return {}}};
+  const write=value=>localStorage.setItem(key,JSON.stringify(value));
+  window.xhs=window.xhs||{};
+  window.xhs.miniTool={
+   getStorage:async ({key})=>({data:read()[key]===undefined?null:read()[key]}),
+   setStorage:async ({key,data})=>{const values=read();values[key]=data;write(values);return {errMsg:'setStorage:ok'}},
+   removeStorage:async ({key})=>{const values=read();delete values[key];write(values);return {errMsg:'removeStorage:ok'}}
+  };
+ });
  const errors=[],unavailable=[];
  page.on('pageerror',error=>errors.push(error.message));
  page.on('response',response=>{if(response.status()>=400)unavailable.push(response.url()+' '+response.status())});
