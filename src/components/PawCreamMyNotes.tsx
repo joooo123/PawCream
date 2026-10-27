@@ -23,7 +23,7 @@ export default function PawCreamMyNotes({ notes, mobile, language, onWrite, onSa
     ? {
         title: '我的便签',
         count: `${notes.length} 张`,
-        write: '写新便签',
+        write: '写一张便签',
         empty: '你还没有留下便签。',
         edit: '编辑',
         remove: '删除',
@@ -33,7 +33,7 @@ export default function PawCreamMyNotes({ notes, mobile, language, onWrite, onSa
     : {
         title: 'My notes',
         count: `${notes.length} notes`,
-        write: 'Write a new note',
+        write: 'Write a note',
         empty: 'You have not left a note yet.',
         edit: 'Edit',
         remove: 'Delete',
