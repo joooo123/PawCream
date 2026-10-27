@@ -146,12 +146,20 @@ const saveBoxPhotoToAlbum = async (photo: PawCreamStoredPhoto) => {
   if (!api || typeof api.saveImageToPhotosAlbum !== 'function') {
     throw new Error('当前小红书客户端暂不支持保存到相册')
   }
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('无法读取拍立得图片'))
-    reader.readAsDataURL(photo.imageBlob)
-  })
+  const sourceUrl = URL.createObjectURL(photo.imageBlob)
+  let image: HTMLImageElement
+  try {
+    image = await loadImage(sourceUrl)
+  } finally {
+    URL.revokeObjectURL(sourceUrl)
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = image.naturalWidth
+  canvas.height = image.naturalHeight
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('无法准备相册图片')
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  const dataUrl = canvas.toDataURL('image/png')
   let filePath = dataUrl
   if (typeof api.writeTempFile === 'function') {
     const result = await api.writeTempFile({ data: dataUrl })
