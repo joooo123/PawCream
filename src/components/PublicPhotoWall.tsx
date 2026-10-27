@@ -312,7 +312,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
             <div style={{ fontSize: 24, fontWeight: 650, letterSpacing: '.09em' }}>our little gallery ♡</div>
             <div style={{ fontSize: 13, marginTop: 5 }}>公共返图墙 · 分享每一张温柔瞬间</div>
             <div style={{ fontSize: 12, marginTop: 5, opacity: .72 }}>
-              {mobile ? '轻点照片预览，左右滑动切换' : '将鼠标移近照片，感受磁吸和弹性回弹'}
+              {mobile ? '轻点照片预览' : '悬停照片预览，点击查看大图'}
             </div>
             <div style={{ fontSize: 12, marginTop: 6, opacity: .65 }}>
               {demoMode ? `离线返图展示 · ${displayedTotal} 张实拍返图` : `${displayedTotal} 张公开返图`}
@@ -335,7 +335,6 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
                       <div style={{ textAlign: 'center', fontSize: 13, marginTop: 8 }}>
                         {demoMode ? `精选返图 ${selected.id.replace('return-', '')} / ${displayedTotal}` : `@${selected.authorName} · ${selected.frameName}`}
                       </div>
-                      <p style={{ textAlign: 'center', fontSize: 12, opacity: .6 }}>悬停浏览 · 点击查看完整返图</p>
                     </>
                   )}
                 </aside>
