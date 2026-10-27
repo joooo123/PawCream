@@ -57,7 +57,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
     ? {
         title: 'PawCream 公共便签墙',
         subtitle: '大家留下的便签都会在这里相遇。',
-        preview: 'GitHub Pages 预览模式 · 可以切换模拟登录状态，完整测试写便签、我的便签、编辑、删除和点赞。',
+        preview: '便签预览模式。',
         guestPreview: '游客预览',
         signedPreview: '已登录预览',
         resetPreview: '重置预览数据',
@@ -69,18 +69,18 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         next: '下一批',
         shuffle: '换一批 ♡',
         write: '写一张便签',
-        loginLead: '所有人都可以看便签，登录 PawCream 后可以留言、点赞和管理自己的便签。',
-        login: '登入',
+        loginLead: '登录后即可发布、点赞和管理自己的便签。',
+        login: '登录',
         register: '注册',
         loading: '正在整理便签…',
         deleteConfirm: '确定要删除这张便签吗？',
         close: '关闭留言板',
-        previewNeedLogin: '当前是游客预览。请切换到「已登录预览」查看登录后的便签逻辑。',
+        previewNeedLogin: '账号功能暂未开放，暂时无法使用此功能。',
       }
     : {
         title: 'PawCream Public Notes',
         subtitle: 'Little notes from everyone meet here.',
-        preview: 'GitHub Pages preview · switch the mock account state to test writing, My notes, edit, delete, and likes.',
+        preview: 'Notes preview mode.',
         guestPreview: 'Guest preview',
         signedPreview: 'Signed-in preview',
         resetPreview: 'Reset preview data',
@@ -92,13 +92,13 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         next: 'Next batch',
         shuffle: 'Another batch ♡',
         write: 'Write a note',
-        loginLead: 'Everyone can read notes. Sign in to post, like, and manage your own notes.',
+        loginLead: 'Sign in to post, like, and manage your notes.',
         login: 'Sign in',
         register: 'Register',
         loading: 'Gathering notes…',
         deleteConfirm: 'Delete this note?',
         close: 'Close notes',
-        previewNeedLogin: 'You are in guest preview. Switch to Signed-in preview to inspect the signed-in note flow.',
+        previewNeedLogin: 'Accounts are not available yet, so this feature cannot be used right now.',
       }
 
   useEffect(() => {
