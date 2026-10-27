@@ -842,7 +842,7 @@ export default function AtelierWithSignin(props: Props) {
             fontSize: 12,
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 9 }}>登入调试面板</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 9 }}>登录调试面板</div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
             {(['desktop', 'mobile'] as const).map((profile) => {
