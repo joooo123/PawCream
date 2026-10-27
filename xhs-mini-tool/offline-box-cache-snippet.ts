@@ -141,6 +141,25 @@ const saveOfflineBoxPhoto = async (photo: PawCreamStoredPhoto): Promise<PawCream
   }
 }
 
+const saveBoxPhotoToAlbum = async (photo: PawCreamStoredPhoto) => {
+  const api = (window as any).xhs && (window as any).xhs.miniTool
+  if (!api || typeof api.saveImageToPhotosAlbum !== 'function') {
+    throw new Error('当前小红书客户端暂不支持保存到相册')
+  }
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('无法读取拍立得图片'))
+    reader.readAsDataURL(photo.imageBlob)
+  })
+  let filePath = dataUrl
+  if (typeof api.writeTempFile === 'function') {
+    const result = await api.writeTempFile({ data: dataUrl })
+    if (result && result.filePath) filePath = result.filePath
+  }
+  await api.saveImageToPhotosAlbum({ filePath })
+}
+
 const deleteOfflineBoxPhoto = async (photoId: string) => {
   const index = await readOfflineBoxIndex()
   const next = index.filter(item => item.id !== photoId)
