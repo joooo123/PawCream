@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   AUTH_CHANGED_EVENT,
   createNote,
@@ -300,17 +301,20 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   const canAdvanceRecent = publicOrder === 'recent' && batchOffset + pageSize < totalNotes
   const canShuffle = publicOrder === 'random' && totalNotes > pageSize
 
-  return (
+  return createPortal(
     <div
+      data-pawcream-notes-board="true"
       role="dialog"
       aria-modal="true"
       aria-label={copy.title}
       onClick={(event) => event.stopPropagation()}
       onPointerDownCapture={(event) => event.stopPropagation()}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
-        zIndex: 9999,
+        zIndex: 2147483647,
+        pointerEvents: 'auto',
+        touchAction: 'manipulation',
         display: 'grid',
         placeItems: 'center',
         // Keep space for XHS navigation; avoid CSS max() unsupported by old WebViews.
@@ -473,6 +477,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           />
         )}
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
