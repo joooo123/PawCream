@@ -172,6 +172,24 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
       if(a<0||b<=a)throw Error('Unable to locate original Instax offline adapter: '+startToken);
       source=source.slice(0,a)+replacement+source.slice(b);
     }
+    const makeAnotherOld = [
+      "onMakeAnother={() => {",
+      "                  cleanupPhotos()",
+      "                  setBoxPhotos([])",
+      "                  setNewestPhotoId(null)",
+      "                  setStep('select')",
+      "                  setStatus('')",
+      "                }}"
+    ].join('\n');
+    const makeAnotherNew = [
+      "onMakeAnother={() => {",
+      "                  cleanupPhotos()",
+      "                  setStep('select')",
+      "                  setStatus('')",
+      "                }}"
+    ].join('\n');
+    if(!source.includes(makeAnotherOld))throw Error('Unable to locate make-another cache reset');
+    source=source.replace(makeAnotherOld,makeAnotherNew);
   }
   // XHS-only responsive overrides: keep the public site untouched.
   if(args.path.endsWith(path.sep+'AtelierWithSignin.tsx')){
