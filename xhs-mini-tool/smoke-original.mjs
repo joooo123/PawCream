@@ -229,7 +229,7 @@ try{
  await page.evaluate(()=>document.querySelector('[data-atelier-asset="people"]').click());
  await page.waitForSelector('.pawcream-public-wall',{timeout:5000});
  const wallText=await page.locator('.pawcream-public-wall').innerText();
- if(!wallText.includes('离线返图展示 · 40 张实拍返图'))throw Error('Return wall count label missing: '+wallText.slice(0,180));
+ if(wallText.includes('离线返图展示')||wallText.includes('张实拍返图'))throw Error('Internal offline-demo label should not be visible: '+wallText.slice(0,180));
  const returnTiles=page.locator('.pawcream-public-wall-tile img');
  if(await returnTiles.count()!==40)throw Error('Expected 40 return photos, got '+await returnTiles.count());
  await returnTiles.evaluateAll(imgs=>imgs.forEach(img=>{img.loading='eager'}));
@@ -413,6 +413,21 @@ try{
  const noteOffset=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>el.style.left);
  if(noteOffset!=='50%')throw Error('Note prompt was not shifted right: '+noteOffset);
  await assertNotesIsolation('My notes');
+ // Website-only account actions should keep the sign-in panel behind a clear frosted notice.
+ for (const [buttonName, expectedLabel] of [['Sign in', 'This feature is available on the website only'], ['Register', 'This feature is available on the website only']]) {
+  await page.getByRole('button',{name:buttonName,exact:true}).click();
+  await page.waitForFunction(()=>document.documentElement.classList.contains('pawcream-signin-open'),null,{timeout:3000});
+  const notice=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>({
+   label:getComputedStyle(el,'::after').content,
+   display:getComputedStyle(el,'::after').display,
+   cardVisible:getComputedStyle(el.querySelector('.pawcream-notes-card')).visibility
+  }));
+  if(!notice.label.includes(expectedLabel)||notice.display!=='block'||notice.cardVisible!=='hidden')
+   throw Error('Website-only sign-in notice did not cover the auth panel: '+JSON.stringify(notice));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>!document.documentElement.classList.contains('pawcream-signin-open'),null,{timeout:3000});
+  await page.waitForSelector('.pawcream-notes-card',{timeout:3000});
+ }
 
  await page.getByRole('button',{name:'Close notes',exact:true}).click();
  await page.getByRole('button',{name:'中文',exact:true}).click();
