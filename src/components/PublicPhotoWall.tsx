@@ -314,9 +314,6 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
             <div style={{ fontSize: 12, marginTop: 5, opacity: .72 }}>
               {mobile ? '轻点照片预览' : '悬停照片预览，点击查看大图'}
             </div>
-            <div style={{ fontSize: 12, marginTop: 6, opacity: .65 }}>
-              {demoMode ? `离线返图展示 · ${displayedTotal} 张实拍返图` : `${displayedTotal} 张公开返图`}
-            </div>
           </div>
           <button type="button" className="pawcream-public-wall-close" onClick={onClose} aria-label="关闭公共返图墙">× 关闭</button>
         </header>
