@@ -304,6 +304,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
   return createPortal(
     <div
       data-pawcream-notes-board="true"
+      data-site-only-label={language === 'zh' ? '仅网站可以使用此功能' : 'This feature is available on the website only'}
       role="dialog"
       aria-modal="true"
       aria-label={copy.title}
@@ -334,6 +335,28 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           visibility: hidden !important;
           pointer-events: none !important;
           transform: scale(.985);
+        }
+        html.pawcream-signin-open [data-pawcream-notes-board="true"]::after {
+          content: attr(data-site-only-label);
+          position: fixed;
+          top: 12%;
+          left: 14px;
+          right: 14px;
+          z-index: 2147483647;
+          display: block;
+          box-sizing: border-box;
+          padding: 12px 18px;
+          border: 1px solid rgba(205,148,168,.24);
+          border-radius: 999px;
+          background: rgba(255,249,251,.62);
+          color: #8f6877;
+          box-shadow: 0 8px 24px rgba(101,74,84,.08);
+          backdrop-filter: blur(13px);
+          -webkit-backdrop-filter: blur(13px);
+          font-size: 14px;
+          line-height: 1.5;
+          text-align: center;
+          pointer-events: none;
         }
       `}</style>
 
