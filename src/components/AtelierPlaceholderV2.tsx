@@ -256,19 +256,19 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
   const copy = language === 'zh'
     ? {
         notePrompt: '留下你想对 PawCream 说的话吧',
-        toolbarHome: '返回 Home', toolbarLogin: '登入', toolbarClose: '收起',
+        toolbarHome: '返回首页', toolbarLogin: '登录', toolbarClose: '收起',
         boardTitle: 'PawCream 留言板', boardSubtitle: '写下一句话，留在这间小小的工作室里。',
-        boardPlaceholder: '想对 PawCream 说点什么？', boardSubmit: '贴上留言', boardEmpty: '这里还没有留言。',
-        boardLocal: '当前留言保存在此浏览器中。', loginTitle: '登入',
-        loginBody: '账号系统还没有接入。这个入口已经预留，后续可以连接真实账号与云端留言。', close: '关闭',
+        boardPlaceholder: '想对 PawCream 说点什么？', boardSubmit: '发布留言', boardEmpty: '这里还没有留言。',
+        boardLocal: '留言仅保存在当前设备中。', loginTitle: '登录',
+        loginBody: '账号功能暂未开放。', close: '关闭',
       }
     : {
         notePrompt: 'Leave a little note for PawCream',
         toolbarHome: 'Home', toolbarLogin: 'Sign in', toolbarClose: 'Hide',
         boardTitle: 'PawCream Message Board', boardSubtitle: 'Leave a small thought in this tiny atelier.',
         boardPlaceholder: 'What would you like to tell PawCream?', boardSubmit: 'Leave note', boardEmpty: 'No notes here yet.',
-        boardLocal: 'Messages are currently stored in this browser.', loginTitle: 'Sign in',
-        loginBody: 'The account system is not connected yet. This entry point is ready for real accounts and cloud messages later.', close: 'Close',
+        boardLocal: 'Messages are only saved on this device.', loginTitle: 'Sign in',
+        loginBody: 'Accounts are not available yet.', close: 'Close',
       }
 
   useEffect(() => {
