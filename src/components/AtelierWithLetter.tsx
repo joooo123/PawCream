@@ -18,6 +18,7 @@ type LetterTune = {
   paperWidth: number
   paperHeight: number
   paperScale: number
+  paperStretchX: number
   paperRotate: number
   startY: number
   endY: number
@@ -25,10 +26,27 @@ type LetterTune = {
   textTop: number
   textWidth: number
   textHeight: number
+  titleLeft: number
+  titleTop: number
+  titleWidth: number
+  titleHeight: number
   titleSize: number
-  bodySize: number
+  zhBodyLeft: number
+  zhBodyTop: number
+  zhBodyWidth: number
+  zhBodyHeight: number
+  zhBodySize: number
+  enBodyLeft: number
+  enBodyTop: number
+  enBodyWidth: number
+  enBodyHeight: number
+  enBodySize: number
   bodyLineHeight: number
-  signatureSize: number
+  subtitleLeft: number
+  subtitleTop: number
+  subtitleWidth: number
+  subtitleHeight: number
+  subtitleSize: number
   riseMs: number
   typeGapMs: number
   typeDelayZh: number
@@ -43,7 +61,7 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v1'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -89,6 +107,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperWidth: 82,
     paperHeight: 86,
     paperScale: 0.88,
+    paperStretchX: 1,
     paperRotate: 0,
     startY: 35,
     endY: 9,
@@ -96,10 +115,27 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     textTop: 13,
     textWidth: 64,
     textHeight: 54,
+    titleLeft: 0,
+    titleTop: 0,
+    titleWidth: 100,
+    titleHeight: 18,
     titleSize: 31.5,
-    bodySize: 18.5,
+    zhBodyLeft: 0,
+    zhBodyTop: 29,
+    zhBodyWidth: 100,
+    zhBodyHeight: 64,
+    zhBodySize: 18.5,
+    enBodyLeft: 0,
+    enBodyTop: 29,
+    enBodyWidth: 100,
+    enBodyHeight: 64,
+    enBodySize: 18.5,
     bodyLineHeight: 1.76,
-    signatureSize: 21.5,
+    subtitleLeft: 0,
+    subtitleTop: 18,
+    subtitleWidth: 100,
+    subtitleHeight: 10,
+    subtitleSize: 21.5,
     riseMs: 4000,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -111,6 +147,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperWidth: 75.5,
     paperHeight: 84,
     paperScale: 0.88,
+    paperStretchX: 1.0,
     paperRotate: 0,
     startY: 5,
     endY: -16,
@@ -118,10 +155,27 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     textTop: 16.5,
     textWidth: 64.5,
     textHeight: 56,
+    titleLeft: 0,
+    titleTop: 0,
+    titleWidth: 100,
+    titleHeight: 18,
     titleSize: 19,
-    bodySize: 10.5,
+    zhBodyLeft: 0,
+    zhBodyTop: 29,
+    zhBodyWidth: 100,
+    zhBodyHeight: 64,
+    zhBodySize: 10.5,
+    enBodyLeft: 0,
+    enBodyTop: 29,
+    enBodyWidth: 100,
+    enBodyHeight: 64,
+    enBodySize: 10.5,
     bodyLineHeight: 1.62,
-    signatureSize: 8,
+    subtitleLeft: 0,
+    subtitleTop: 18,
+    subtitleWidth: 100,
+    subtitleHeight: 10,
+    subtitleSize: 8,
     riseMs: 1550,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -182,6 +236,7 @@ function TuneControl({ label, value, min, max, step = 1, suffix = '', onChange }
         max={max}
         step={step}
         value={value}
+        aria-label={`${label} slider`}
         onChange={(event) => onChange(Number(event.target.value))}
       />
       <input
@@ -190,6 +245,7 @@ function TuneControl({ label, value, min, max, step = 1, suffix = '', onChange }
         max={max}
         step={step}
         value={value}
+        aria-label={`${label} value`}
         onChange={(event) => onChange(Number(event.target.value))}
       />
       <em>{suffix}</em>
@@ -225,7 +281,6 @@ export default function AtelierWithLetter(props: Props) {
   const visibleBody = copy.body.slice(0, Math.max(0, typedChars - titleLength))
   const typingTitle = typedChars > 0 && typedChars < titleLength
   const typingBody = typedChars >= titleLength && typedChars < totalTypingLength
-  const typingDone = typedChars >= totalTypingLength
   const effectiveTypeGapMs = letterTuneMode
     ? tune.typeGapMs
     : Math.min(tune.typeGapMs, FORMAL_TYPE_GAP_MAX_MS)
@@ -290,6 +345,13 @@ export default function AtelierWithLetter(props: Props) {
     setTypedChars(totalTypingLength)
     setCopyStatus(profile === 'mobile' ? '已切到手机端参数' : '已切到电脑端参数')
     window.setTimeout(() => setCopyStatus(''), 1200)
+  }
+
+  const switchTuneLanguage = (nextLanguage: Language) => {
+    setLanguage(nextLanguage)
+    setPreviewMode('end')
+    setPaperRaised(true)
+    setTypedChars(COPY[nextLanguage].title.length + COPY[nextLanguage].body.length)
   }
 
   const saveTune = () => {
@@ -376,6 +438,9 @@ export default function AtelierWithLetter(props: Props) {
     control.style.cursor = 'pointer'
 
     const onClick = (event: MouseEvent) => {
+      // The notes board can visually cover the window artwork. Never let the
+      // document-level capture listener open the letter underneath that modal.
+      if (document.querySelector('[data-pawcream-notes-board="true"]')) return
       const target = event.target as Element | null
       if (!target?.closest('[aria-label="Window interaction"]')) return
       openLetter()
@@ -386,6 +451,7 @@ export default function AtelierWithLetter(props: Props) {
         setOpen(false)
         return
       }
+      if (document.querySelector('[data-pawcream-notes-board="true"]')) return
       if (event.key !== 'Enter' && event.key !== ' ') return
       const target = event.target as Element | null
       if (!target?.closest('[aria-label="Window interaction"]')) return
@@ -597,6 +663,22 @@ export default function AtelierWithLetter(props: Props) {
                 border-radius: 12px;
               }
               .pawcream-letter-tune-panel legend { padding: 0 5px; font-size: 11px; font-weight: 700; }
+              @media (max-width: 520px) {
+                .pawcream-letter-tune-panel {
+                  top: auto;
+                  right: 8px;
+                  bottom: 8px;
+                  left: 8px;
+                  width: auto;
+                  max-height: 30vh;
+                  max-height: 30svh;
+                  padding: 10px;
+                  border-radius: 14px;
+                }
+                .pawcream-letter-tune-panel h3 { font-size: 13px; }
+                .pawcream-letter-tune-panel p { font-size: 10px; }
+                .pawcream-letter-tune-panel fieldset { margin: 6px 0; padding: 6px; }
+              }
               .pawcream-letter-tune-profile {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -718,6 +800,7 @@ export default function AtelierWithLetter(props: Props) {
                   draggable={false}
                   decoding="async"
                   className="pawcream-envelope-paper"
+                  style={{ transform: `scaleX(${tune.paperStretchX})`, transformOrigin: 'center' }}
                 />
 
                 <div
@@ -732,15 +815,50 @@ export default function AtelierWithLetter(props: Props) {
                       : "'PawCream EN', sans-serif",
                   }}
                 >
-                  <h2 className="pawcream-paper-title" style={{ fontSize: tune.titleSize }}>
+                  <h2
+                    className="pawcream-paper-title"
+                    style={{
+                      position: 'absolute',
+                      left: `${tune.titleLeft}%`,
+                      top: `${tune.titleTop}%`,
+                      width: `${tune.titleWidth}%`,
+                      height: `${tune.titleHeight}%`,
+                      margin: 0,
+                      overflow: 'hidden',
+                      fontSize: tune.titleSize,
+                    }}
+                  >
                     {visibleTitle}
                     {typingTitle && <span className="pawcream-type-caret" aria-hidden="true" />}
                   </h2>
 
+                  <div
+                    className={`pawcream-paper-signature${visibleTitle === copy.title ? ' is-visible' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      left: `${tune.subtitleLeft}%`,
+                      top: `${tune.subtitleTop}%`,
+                      width: `${tune.subtitleWidth}%`,
+                      height: `${tune.subtitleHeight}%`,
+                      margin: 0,
+                      overflow: 'hidden',
+                      fontSize: tune.subtitleSize,
+                    }}
+                  >
+                    {copy.signature}
+                  </div>
+
                   <p
                     className="pawcream-paper-body"
                     style={{
-                      fontSize: tune.bodySize,
+                      position: 'absolute',
+                      left: `${language === 'zh' ? tune.zhBodyLeft : tune.enBodyLeft}%`,
+                      top: `${language === 'zh' ? tune.zhBodyTop : tune.enBodyTop}%`,
+                      width: `${language === 'zh' ? tune.zhBodyWidth : tune.enBodyWidth}%`,
+                      height: `${language === 'zh' ? tune.zhBodyHeight : tune.enBodyHeight}%`,
+                      margin: 0,
+                      overflow: 'hidden',
+                      fontSize: language === 'zh' ? tune.zhBodySize : tune.enBodySize,
                       lineHeight: tune.bodyLineHeight,
                       letterSpacing: language === 'zh' ? '.015em' : '.005em',
                     }}
@@ -749,12 +867,7 @@ export default function AtelierWithLetter(props: Props) {
                     {typingBody && <span className="pawcream-type-caret" aria-hidden="true" />}
                   </p>
 
-                  <div
-                    className={`pawcream-paper-signature${typingDone ? ' is-visible' : ''}`}
-                    style={{ fontSize: tune.signatureSize }}
-                  >
-                    {copy.signature}
-                  </div>
+
                 </div>
               </div>
 
@@ -800,8 +913,8 @@ export default function AtelierWithLetter(props: Props) {
 
           {letterTuneMode && (
             <aside className="pawcream-letter-tune-panel" onClick={(event) => event.stopPropagation()}>
-              <h3>Letter Tune · {activeProfile}</h3>
-              <p>Start / End 现在完全独立。修改后点击“保存参数”，Desktop / Mobile 各自保存一套。</p>
+              <h3>品牌理念介绍调试板 · {activeProfile}</h3>
+              <p>参数按设备端独立保存。纸张宽度只横向拉伸，不改变高度；先选语言预览，再调整字号与位置，最后保存参数。</p>
 
               <div className="pawcream-letter-tune-profile">
                 <button
@@ -820,36 +933,87 @@ export default function AtelierWithLetter(props: Props) {
                 </button>
               </div>
 
+              <div className="pawcream-letter-tune-profile">
+                <button
+                  type="button"
+                  className={language === 'zh' ? 'is-active' : ''}
+                  onClick={() => switchTuneLanguage('zh')}
+                >
+                  中文预览
+                </button>
+                <button
+                  type="button"
+                  className={language === 'en' ? 'is-active' : ''}
+                  onClick={() => switchTuneLanguage('en')}
+                >
+                  English Preview
+                </button>
+              </div>
+
               <fieldset>
-                <legend>Paper · 纸张</legend>
-                <TuneControl label="Left" value={tune.paperLeft} min={0} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperLeft', v)} />
-                <TuneControl label="Top" value={tune.paperTop} min={-20} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperTop', v)} />
-                <TuneControl label="Width" value={tune.paperWidth} min={35} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('paperWidth', v)} />
-                <TuneControl label="Height" value={tune.paperHeight} min={40} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperHeight', v)} />
-                <TuneControl label="Scale" value={tune.paperScale} min={0.45} max={1.25} step={0.01} suffix="×" onChange={(v) => updateTune('paperScale', v)} />
-                <TuneControl label="Rotate" value={tune.paperRotate} min={-180} max={180} step={1} suffix="deg" onChange={(v) => updateTune('paperRotate', v)} />
-                <TuneControl label="Start Y" value={tune.startY} min={-100} max={140} step={1} suffix="%" onChange={(v) => updateTune('startY', v)} />
-                <TuneControl label="End Y" value={tune.endY} min={-120} max={100} step={1} suffix="%" onChange={(v) => updateTune('endY', v)} />
+                <legend>纸张 · 横向拉伸与位置</legend>
+                <TuneControl label="纸张左侧" value={tune.paperLeft} min={0} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperLeft', v)} />
+                <TuneControl label="纸张顶部" value={tune.paperTop} min={-20} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('paperTop', v)} />
+                <TuneControl label="纸张区域宽度" value={tune.paperWidth} min={35} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperWidth', v)} />
+                <TuneControl label="纸张横向拉伸" value={tune.paperStretchX} min={0.8} max={1.8} step={0.01} suffix="×" onChange={(v) => updateTune('paperStretchX', v)} />
+                <TuneControl label="纸张高度" value={tune.paperHeight} min={40} max={120} step={0.5} suffix="%" onChange={(v) => updateTune('paperHeight', v)} />
+                <TuneControl label="整体缩放" value={tune.paperScale} min={0.45} max={1.25} step={0.01} suffix="×" onChange={(v) => updateTune('paperScale', v)} />
+                <TuneControl label="纸张旋转" value={tune.paperRotate} min={-180} max={180} step={1} suffix="°" onChange={(v) => updateTune('paperRotate', v)} />
+                <TuneControl label="起始位置 Y" value={tune.startY} min={-100} max={140} step={1} suffix="%" onChange={(v) => updateTune('startY', v)} />
+                <TuneControl label="结束位置 Y" value={tune.endY} min={-120} max={100} step={1} suffix="%" onChange={(v) => updateTune('endY', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>Text · 文字框</legend>
-                <TuneControl label="Text Left" value={tune.textLeft} min={0} max={50} step={0.5} suffix="%" onChange={(v) => updateTune('textLeft', v)} />
-                <TuneControl label="Text Top" value={tune.textTop} min={0} max={60} step={0.5} suffix="%" onChange={(v) => updateTune('textTop', v)} />
-                <TuneControl label="Text Width" value={tune.textWidth} min={30} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textWidth', v)} />
-                <TuneControl label="Text Height" value={tune.textHeight} min={20} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('textHeight', v)} />
-                <TuneControl label="Title Size" value={tune.titleSize} min={8} max={48} step={0.5} suffix="px" onChange={(v) => updateTune('titleSize', v)} />
-                <TuneControl label="Body Size" value={tune.bodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('bodySize', v)} />
-                <TuneControl label="Line Height" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('bodyLineHeight', v)} />
-                <TuneControl label="Sign Size" value={tune.signatureSize} min={5} max={24} step={0.5} suffix="px" onChange={(v) => updateTune('signatureSize', v)} />
+                <legend>文字区域整体</legend>
+                <TuneControl label="文字区左侧" value={tune.textLeft} min={0} max={50} step={0.5} suffix="%" onChange={(v) => updateTune('textLeft', v)} />
+                <TuneControl label="文字区顶部" value={tune.textTop} min={0} max={60} step={0.5} suffix="%" onChange={(v) => updateTune('textTop', v)} />
+                <TuneControl label="文字区宽度" value={tune.textWidth} min={30} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textWidth', v)} />
+                <TuneControl label="文字区高度" value={tune.textHeight} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textHeight', v)} />
+                <TuneControl label="正文行高" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('bodyLineHeight', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>Animation · 动画</legend>
-                <TuneControl label="Rise Time" value={tune.riseMs} min={200} max={4000} step={50} suffix="ms" onChange={(v) => updateTune('riseMs', v)} />
-                <TuneControl label="Type Gap" value={tune.typeGapMs} min={0} max={1800} step={20} suffix="ms" onChange={(v) => updateTune('typeGapMs', v)} />
+                <legend>标题 · 大小与位置</legend>
+                <TuneControl label="标题左侧" value={tune.titleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleLeft', v)} />
+                <TuneControl label="标题顶部" value={tune.titleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleTop', v)} />
+                <TuneControl label="标题宽度" value={tune.titleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleWidth', v)} />
+                <TuneControl label="标题高度" value={tune.titleHeight} min={5} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('titleHeight', v)} />
+                <TuneControl label="标题字号" value={tune.titleSize} min={8} max={48} step={0.5} suffix="px" onChange={(v) => updateTune('titleSize', v)} />
+              </fieldset>
+
+              <fieldset>
+                <legend>中文正文 · 大小与位置</legend>
+                <TuneControl label="中文左侧" value={tune.zhBodyLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyLeft', v)} />
+                <TuneControl label="中文顶部" value={tune.zhBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyTop', v)} />
+                <TuneControl label="中文宽度" value={tune.zhBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyWidth', v)} />
+                <TuneControl label="中文高度" value={tune.zhBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyHeight', v)} />
+                <TuneControl label="中文字体大小" value={tune.zhBodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('zhBodySize', v)} />
+              </fieldset>
+
+              <fieldset>
+                <legend>英文正文 · 大小与位置</legend>
+                <TuneControl label="英文左侧" value={tune.enBodyLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyLeft', v)} />
+                <TuneControl label="英文顶部" value={tune.enBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyTop', v)} />
+                <TuneControl label="英文宽度" value={tune.enBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyWidth', v)} />
+                <TuneControl label="英文高度" value={tune.enBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyHeight', v)} />
+                <TuneControl label="英文字体大小" value={tune.enBodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('enBodySize', v)} />
+              </fieldset>
+
+              <fieldset>
+                <legend>副标题 · 大小与位置</legend>
+                <TuneControl label="副标题左侧" value={tune.subtitleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleLeft', v)} />
+                <TuneControl label="副标题顶部" value={tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleTop', v)} />
+                <TuneControl label="副标题宽度" value={tune.subtitleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleWidth', v)} />
+                <TuneControl label="副标题高度" value={tune.subtitleHeight} min={5} max={30} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleHeight', v)} />
+                <TuneControl label="副标题字号" value={tune.subtitleSize} min={5} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('subtitleSize', v)} />
+              </fieldset>
+
+              <fieldset>
+                <legend>动画 · Animation</legend>
+                <TuneControl label="升起时长" value={tune.riseMs} min={200} max={4000} step={50} suffix="ms" onChange={(v) => updateTune('riseMs', v)} />
+                <TuneControl label="打字间隔" value={tune.typeGapMs} min={0} max={1800} step={20} suffix="ms" onChange={(v) => updateTune('typeGapMs', v)} />
                 <TuneControl label="中文/字" value={tune.typeDelayZh} min={10} max={180} step={2} suffix="ms" onChange={(v) => updateTune('typeDelayZh', v)} />
-                <TuneControl label="EN/char" value={tune.typeDelayEn} min={8} max={120} step={2} suffix="ms" onChange={(v) => updateTune('typeDelayEn', v)} />
+                <TuneControl label="英文/字符" value={tune.typeDelayEn} min={8} max={120} step={2} suffix="ms" onChange={(v) => updateTune('typeDelayEn', v)} />
               </fieldset>
 
               <div className="pawcream-letter-tune-actions">
