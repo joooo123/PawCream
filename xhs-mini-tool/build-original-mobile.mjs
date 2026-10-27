@@ -48,7 +48,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
   if(args.path.endsWith(path.sep+'AtelierWithInstax.tsx')){
     source=source.replace("  const openMyBox = async () => {",fs.readFileSync(path.join(root,'offline-box-cache-snippet.ts'),'utf8')+'\n  const openMyBox = async () => {');
     // Keep the original Instax and tin-box React UIs, but replace their cloud
-    // handlers with a clearly labeled current-session local preview. The
+    // handlers with a clearly labeled, persistent local-cache preview. The
     // original website source remains untouched.
     const patches=[
       ['  const openMyBox = async () => {','  const retryBoxSync = async () => {',
