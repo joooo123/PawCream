@@ -572,6 +572,27 @@ try{
  if(!inputClosed||!photoLoaded)throw Error('Photo gallery selection did not update the Instax editor');
 
 
+
+ // Completed Instax photos must survive "make another" and a tool-panel reopen.
+ await page.getByRole('button',{name:'放入我的小盒子',exact:true}).click();
+ await page.getByText('小盒子里已经有 1 张拍立得',{exact:true}).waitFor({timeout:7000});
+ await page.getByRole('button',{name:'再做一张',exact:true}).click();
+ await page.getByRole('button',{name:'ok!',exact:true}).click();
+ await page.getByRole('button',{name:'第 1 格，选择照片',exact:true}).click();
+ await page.waitForSelector('input[aria-label="从图库选择照片"]',{state:'attached',timeout:4000});
+ const secondChooserWait=page.waitForEvent('filechooser',{timeout:4000});
+ await page.getByText('从图库选择',{exact:false}).last().click();
+ const secondChooser=await secondChooserWait;
+ await secondChooser.setFiles(path.join(dist,'assets/home/Home_mobile.webp'));
+ await page.getByRole('button',{name:'放入我的小盒子',exact:true}).click();
+ await page.getByText('小盒子里已经有 2 张拍立得',{exact:true}).waitFor({timeout:7000});
+ await page.locator('.pawcream-instax-maker-card button[aria-label="Close"]').click();
+ await page.waitForSelector('.pawcream-instax-maker-card',{state:'detached',timeout:5000});
+ await page.locator('[data-atelier-asset="instax"]').click();
+ await page.waitForSelector('.pawcream-instax-maker-card',{timeout:5000});
+ await page.getByRole('button',{name:/我的铁盒/}).click();
+ await page.getByText('小盒子里已经有 2 张拍立得',{exact:true}).waitFor({timeout:7000});
+
  // Offline notes must not expose simulation-mode controls.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="message"]',{timeout:5000});
