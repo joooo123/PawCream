@@ -81,8 +81,19 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
 `],
       ['  const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {','  useEffect(() => {',
 `  const deleteBoxPhoto = async (photo: PawCreamStoredPhoto) => {
-    setBoxPhotos(current => current.filter(item => item.id !== photo.id))
-    setNewestPhotoId(null)
+    if (busy) throw new Error('请等待上一项操作完成')
+    setBusy(true)
+    try {
+      await deleteOfflineBoxPhoto(photo.id)
+      setBoxPhotos(current => current.filter(item => item.id !== photo.id))
+      setNewestPhotoId(null)
+      setBoxSyncStatus('已从小红书工具本地缓存删除这张拍立得')
+    } catch (error) {
+      setBoxSyncStatus(error instanceof Error ? error.message : '删除本地拍立得失败')
+      throw error
+    } finally {
+      setBusy(false)
+    }
   }
 
 `],
