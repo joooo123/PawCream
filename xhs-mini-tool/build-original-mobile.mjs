@@ -53,11 +53,23 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     const patches=[
       ['  const openMyBox = async () => {','  const retryBoxSync = async () => {',
 `  const openMyBox = async () => {
-    setBoxOwnerName('离线访客')
-    // Keep private creations already made during this offline page session.
-    setNewestPhotoId(null)
-    setBoxSyncStatus('当前为离线预览；更多功能见工作室网站')
-    setStep('boxing')
+    if (busy) return
+    setBusy(true)
+    setStatus('')
+    try {
+      const cached = await loadOfflineBoxPhotos()
+      setBoxPhotos(cached)
+      setBoxOwnerName('离线访客')
+      setNewestPhotoId(cached[0]?.id ?? null)
+      setBoxSyncStatus(cached.length
+        ? '已从小红书工具本地缓存恢复 ' + cached.length + ' 张拍立得'
+        : '铁盒还是空空的；新作品会保存在小红书工具本地缓存')
+      setStep('boxing')
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : '本地铁盒读取失败')
+    } finally {
+      setBusy(false)
+    }
   }
 
 `],
