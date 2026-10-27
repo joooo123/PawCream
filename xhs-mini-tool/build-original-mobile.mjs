@@ -131,6 +131,10 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
   }
   // XHS-only responsive overrides: keep the public site untouched.
   if(args.path.endsWith(path.sep+'AtelierWithSignin.tsx')){
+    const labelMarker='className="pawcream-signin-drop"';
+    const labelReplacement='className="pawcream-signin-drop" data-site-only-label={language === "zh" ? "仅网站可以使用此功能" : "This feature is available on the website only"}';
+    if(!source.includes(labelMarker))throw Error('XHS signin notice marker missing');
+    source=source.replace(labelMarker,labelReplacement);
     const patches=[
       ["(mobile && registerPaper ? 0.90 : 1)","(mobile ? 0.90 : 1)"],
       ["Math.min(tune.fontBoost, 2)","Math.min(tune.fontBoost, 7)"],
@@ -329,6 +333,18 @@ css += [
   'border:0!important;border-radius:0!important;box-shadow:none!important;',
   'color:#617b8b!important;font-size:12px!important;line-height:1.3!important;',
   'padding:0!important;white-space:normal!important;',
+  '}',
+  'html.pawcream-signin-open [data-pawcream-notes-board="true"] {z-index:200!important;}',
+  'html.pawcream-signin-open [data-pawcream-notes-board="true"]::after {display:none!important;content:none!important;}',
+  '.pawcream-signin-drop[data-site-only-label]::before {',
+  'content:attr(data-site-only-label);position:absolute;top:-46px;left:12px;right:12px;z-index:1;',
+  'display:block;box-sizing:border-box;padding:10px 16px;',
+  'border:1px solid rgba(205,148,168,.24);border-radius:999px;',
+  'background:rgba(255,249,251,.78);color:#8f6877;',
+  'box-shadow:0 8px 24px rgba(101,74,84,.08);',
+  'backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);',
+  'font-family:"PawCream CN","PawCream EN",sans-serif;font-size:14px;line-height:1.5;text-align:center;',
+  'pointer-events:none;',
   '}',
 ].join('\n');
 fs.writeFileSync(cssFile,css);
