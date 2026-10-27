@@ -201,6 +201,9 @@ export default function InstaxTinBox({
   const [deleting, setDeleting] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [albumBusy, setAlbumBusy] = useState(false)
+  const [albumFeedback, setAlbumFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const albumFeedbackTimer = useRef<number | null>(null)
   const [publishStatus, setPublishStatus] = useState('')
   const [publicationError, setPublicationError] = useState('')
   const [pendingPublication, setPendingPublication] = useState<{
@@ -231,6 +234,10 @@ export default function InstaxTinBox({
     originalUrls.forEach(url => URL.revokeObjectURL(url))
   }, [originalUrls])
 
+  useEffect(() => () => {
+    if (albumFeedbackTimer.current !== null) window.clearTimeout(albumFeedbackTimer.current)
+  }, [])
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     window.localStorage.setItem(STORE_TUNE_KEY, JSON.stringify(storeTune))
@@ -252,6 +259,41 @@ export default function InstaxTinBox({
   }, [newestPhotoId, views])
 
   const active = views[activeIndex] ?? null
+  const albumToastPalette = (() => {
+    const frameName = active?.frameName ?? ''
+    if (frameName.includes('粉白')) return {
+      background: 'rgba(252,232,239,.97)', border: 'rgba(216,147,174,.68)',
+      text: '#a7657e', shadow: 'rgba(215,144,170,.24)',
+    }
+    if (frameName.includes('粉蓝')) return {
+      background: 'linear-gradient(135deg, rgba(252,231,238,.98), rgba(233,241,250,.98))',
+      border: 'rgba(188,154,191,.68)', text: '#95758f', shadow: 'rgba(195,142,170,.26)',
+    }
+    if (frameName.includes('紫咖')) return {
+      background: 'rgba(238,236,252,.97)', border: 'rgba(157,151,211,.68)',
+      text: '#7770a9', shadow: 'rgba(157,151,211,.24)',
+    }
+    if (frameName.includes('绿咖')) return {
+      background: 'rgba(242,249,230,.98)', border: 'rgba(153,181,111,.68)',
+      text: '#75895d', shadow: 'rgba(157,185,121,.24)',
+    }
+    if (frameName.includes('蓝咖')) return {
+      background: 'rgba(235,243,250,.97)', border: 'rgba(130,166,199,.68)',
+      text: '#6686a3', shadow: 'rgba(138,174,202,.24)',
+    }
+    if (frameName.includes('蓝白')) return {
+      background: 'rgba(242,247,251,.98)', border: 'rgba(157,181,201,.68)',
+      text: '#758a9d', shadow: 'rgba(157,181,200,.24)',
+    }
+    if (frameName.includes('黄咖')) return {
+      background: 'rgba(252,245,218,.98)', border: 'rgba(199,170,93,.68)',
+      text: '#947b47', shadow: 'rgba(196,167,94,.24)',
+    }
+    return {
+      background: 'rgba(239,239,239,.98)', border: 'rgba(164,164,164,.68)',
+      text: '#737373', shadow: 'rgba(162,162,162,.24)',
+    }
+  })()
   useEffect(() => {
     setPendingPublication(null)
     setPublicationError('')
@@ -294,6 +336,51 @@ export default function InstaxTinBox({
       setDeleteError(error instanceof Error ? error.message : '删除失败，请稍后重试')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const showAlbumFeedback = (type: 'success' | 'error', message: string) => {
+    if (albumFeedbackTimer.current !== null) window.clearTimeout(albumFeedbackTimer.current)
+    setAlbumFeedback({ type, message })
+    albumFeedbackTimer.current = window.setTimeout(() => {
+      setAlbumFeedback(null)
+      albumFeedbackTimer.current = null
+    }, 2600)
+  }
+
+  const saveActiveToAlbum = async () => {
+    if (!active || albumBusy) return
+    setAlbumBusy(true)
+    try {
+      const blob = active.imageBlob
+      const mime = blob.type || 'image/png'
+      const extension = mime.includes('jpeg') ? 'jpg' : mime.includes('webp') ? 'webp' : 'png'
+      const filename = 'PawCream-' + (active.frameName || 'Instax') + '-' + active.id + '.' + extension
+      const file = new File([blob], filename, { type: mime })
+      if (
+        typeof navigator.share === 'function'
+        && typeof navigator.canShare === 'function'
+        && navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({ files: [file], title: 'PawCream 拍立得' })
+        showAlbumFeedback('success', '保存操作已完成 ♡')
+      } else {
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = filename
+        anchor.style.display = 'none'
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+        window.setTimeout(() => URL.revokeObjectURL(url), 1500)
+        showAlbumFeedback('success', '当前浏览器已开始下载图片，请在下载目录查看 ♡')
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      showAlbumFeedback('error', error instanceof Error ? error.message : '保存图片失败，请重试')
+    } finally {
+      setAlbumBusy(false)
     }
   }
 
@@ -641,6 +728,14 @@ export default function InstaxTinBox({
                   >
                     删除这张
                   </button>
+                  <button
+                    type="button"
+                    disabled={albumBusy || deleting || syncBusy || publishBusy}
+                    onClick={() => void saveActiveToAlbum()}
+                    style={{ ...themedButton, fontSize: mobile ? 14 : 15, opacity: albumBusy ? .6 : 1 }}
+                  >
+                    {albumBusy ? '准备保存…' : '保存到相册'}
+                  </button>
                   {sourceSlotsReady && sourceSlots.length > 0 && (
                     <button type="button" onClick={() => void togglePublished()} disabled={publishBusy || deleting} style={{
                       ...themedButton,
@@ -839,6 +934,32 @@ export default function InstaxTinBox({
                   style={{ color: 'white', background: 'transparent', border: '1px solid #777', borderRadius: 12, padding: '7px 18px' }}>→</button>
               </div>
             )}
+          </div>
+        )}
+        {albumFeedback && (
+          <div
+            role={albumFeedback.type === 'error' ? 'alert' : 'status'}
+            style={{
+              position: 'fixed',
+              left: '50%',
+              bottom: 'calc(24px + env(safe-area-inset-bottom))',
+              transform: 'translateX(-50%)',
+              zIndex: 1000,
+              maxWidth: 'calc(100vw - 32px)',
+              boxSizing: 'border-box',
+              padding: '12px 20px',
+              borderRadius: 999,
+              border: '1px solid ' + albumToastPalette.border,
+              background: albumToastPalette.background,
+              color: albumToastPalette.text,
+              boxShadow: '0 10px 30px ' + albumToastPalette.shadow,
+              fontSize: 14,
+              lineHeight: 1.5,
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            {albumFeedback.message}
           </div>
         )}
       </div>
