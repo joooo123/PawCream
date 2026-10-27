@@ -349,37 +349,77 @@ try{
   await page.mouse.click(point.x,point.y);
   await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
  }
- // Reset before checking the three-line writing prompt and responsive card bounds.
+ // Regression: the note board must isolate all artwork in both languages.
  await page.goto(base+'/?scene=atelier',{waitUntil:'domcontentloaded'});
  await page.waitForSelector('[data-atelier-asset="message"]',{timeout:5000});
  await page.mouse.click(lampPoints.opaque.x,lampPoints.opaque.y);
  await page.waitForFunction(()=>document.querySelector('section[aria-label^="PawCream Atelier Room"]')?.querySelector('nav[aria-label="PawCream Atelier toolbar"]')?.style.pointerEvents==='auto',{timeout:3000});
- await page.getByRole('button',{name:'EN',exact:true}).click();
 
- // Open the sticky-note wall and verify the actual mobile card does not
- // overlap the XHS header or phone home indicator.
- await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
- await page.waitForTimeout(100);
- const notePrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
+ const openNotesBoard=async()=>{
+  await page.evaluate(()=>document.querySelector('[data-atelier-asset="message"]').click());
+  await page.waitForTimeout(100);
+  await page.evaluate(()=>{
+   const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
+   const note=stage.querySelector('[data-atelier-asset="note"]');
+   const r=note.getBoundingClientRect();
+   stage.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,
+    clientX:r.left+r.width/2,clientY:r.top+r.height/2}));
+  });
+  await page.waitForSelector('[data-pawcream-notes-board="true"]',{timeout:4000});
+  await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
+ };
+ const assertNotesIsolation=async(buttonName)=>{
+  const button=page.getByRole('button',{name:buttonName,exact:true});
+  await button.evaluate(el=>{
+   const r=el.getBoundingClientRect();
+   const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+   if(!hit?.closest('[data-pawcream-notes-board="true"]'))
+    throw Error('Notes tab is not the topmost hit target: '+JSON.stringify({button:el.textContent,hit:hit?.outerHTML?.slice(0,180)}));
+  });
+  await button.click();
+  await page.waitForTimeout(100);
+  if(!await page.locator('.pawcream-notes-card').isVisible()||await page.locator('.pawcream-letter-overlay').isVisible().catch(()=>false))
+   throw Error('Tapping '+buttonName+' triggered the brand introduction instead of staying in the notes board');
+
+  // Simulate a click that reaches the underlying window/lamp handlers directly.
+  // These must remain inert while the notes overlay is open.
+  await page.evaluate(({x,y})=>{
+   const windowControl=document.querySelector('[aria-label="Window interaction"]');
+   if(!windowControl)throw Error('Window interaction target missing');
+   const wr=windowControl.getBoundingClientRect();
+   windowControl.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,
+    clientX:wr.left+wr.width/2,clientY:wr.top+wr.height/2}));
+   const light=document.querySelector('[data-atelier-asset="light"]');
+   light.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:x,clientY:y}));
+  },lampPoints.opaque);
+  await page.waitForTimeout(100);
+  if(!await page.locator('.pawcream-notes-card').isVisible()||await page.locator('.pawcream-letter-overlay').isVisible().catch(()=>false))
+   throw Error('Underlying artwork opened the brand introduction while the notes board was open');
+  const toolbarPointerEvents=await page.locator('nav[aria-label="PawCream Atelier toolbar"]').evaluate(el=>el.style.pointerEvents);
+  if(toolbarPointerEvents!=='auto')throw Error('Underlying lamp toggled the toolbar while the notes board was open');
+ };
+
+ await page.getByRole('button',{name:'EN',exact:true}).click();
+ await openNotesBoard();
+ const enPrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
   const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
- if(JSON.stringify(notePrompt.lines)!==JSON.stringify(['Leave a','little note','for PawCream'])||notePrompt.bg!=='rgba(0, 0, 0, 0)')
-  throw Error('English Note prompt must be two words per line across three transparent lines: '+JSON.stringify(notePrompt));
+ if(JSON.stringify(enPrompt.lines)!==JSON.stringify(['Leave a','little note','for PawCream'])||enPrompt.bg!=='rgba(0, 0, 0, 0)')
+  throw Error('English Note prompt must be two words per line across three transparent lines: '+JSON.stringify(enPrompt));
  const noteOffset=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>el.style.left);
  if(noteOffset!=='50%')throw Error('Note prompt was not shifted right: '+noteOffset);
- await page.evaluate(()=>{
-  const stage=document.querySelector('section[aria-label^="PawCream Atelier Room"]');
-  const note=stage.querySelector('[data-atelier-asset="note"]');
-  const r=note.getBoundingClientRect();
-  stage.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,
-   clientX:r.left+r.width/2,clientY:r.top+r.height/2}));
+ await assertNotesIsolation('My notes');
+
+ await page.getByRole('button',{name:'Close notes',exact:true}).click();
+ await page.getByRole('button',{name:'中文',exact:true}).click();
+ await openNotesBoard();
+ const zhPrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
+  const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
- await page.waitForSelector('.pawcream-notes-card',{timeout:4000});
- await page.getByRole('button',{name:'My notes',exact:true}).click();
- await page.waitForTimeout(100);
- if(!await page.locator('.pawcream-notes-card').isVisible()||await page.locator('.pawcream-letter-overlay').isVisible().catch(()=>false))
-  throw Error('Tapping My notes navigated to the brand introduction instead of staying in the notes board');
- await page.evaluate(()=>localStorage.setItem('pawcream-language-v1','zh'));
+ if(JSON.stringify(zhPrompt.lines)!==JSON.stringify(['留下你想对','PawCream','说的话吧'])||zhPrompt.bg!=='rgba(0, 0, 0, 0)')
+  throw Error('Chinese Note prompt must keep three transparent lines: '+JSON.stringify(zhPrompt));
+ await assertNotesIsolation('我的便签');
+
  const assertNotesBounds=async(width,height)=>{
   const r=await page.locator('.pawcream-notes-card').boundingBox();
   if(!r||r.y<76||r.x<10||r.x+r.width>width-10||r.y+r.height>height-35)
