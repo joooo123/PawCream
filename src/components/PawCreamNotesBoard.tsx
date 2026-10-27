@@ -322,7 +322,7 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
         background: 'rgba(255,249,251,.64)',
         backdropFilter: 'blur(13px)',
         WebkitBackdropFilter: 'blur(13px)',
-        fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: language === 'zh' ? "'PawCream CN', 'PawCream EN', sans-serif" : "'PawCream EN', 'PawCream CN', sans-serif",
       }}
     >
       <style>{`
