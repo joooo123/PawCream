@@ -105,7 +105,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     try {
       const blob = await composeFinishedPhoto(transparentFrameSrc, frameMeta, photos)
       const saved: PawCreamStoredPhoto = {
-        id: 'offline-' + Date.now(),
+        id: 'offline-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
         ownerId: 'offline-session',
         ownerName: '离线访客',
         imageBlob: blob,
@@ -114,12 +114,28 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
         createdAt: new Date().toISOString(),
         cloudSynced: false,
       }
+      const previousPhotos = boxPhotos.length
+        ? boxPhotos
+        : await loadOfflineBoxPhotos().catch(() => boxPhotos)
+      let boxPhoto = saved
+      let cacheSaved = false
+      let cacheMessage = ''
+      try {
+        boxPhoto = await saveOfflineBoxPhoto(saved)
+        cacheSaved = true
+        cacheMessage = '已缓存到小红书工具；最多保留最近 ' + offlineBoxCacheLimit() + ' 张拍立得'
+      } catch (error) {
+        cacheMessage = '本次拍立得未能写入工具缓存：' +
+          (error instanceof Error ? error.message : '缓存失败') + '；当前页面仍可查看'
+      }
+      const nextPhotos = [boxPhoto, ...previousPhotos.filter(item => item.id !== boxPhoto.id)]
+        .slice(0, offlineBoxCacheLimit())
       setBoxOwnerName('离线访客')
-      setBoxPhotos(current => [saved, ...current])
-      setNewestPhotoId(saved.id)
+      setBoxPhotos(nextPhotos)
+      setNewestPhotoId(boxPhoto.id)
       setStep('boxing')
       setStatus('')
-      setBoxSyncStatus('作品只在本次离线页面中预览；更多功能见工作室网站')
+      setBoxSyncStatus(cacheMessage)
       const api: any = (window as any).xhs && (window as any).xhs.miniTool
       if (api && typeof api.saveImageToPhotosAlbum === 'function') {
         try {
@@ -135,9 +151,13 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
             if (result && result.filePath) filePath = result.filePath
           }
           await api.saveImageToPhotosAlbum({ filePath })
-          setBoxSyncStatus('图片已保存至相册；云端铁盒请前往工作室网站')
+          setBoxSyncStatus(cacheSaved
+            ? '图片已保存至相册，铁盒也已缓存到小红书工具'
+            : '图片已保存至相册，但铁盒缓存失败；当前页面仍可查看')
         } catch (error) {
-          setBoxSyncStatus('已完成离线盒子预览；相册保存未成功，请检查权限。更多功能见工作室网站')
+          setBoxSyncStatus(cacheSaved
+            ? '铁盒已缓存到小红书工具；相册保存未成功，请检查权限'
+            : '铁盒缓存和相册保存均未成功；当前页面仍可查看')
         }
       }
     } catch (error) {
@@ -145,7 +165,7 @@ const originalPlugin={name:'original-pawcream-mobile',setup(build){
     } finally { setBusy(false) }
   }
 
-`]
+`],
     ];
     for(const [startToken,endToken,replacement] of patches){
       const a=source.indexOf(startToken),b=a>=0?source.indexOf(endToken,a+startToken.length):-1;
