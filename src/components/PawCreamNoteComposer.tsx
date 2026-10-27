@@ -5,12 +5,11 @@ type Language = 'zh' | 'en'
 type Props = {
   mobile: boolean
   language: Language
-  viewerName: string
   onPublish: (text: string) => Promise<void>
   onCancel: () => void
 }
 
-export default function PawCreamNoteComposer({ mobile, language, viewerName, onPublish, onCancel }: Props) {
+export default function PawCreamNoteComposer({ mobile, language, onPublish, onCancel }: Props) {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
@@ -20,15 +19,13 @@ export default function PawCreamNoteComposer({ mobile, language, viewerName, onP
   const copy = language === 'zh'
     ? {
         title: '写一张便签',
-        subtitle: `以 ${viewerName} 的名字留在 PawCream。`,
         placeholder: '想在 PawCream 留下什么？',
-        publish: '贴上便签',
+        publish: '发布便签',
         cancel: '取消',
         failed: '便签没有贴上，请再试一次。',
       }
     : {
         title: 'Write a note',
-        subtitle: `Leave it in PawCream as ${viewerName}.`,
         placeholder: 'What would you like to leave in PawCream?',
         publish: 'Post note',
         cancel: 'Cancel',
@@ -63,10 +60,7 @@ export default function PawCreamNoteComposer({ mobile, language, viewerName, onP
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-        <div>
-          <strong style={{ display: 'block', color: '#8c6775', fontSize: uiSize(mobile ? 14 : 15.5) }}>{copy.title}</strong>
-          <p style={{ margin: '5px 0 0', color: '#a1848f', fontSize: uiSize(mobile ? 10.5 : 11.5), lineHeight: 1.5 }}>{copy.subtitle}</p>
-        </div>
+        <strong style={{ display: 'block', color: '#8c6775', fontSize: uiSize(mobile ? 14 : 15.5) }}>{copy.title}</strong>
         <button
           type="button"
           onClick={onCancel}
