@@ -427,7 +427,6 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
           <PawCreamNoteComposer
             mobile={mobile}
             language={language}
-            viewerName={viewer.displayName}
             onPublish={publish}
             onCancel={() => setComposerOpen(false)}
           />
