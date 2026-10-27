@@ -413,26 +413,45 @@ try{
  const noteOffset=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>el.style.left);
  if(noteOffset!=='50%')throw Error('Note prompt was not shifted right: '+noteOffset);
  await assertNotesIsolation('My notes');
- // Website-only account actions should keep the sign-in panel behind a clear frosted notice.
- for (const [buttonName, expectedLabel] of [['Sign in', 'This feature is available on the website only'], ['Register', 'This feature is available on the website only']]) {
+ // Website-only notice must sit above the auth panel without blocking its controls.
+ const assertWebsiteOnlyAuth=async(buttonName, expectedLabel)=>{
   await page.locator('.pawcream-notes-card').getByRole('button',{name:buttonName,exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.classList.contains('pawcream-signin-open'),null,{timeout:3000});
-  await page.waitForTimeout(250); // Let the notes card's visibility transition finish.
-  const notice=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>({
-   label:getComputedStyle(el,'::after').content,
-   display:getComputedStyle(el,'::after').display,
-   cardVisible:getComputedStyle(el.querySelector('.pawcream-notes-card')).visibility
-  }));
-  if(!notice.label.includes(expectedLabel)||notice.display!=='block'||notice.cardVisible!=='hidden')
-   throw Error('Website-only sign-in notice did not cover the auth panel: '+JSON.stringify(notice));
+  await page.waitForSelector('.pawcream-signin-drop',{state:'visible',timeout:3000});
+  await page.waitForTimeout(350); // Let the notes fade and auth-panel entrance finish.
+  const notice=await page.locator('.pawcream-signin-drop').evaluate(el=>{
+   const board=document.querySelector('[data-pawcream-notes-board="true"]');
+   const label=getComputedStyle(el,'::before');
+   const submit=[...el.querySelectorAll('button[type="submit"]')].find(button=>button.getClientRects().length>0);
+   if(!board||!submit)return null;
+   const r=submit.getBoundingClientRect();
+   const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+   return {
+    label:label.content,
+    display:label.display,
+    pointerEvents:label.pointerEvents,
+    boardZ:Number.parseInt(getComputedStyle(board).zIndex,10),
+    dialogZ:Number.parseInt(getComputedStyle(el).zIndex,10),
+    boardNoticeDisplay:getComputedStyle(board,'::after').display,
+    submitVisible:r.width>0&&r.height>0,
+    submitHit:hit===submit||submit.contains(hit)
+   };
+  });
+  if(!notice||!notice.label.includes(expectedLabel)||notice.display==='none'||notice.pointerEvents!=='none'||
+     notice.boardZ>=notice.dialogZ||notice.boardNoticeDisplay!=='none'||!notice.submitVisible||!notice.submitHit)
+   throw Error('Website-only notice must sit above, not block, auth form: '+JSON.stringify(notice));
   await page.keyboard.press('Escape');
   await page.waitForFunction(()=>!document.documentElement.classList.contains('pawcream-signin-open'),null,{timeout:3000});
   await page.waitForSelector('.pawcream-notes-card',{timeout:3000});
+ };
+ for (const [buttonName, expectedLabel] of [['Sign in', 'This feature is available on the website only'], ['Register', 'This feature is available on the website only']]) {
+  await assertWebsiteOnlyAuth(buttonName,expectedLabel);
  }
 
  await page.getByRole('button',{name:'Close notes',exact:true}).click();
  await page.getByRole('button',{name:'中文',exact:true}).click();
  await openNotesBoard();
+ await assertWebsiteOnlyAuth('登录','仅网站可以使用此功能');
  const zhFont=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>getComputedStyle(el).fontFamily);
  if(!zhFont.includes('PawCream CN'))throw Error('Chinese notes board lost PawCream CN font: '+zhFont);
  const cnFaceCount=await page.evaluate(async()=> (await document.fonts.load('16px "PawCream CN"')).length);
