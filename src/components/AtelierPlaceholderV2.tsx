@@ -266,7 +266,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         notePrompt: 'Leave a little note for PawCream',
         toolbarHome: 'Home', toolbarLogin: 'Sign in', toolbarClose: 'Hide',
         boardTitle: 'PawCream Message Board', boardSubtitle: 'Leave a small thought in this tiny atelier.',
-        boardPlaceholder: 'What would you like to tell PawCream?', boardSubmit: 'Leave note', boardEmpty: 'No notes here yet.',
+        boardPlaceholder: 'What would you like to tell PawCream?', boardSubmit: 'Post message', boardEmpty: 'No messages here yet.',
         boardLocal: 'Messages are only saved on this device.', loginTitle: 'Sign in',
         loginBody: 'Accounts are not available yet.', close: 'Close',
       }
