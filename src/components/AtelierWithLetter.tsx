@@ -438,6 +438,9 @@ export default function AtelierWithLetter(props: Props) {
     control.style.cursor = 'pointer'
 
     const onClick = (event: MouseEvent) => {
+      // The notes board can visually cover the window artwork. Never let the
+      // document-level capture listener open the letter underneath that modal.
+      if (document.querySelector('[data-pawcream-notes-board="true"]')) return
       const target = event.target as Element | null
       if (!target?.closest('[aria-label="Window interaction"]')) return
       openLetter()
@@ -448,6 +451,7 @@ export default function AtelierWithLetter(props: Props) {
         setOpen(false)
         return
       }
+      if (document.querySelector('[data-pawcream-notes-board="true"]')) return
       if (event.key !== 'Enter' && event.key !== ' ') return
       const target = event.target as Element | null
       if (!target?.closest('[aria-label="Window interaction"]')) return
