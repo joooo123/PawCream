@@ -403,6 +403,8 @@ try{
  await openNotesBoard();
  const enFont=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>getComputedStyle(el).fontFamily);
  if(!enFont.includes('PawCream EN'))throw Error('English notes board lost PawCream EN font: '+enFont);
+ const enFaceCount=await page.evaluate(async()=> (await document.fonts.load('16px "PawCream EN"')).length);
+ if(enFaceCount<1)throw Error('PawCream EN font face failed to load');
  const enPrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
   const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
@@ -417,6 +419,8 @@ try{
  await openNotesBoard();
  const zhFont=await page.locator('[data-pawcream-notes-board="true"]').evaluate(el=>getComputedStyle(el).fontFamily);
  if(!zhFont.includes('PawCream CN'))throw Error('Chinese notes board lost PawCream CN font: '+zhFont);
+ const cnFaceCount=await page.evaluate(async()=> (await document.fonts.load('16px "PawCream CN"')).length);
+ if(cnFaceCount<1)throw Error('PawCream CN font face failed to load');
  const zhPrompt=await page.locator('[data-atelier-asset="note"] > span').first().evaluate(el=>{
   const css=getComputedStyle(el);return {lines:[...el.querySelectorAll('span')].map(line=>line.textContent.trim()),bg:css.backgroundColor};
  });
