@@ -1,11 +1,11 @@
 const OFFLINE_BOX_INDEX_KEY = 'pawcream-xhs-box-index-v1'
 const OFFLINE_BOX_PHOTO_PREFIX = 'pawcream-xhs-box-photo-v1-'
 const OFFLINE_BOX_MAX_PHOTOS = 8
-const OFFLINE_BOX_MAX_DATA_URL_LENGTH = 900000
+const OFFLINE_BOX_MAX_DATA_URL_LENGTH = 450000
 
 const offlineBoxCacheLimit = () => {
   const api = (window as any).xhs && (window as any).xhs.miniTool
-  return api && typeof api.setStorage === 'function' ? OFFLINE_BOX_MAX_PHOTOS : 4
+  return api && typeof api.setStorage === 'function' ? OFFLINE_BOX_MAX_PHOTOS : 2
 }
 
 const readOfflineBoxValue = async (key: string): Promise<any> => {
