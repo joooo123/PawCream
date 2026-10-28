@@ -65,8 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
-const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
+const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -107,19 +107,19 @@ function preloadEnvelopeAssets(): Promise<void> {
 
 const DEFAULT_TUNE: LetterTuneProfiles = {
   desktop: {
-    paperLeft: 11.5,
+    paperLeft: 7,
     paperTop: -20,
-    paperWidth: 82,
+    paperWidth: 86,
     paperHeight: 86,
     paperScale: 0.88,
     paperStretchX: 1,
     paperRotate: 0,
     startY: 35,
     endY: 9,
-    textLeft: 18,
+    textLeft: 12,
     textTop: 13,
-    textWidth: 64,
-    textHeight: 54,
+    textWidth: 76,
+    textHeight: 56,
     titleLeft: 0,
     titleTop: 0,
     titleWidth: 100,
@@ -134,13 +134,15 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     enBodyTop: 29,
     enBodyWidth: 100,
     enBodyHeight: 64,
-    enBodySize: 18.5,
-    bodyLineHeight: 1.76,
+    enBodySize: 17.5,
+    bodyLineHeight: 1.5,
+    zhBodyLineHeight: 1.5,
+    enBodyLineHeight: 1.4,
     subtitleLeft: 0,
     subtitleTop: 18,
     subtitleWidth: 100,
     subtitleHeight: 10,
-    subtitleSize: 21.5,
+    subtitleSize: 20,
     riseMs: 4000,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -195,14 +197,14 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 const COPY = {
   zh: {
     title: '关于 PawCream',
-    body: 'PawCream 是一间收集柔软日常的小小工作室。我们喜欢纸张、照片、旧物和那些来不及一下子说完的话，也相信每一点细小心情，都值得被温柔保存。希望你来到这里时，可以慢一点，也留下属于自己的痕迹。',
-    signature: 'soft things · slow days · little keepsakes',
+    body: '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n躲进糖分里，暂时逃离喧嚣的大人世界。\\n甜蜜不止一点点，可爱也不止今天。',
+    signature: 'made with a little sugar & lots of love ♡',
     close: '关闭品牌介绍',
   },
   en: {
     title: 'About PawCream',
-    body: 'PawCream is a tiny atelier for soft everyday moments. We love paper, photographs, old objects, and thoughts that do not need to be said all at once. We believe even the smallest feelings deserve to be kept gently. We hope this little room lets you slow down and leave a trace of your own.',
-    signature: 'soft things · slow days · little keepsakes',
+    body: 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.\\nEvery outfit change is like unboxing a long-awaited sweet.\\nHide in sweetness, escaping the adult world for a while. Sweetness and cuteness linger beyond today.',
+    signature: 'made with a little sugar & lots of love ♡',
     close: 'Close brand introduction',
   },
 } as const
@@ -221,8 +223,8 @@ function readTuneProfiles(): LetterTuneProfiles {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     return {
-      desktop: { ...DEFAULT_TUNE.desktop, ...(legacy.desktop || {}), ...(saved.desktop || {}) },
-      mobile: { ...DEFAULT_TUNE.mobile, ...(saved.mobile || {}) },
+      desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(legacy.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
@@ -288,7 +290,7 @@ export default function AtelierWithLetter(props: Props) {
   const activeProfile: DeviceProfile = mobile ? 'mobile' : 'desktop'
   const tune = tuneProfiles[activeProfile]
   const copy = mobile
-    ? { ...COPY[language], body: language === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY, signature: 'made with a little sugar & lots of love ♡' }
+    ? { ...COPY[language], body: language === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY }
     : COPY[language]
   const titleLength = copy.title.length
   const totalTypingLength = titleLength + copy.body.length
