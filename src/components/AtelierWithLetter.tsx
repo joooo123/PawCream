@@ -986,7 +986,6 @@ export default function AtelierWithLetter(props: Props) {
                 <TuneControl label="文字区顶部" value={tune.textTop} min={0} max={60} step={0.5} suffix="%" onChange={(v) => updateTune('textTop', v)} />
                 <TuneControl label="文字区宽度" value={tune.textWidth} min={30} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textWidth', v)} />
                 <TuneControl label="文字区高度" value={tune.textHeight} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textHeight', v)} />
-                <TuneControl label="默认正文行高" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('bodyLineHeight', v)} />
                 <TuneControl label="中文正文行高" value={tune.zhBodyLineHeight ?? tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('zhBodyLineHeight', v)} />
                 <TuneControl label="英文正文行高" value={tune.enBodyLineHeight ?? tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('enBodyLineHeight', v)} />
               </fieldset>
