@@ -302,9 +302,11 @@ export default function PawCreamNotesBoard({ open, onClose, mobile, language }: 
 
   return (
     <div
+      data-pawcream-notes-board="true"
       role="dialog"
       aria-modal="true"
       aria-label={copy.title}
+      onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       style={{
         position: 'absolute',
