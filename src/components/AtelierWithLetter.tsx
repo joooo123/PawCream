@@ -42,8 +42,12 @@ type LetterTune = {
   enBodyHeight: number
   enBodySize: number
   bodyLineHeight: number
+  zhBodyLineHeight?: number
+  enBodyLineHeight?: number
   subtitleLeft: number
   subtitleTop: number
+  zhSubtitleTop?: number
+  enSubtitleTop?: number
   subtitleWidth: number
   subtitleHeight: number
   subtitleSize: number
@@ -61,7 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
+const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -143,39 +148,43 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
   },
   mobile: {
     paperLeft: 14,
-    paperTop: 5.5,
+    paperTop: 7.5,
     paperWidth: 75.5,
     paperHeight: 84,
     paperScale: 0.88,
-    paperStretchX: 1.0,
+    paperStretchX: 1.31,
     paperRotate: 0,
     startY: 5,
-    endY: -16,
-    textLeft: 19.5,
-    textTop: 16.5,
-    textWidth: 64.5,
-    textHeight: 56,
+    endY: -15,
+    textLeft: 10.5,
+    textTop: 11,
+    textWidth: 85,
+    textHeight: 100,
     titleLeft: 0,
-    titleTop: 0,
+    titleTop: -2.5,
     titleWidth: 100,
     titleHeight: 18,
-    titleSize: 19,
+    titleSize: 21,
     zhBodyLeft: 0,
-    zhBodyTop: 29,
+    zhBodyTop: 14,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
     zhBodySize: 10.5,
-    enBodyLeft: 0,
-    enBodyTop: 29,
-    enBodyWidth: 100,
+    enBodyLeft: -5.5,
+    enBodyTop: 10.5,
+    enBodyWidth: 111.5,
     enBodyHeight: 64,
-    enBodySize: 10.5,
-    bodyLineHeight: 1.62,
+    enBodySize: 14.5,
+    bodyLineHeight: 1.1,
+    zhBodyLineHeight: 1.6,
+    enBodyLineHeight: 1.1,
     subtitleLeft: 0,
-    subtitleTop: 18,
+    subtitleTop: 7.5,
+    zhSubtitleTop: 8.5,
+    enSubtitleTop: 5.5,
     subtitleWidth: 100,
-    subtitleHeight: 10,
-    subtitleSize: 8,
+    subtitleHeight: 9,
+    subtitleSize: 11.5,
     riseMs: 1550,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -198,6 +207,9 @@ const COPY = {
   },
 } as const
 
+const MOBILE_ZH_BODY = '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。'
+const MOBILE_EN_BODY = 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \n    change is like unboxing a long-awaited sweet.\n       Hide in sweetness, escaping the adult world \n                for a while. Sweetness and \n                    cuteness linger beyond\n                             today.\n'
+
 function readLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
@@ -207,8 +219,9 @@ function readTuneProfiles(): LetterTuneProfiles {
   if (typeof window === 'undefined') return DEFAULT_TUNE
   try {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     return {
-      desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
+      desktop: { ...DEFAULT_TUNE.desktop, ...(legacy.desktop || {}), ...(saved.desktop || {}) },
       mobile: { ...DEFAULT_TUNE.mobile, ...(saved.mobile || {}) },
     }
   } catch {
@@ -274,7 +287,9 @@ export default function AtelierWithLetter(props: Props) {
   const mobile = props.deviceProfile === 'mobile'
   const activeProfile: DeviceProfile = mobile ? 'mobile' : 'desktop'
   const tune = tuneProfiles[activeProfile]
-  const copy = COPY[language]
+  const copy = mobile
+    ? { ...COPY[language], body: language === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY, signature: 'made with a little sugar & lots of love ♡' }
+    : COPY[language]
   const titleLength = copy.title.length
   const totalTypingLength = titleLength + copy.body.length
   const visibleTitle = copy.title.slice(0, Math.min(typedChars, titleLength))
@@ -351,7 +366,8 @@ export default function AtelierWithLetter(props: Props) {
     setLanguage(nextLanguage)
     setPreviewMode('end')
     setPaperRaised(true)
-    setTypedChars(COPY[nextLanguage].title.length + COPY[nextLanguage].body.length)
+    const nextBody = mobile ? (nextLanguage === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY) : COPY[nextLanguage].body
+    setTypedChars(COPY[nextLanguage].title.length + nextBody.length)
   }
 
   const saveTune = () => {
@@ -525,7 +541,7 @@ export default function AtelierWithLetter(props: Props) {
             style={{
               position: 'relative',
               width: mobile
-                ? 'min(520px, calc(100vw - 18px))'
+                ? 'min(580px, calc(100vw - 8px))'
                 : 'min(820px, calc(100vw - 44px))',
               maxHeight: 'calc(100svh - 18px)',
               overflow: 'visible',
@@ -576,15 +592,16 @@ export default function AtelierWithLetter(props: Props) {
                 user-select: none;
                 pointer-events: none;
               }
+              .pawcream-envelope-text-wrap { position: absolute; z-index: 5; transform-origin: 50% 84%; pointer-events: none; }
               .pawcream-paper-copy {
                 position: absolute;
-                z-index: 2;
+                z-index: 1;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
                 align-items: stretch;
                 justify-content: flex-start;
-                overflow: hidden;
+                overflow: visible;
                 color: #5b798f;
                 pointer-events: none;
               }
@@ -597,8 +614,9 @@ export default function AtelierWithLetter(props: Props) {
                 text-align: center;
               }
               .pawcream-paper-body {
-                margin: 11px 0 0;
-                color: #648198;
+                margin: 2px 0 0;
+                white-space: pre-wrap;
+                color: #4c7188;
                 letter-spacing: .012em;
                 text-align: left;
               }
@@ -770,7 +788,7 @@ export default function AtelierWithLetter(props: Props) {
               }
             `}</style>
 
-            <div className="pawcream-envelope-stage">
+            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className="pawcream-envelope-stage">
               <img
                 src={ENVELOPE_BACK_URL}
                 alt=""
@@ -803,6 +821,23 @@ export default function AtelierWithLetter(props: Props) {
                   style={{ transform: `scaleX(${tune.paperStretchX})`, transformOrigin: 'center' }}
                 />
 
+              </div>
+
+              <div
+                className="pawcream-envelope-text-wrap"
+                style={{
+                  position: 'absolute',
+                  zIndex: 5,
+                  left: `${tune.paperLeft}%`,
+                  top: `${tune.paperTop}%`,
+                  width: `${tune.paperWidth}%`,
+                  height: `${tune.paperHeight}%`,
+                  transform: `translate3d(0, ${previewY}%, 0) rotate(${tune.paperRotate}deg) scale(${tune.paperScale})`,
+                  transition: previewMode === 'play'
+                    ? `transform ${tune.riseMs}ms cubic-bezier(.2,.76,.28,1)`
+                    : 'none',
+                }}
+              >
                 <div
                   className="pawcream-paper-copy"
                   style={{
@@ -824,7 +859,7 @@ export default function AtelierWithLetter(props: Props) {
                       width: `${tune.titleWidth}%`,
                       height: `${tune.titleHeight}%`,
                       margin: 0,
-                      overflow: 'hidden',
+                      overflow: 'visible',
                       fontSize: tune.titleSize,
                     }}
                   >
@@ -837,7 +872,7 @@ export default function AtelierWithLetter(props: Props) {
                     style={{
                       position: 'absolute',
                       left: `${tune.subtitleLeft}%`,
-                      top: `${tune.subtitleTop}%`,
+                      top: `${language === 'zh' ? (tune.zhSubtitleTop ?? tune.subtitleTop) : (tune.enSubtitleTop ?? tune.subtitleTop)}%`,
                       width: `${tune.subtitleWidth}%`,
                       height: `${tune.subtitleHeight}%`,
                       margin: 0,
@@ -859,8 +894,8 @@ export default function AtelierWithLetter(props: Props) {
                       margin: 0,
                       overflow: 'hidden',
                       fontSize: language === 'zh' ? tune.zhBodySize : tune.enBodySize,
-                      lineHeight: tune.bodyLineHeight,
-                      letterSpacing: language === 'zh' ? '.015em' : '.005em',
+                      lineHeight: language === 'zh' ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight) : (tune.enBodyLineHeight ?? tune.bodyLineHeight),
+                      letterSpacing: language === 'zh' ? '-.025em' : '.005em',
                     }}
                   >
                     {visibleBody}
@@ -879,7 +914,7 @@ export default function AtelierWithLetter(props: Props) {
                 decoding="async"
                 className="pawcream-envelope-layer pawcream-envelope-front"
               />
-            </div>
+            </div></div>
 
             <button
               type="button"
@@ -890,7 +925,7 @@ export default function AtelierWithLetter(props: Props) {
               style={{
                 position: 'absolute',
                 top: mobile ? -2 : 4,
-                right: mobile ? -1 : 4,
+                right: mobile ? 8 : 4,
                 zIndex: 8,
                 width: mobile ? 34 : 40,
                 height: mobile ? 34 : 40,
