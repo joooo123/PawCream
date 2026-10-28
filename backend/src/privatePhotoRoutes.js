@@ -6,6 +6,32 @@ import {
 } from './photoStorage.js'
 
 const MAX_PRIVATE_BYTES = 12 * 1024 * 1024
+
+function detectPrivatePhotoMimeType(bytes) {
+  if (!Buffer.isBuffer(bytes)) return null
+
+  if (
+    bytes.length >= 8 &&
+    bytes.subarray(0, 8).equals(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    )
+  ) return 'image/png'
+
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 255 &&
+    bytes[1] === 216 &&
+    bytes[2] === 255
+  ) return 'image/jpeg'
+
+  if (
+    bytes.length >= 12 &&
+    bytes.toString('ascii', 0, 4) === 'RIFF' &&
+    bytes.toString('ascii', 8, 12) === 'WEBP'
+  ) return 'image/webp'
+
+  return null
+}
 const privateUploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 40,
@@ -176,8 +202,8 @@ export function registerPrivatePhotoRoutes(app, pool, requireAuth, storage = {
         return res.status(400).json({ error: '无效的照片格子' })
       }
       if (!storage.enabled) return res.status(503).json({ error: '请先配置 OSS 私人照片存储' })
-      const type = String(req.get('content-type') || '').split(';')[0].toLowerCase()
-      if (!validPhotoBytes(req.body, type, MAX_PRIVATE_BYTES)) {
+      const type = detectPrivatePhotoMimeType(req.body)
+      if (!type || !validPhotoBytes(req.body, type, MAX_PRIVATE_BYTES)) {
         return res.status(415).json({ error: '原图须为不超过 12MB 的 PNG、JPEG 或 WebP' })
       }
       let uploadedKey
