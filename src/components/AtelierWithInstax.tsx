@@ -473,8 +473,6 @@ export default function AtelierWithInstax(props: Props) {
   const [newestPhotoId, setNewestPhotoId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
-  const galleryInputRef = useRef<HTMLInputElement | null>(null)
-  const cameraInputRef = useRef<HTMLInputElement | null>(null)
   const dragRef = useRef<DragState>(null)
   const slotDragMovedRef = useRef(false)
 
@@ -720,19 +718,13 @@ export default function AtelierWithInstax(props: Props) {
     setSourcePickerOpen(true)
   }
 
-  const chooseSource = (source: 'camera' | 'gallery') => {
-    // This is a direct tap on a visible menu action, preserving user activation
-    // for mobile OS camera/photo-library file pickers.
-    setSourcePickerOpen(false)
-    if (source === 'camera') cameraInputRef.current?.click()
-    else galleryInputRef.current?.click()
-  }
-
   const replaceActivePhoto = () => pickSlotPhoto(activeSlot)
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
     event.currentTarget.value = ''
+    // The user tapped an actual file input, so no synthetic click is needed.
+    if (files.length) setSourcePickerOpen(false)
     if (!files.length || !frameMeta) return
 
     if (replaceTarget !== null) {
@@ -978,27 +970,6 @@ export default function AtelierWithInstax(props: Props) {
   return (
     <>
       <AtelierPlaceholderV2 {...props} />
-
-      <input
-        ref={galleryInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        multiple={replaceTarget === null}
-        onChange={onFileChange}
-        style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={onFileChange}
-        style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-        aria-hidden="true"
-        tabIndex={-1}
-      />
 
       {open && !tuneMode && (
         <div
@@ -1477,14 +1448,20 @@ export default function AtelierWithInstax(props: Props) {
               请选择照片来源
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
-              <button type="button" onClick={() => chooseSource('camera')}
-                style={{ ...themedButtonStyle, background: theme.selectedBg, borderColor: theme.selectedBorder, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
+              <label
+                style={{ ...themedButtonStyle, display: 'block', position: 'relative', background: theme.selectedBg, borderColor: theme.selectedBorder, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650, cursor: 'pointer' }}>
                 <span aria-hidden="true">📷 </span>拍照
-              </button>
-              <button type="button" onClick={() => chooseSource('gallery')}
-                style={{ ...themedButtonStyle, background: theme.selectedBg, borderColor: theme.selectedBorder, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650 }}>
+                <input type="file" accept="image/*" capture="environment" aria-label="拍照选取"
+                  onChange={onFileChange}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+              </label>
+              <label
+                style={{ ...themedButtonStyle, display: 'block', position: 'relative', background: theme.selectedBg, borderColor: theme.selectedBorder, borderRadius: 16, padding: '14px 12px', fontSize: 17, fontWeight: 650, cursor: 'pointer' }}>
                 <span aria-hidden="true">🖼️ </span>从图库选择
-              </button>
+                <input type="file" accept="image/png,image/jpeg,image/webp" multiple={replaceTarget === null}
+                  aria-label="从图库选择照片" onChange={onFileChange}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+              </label>
               <button type="button" onClick={() => setSourcePickerOpen(false)}
                 style={{
                   ...themedButtonStyle,
