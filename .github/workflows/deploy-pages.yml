@@ -2,7 +2,7 @@ name: Deploy PawCream Preview
 
 on:
   push:
-    branches: [main]
+    branches: [main, debug/desktop-letter-tuning]
   pull_request:
   workflow_dispatch:
 
