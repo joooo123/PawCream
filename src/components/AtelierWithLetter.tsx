@@ -286,8 +286,8 @@ export default function AtelierWithLetter(props: Props) {
   const tuneMode = query.get('tune') === '1'
   const letterTuneMode = query.get('letterTune') === '1'
 
-  const mobile = props.deviceProfile === 'mobile'
-  const activeProfile: DeviceProfile = mobile ? 'mobile' : 'desktop'
+  const mobile = letterTuneMode ? false : props.deviceProfile === 'mobile'
+  const activeProfile: DeviceProfile = letterTuneMode ? 'desktop' : mobile ? 'mobile' : 'desktop'
   const tune = tuneProfiles[activeProfile]
   const copy = mobile
     ? { ...COPY[language], body: language === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY }
@@ -355,16 +355,7 @@ export default function AtelierWithLetter(props: Props) {
     replay()
   }
 
-  const switchTuneProfile = (profile: DeviceProfile) => {
-    props.onDeviceChange(profile)
-    setPreviewMode('end')
-    setPaperRaised(true)
-    setTypedChars(totalTypingLength)
-    setCopyStatus(profile === 'mobile' ? '已切到手机端参数' : '已切到电脑端参数')
-    window.setTimeout(() => setCopyStatus(''), 1200)
-  }
-
-  const switchTuneLanguage = (nextLanguage: Language) => {
+    const switchTuneLanguage = (nextLanguage: Language) => {
     setLanguage(nextLanguage)
     setPreviewMode('end')
     setPaperRaised(true)
@@ -951,22 +942,11 @@ export default function AtelierWithLetter(props: Props) {
           {letterTuneMode && (
             <aside className="pawcream-letter-tune-panel" onClick={(event) => event.stopPropagation()}>
               <h3>品牌理念介绍调试板 · {activeProfile}</h3>
-              <p>参数按设备端独立保存。纸张宽度只横向拉伸，不改变高度；先选语言预览，再调整字号与位置，最后保存参数。</p>
+              <p>本调试页仅修改桌面端参数，不调整手机端布局。中英文可分别预览；信纸、文字区域、标题、副标题的宽高、字号、位置和行距均可实时调整，完成后复制桌面参数发回。</p>
 
               <div className="pawcream-letter-tune-profile">
-                <button
-                  type="button"
-                  className={activeProfile === 'desktop' ? 'is-active' : ''}
-                  onClick={() => switchTuneProfile('desktop')}
-                >
-                  Desktop
-                </button>
-                <button
-                  type="button"
-                  className={activeProfile === 'mobile' ? 'is-active' : ''}
-                  onClick={() => switchTuneProfile('mobile')}
-                >
-                  Mobile
+                <button type="button" className="is-active" disabled>
+                  Desktop · 仅调节电脑端
                 </button>
               </div>
 
@@ -1006,7 +986,9 @@ export default function AtelierWithLetter(props: Props) {
                 <TuneControl label="文字区顶部" value={tune.textTop} min={0} max={60} step={0.5} suffix="%" onChange={(v) => updateTune('textTop', v)} />
                 <TuneControl label="文字区宽度" value={tune.textWidth} min={30} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textWidth', v)} />
                 <TuneControl label="文字区高度" value={tune.textHeight} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('textHeight', v)} />
-                <TuneControl label="正文行高" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('bodyLineHeight', v)} />
+                <TuneControl label="默认正文行高" value={tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('bodyLineHeight', v)} />
+                <TuneControl label="中文正文行高" value={tune.zhBodyLineHeight ?? tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('zhBodyLineHeight', v)} />
+                <TuneControl label="英文正文行高" value={tune.enBodyLineHeight ?? tune.bodyLineHeight} min={1} max={2.6} step={0.02} suffix="×" onChange={(v) => updateTune('enBodyLineHeight', v)} />
               </fieldset>
 
               <fieldset>
@@ -1039,7 +1021,9 @@ export default function AtelierWithLetter(props: Props) {
               <fieldset>
                 <legend>副标题 · 大小与位置</legend>
                 <TuneControl label="副标题左侧" value={tune.subtitleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleLeft', v)} />
-                <TuneControl label="副标题顶部" value={tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleTop', v)} />
+                <TuneControl label="通用副标题顶部" value={tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleTop', v)} />
+                <TuneControl label="中文副标题顶部" value={tune.zhSubtitleTop ?? tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhSubtitleTop', v)} />
+                <TuneControl label="英文副标题顶部" value={tune.enSubtitleTop ?? tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enSubtitleTop', v)} />
                 <TuneControl label="副标题宽度" value={tune.subtitleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleWidth', v)} />
                 <TuneControl label="副标题高度" value={tune.subtitleHeight} min={5} max={30} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleHeight', v)} />
                 <TuneControl label="副标题字号" value={tune.subtitleSize} min={5} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('subtitleSize', v)} />
@@ -1059,8 +1043,8 @@ export default function AtelierWithLetter(props: Props) {
                 <button type="button" className={previewMode === 'play' ? 'is-active' : ''} onClick={replay}>重播动画</button>
                 <button type="button" onClick={saveTune}>保存参数</button>
                 <button type="button" onClick={restoreSavedTune}>恢复已保存</button>
-                <button type="button" onClick={copyTune}>复制当前端</button>
-                <button type="button" onClick={resetTune}>重置当前端</button>
+                <button type="button" onClick={copyTune}>复制桌面参数</button>
+                <button type="button" onClick={resetTune}>重置桌面参数</button>
                 <div className="pawcream-letter-save-state">
                   {dirty ? '● 有未保存修改' : '✓ 当前参数已保存'}
                   {copyStatus ? ` · ${copyStatus}` : ''}
