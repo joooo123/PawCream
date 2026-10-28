@@ -197,13 +197,13 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 const COPY = {
   zh: {
     title: '关于 PawCream',
-    body: '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\\n愿每一次换装，都像拆开一盒期待已久的小甜点。\\n躲进糖分里，暂时逃离喧嚣的大人世界。\\n甜蜜不止一点点，可爱也不止今天。',
+    body: '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n躲进糖分里，暂时逃离喧嚣的大人世界。\n甜蜜不止一点点，可爱也不止今天。',
     signature: 'made with a little sugar & lots of love ♡',
     close: '关闭品牌介绍',
   },
   en: {
     title: 'About PawCream',
-    body: 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.\\nEvery outfit change is like unboxing a long-awaited sweet.\\nHide in sweetness, escaping the adult world for a while. Sweetness and cuteness linger beyond today.',
+    body: 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.\nEvery outfit change is like unboxing a long-awaited sweet.\nHide in sweetness, escaping the adult world for a while. Sweetness and cuteness linger beyond today.',
     signature: 'made with a little sugar & lots of love ♡',
     close: 'Close brand introduction',
   },
