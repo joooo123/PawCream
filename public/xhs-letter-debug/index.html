@@ -14,7 +14,7 @@
   .preview{position:relative;top:auto;height:100%;min-height:0;padding:12px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;justify-items:center;align-items:center;gap:10px;overflow:hidden}
   .preview .heading{align-self:center}
   .preview>.actions{justify-content:center}
-  .phone{width:min(820px,calc(100vw - 400px),calc((100vh - 300px)*4/3));width:min(820px,calc(100vw - 400px),calc((100dvh - 300px)*4/3));max-width:100%;aspect-ratio:4/3;flex:none}
+  .phone{width:820px;max-width:none;aspect-ratio:4/3;zoom:1;flex:none}
   .note{width:min(820px,100%);max-width:100%}
   .controls{height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;padding:12px}
   .control{grid-template-columns:minmax(72px,.9fr) minmax(52px,1fr) 62px 10px;gap:5px;font-size:11px}
@@ -36,30 +36,30 @@
 <main class="layout"><section class="card preview"><h2 class="heading">桌面实时预览</h2><div class="actions"><button class="btn active" id="langZh">中文</button><button class="btn" id="langEn">English</button></div>
 <div class="phone" id="phone"><div class="screen"><div class="status"><span>18:42</span><span>▮▮▮ ◉ ▰</span></div><div class="nav"><span>‹</span><div><span>↗</span><span>···</span></div></div><div class="ambient">PAWCREAM ATELIER</div>
 <div class="scene" id="scene"><img class="layer back" src="../assets/envelop/back.png" alt=""><div class="wrap" id="wrap"><img class="paper" id="paper" src="../assets/envelop/paper.png" alt=""></div><img class="layer front" src="../assets/envelop/front.png" alt=""><div class="text-layer" id="textLayer"><div class="copyarea" id="copyarea"><h2 class="title" id="title"></h2><div class="signature" id="signature">made with a little sugar & lots of love ♡</div><p class="bodytext" id="body"></p></div></div></div><button class="close">×</button><div class="homebar"></div></div></div>
-<p class="note">仅调试电脑端。调整纸张、文字区域、主标题、副标题及中英文正文参数，修改会实时反映在预览中。</p><div class="actions"><button class="btn" id="start">预览开始</button><button class="btn" id="end">预览结束</button><button class="btn" id="replay">重新播放</button></div></section>
+<p class="note">固定 820×615 逻辑画布。窗口空间不足时整体等比例缩放，字体和间距同步缩放；复制出的参数仍是正式版原始数值，不做二次换算。</p><div class="actions"><button class="btn" id="start">预览开始</button><button class="btn" id="end">预览结束</button><button class="btn" id="replay">重新播放</button></div></section>
 <section class="card controls"><div class="headrow"><h2 class="heading">桌面端调试面板</h2><span class="btn active">仅 Desktop 参数</span></div><p class="hint">预览画布、字体、字距和换行规则与正式版桌面信纸保持一致。参数保存在当前浏览器；复制导出为正式版可识别的平铺 JSON，完整复制会附带中英文文案。</p><fieldset class="body-editor"><legend>正文 · 手动换行</legend><label for="bodyTextEditor" class="editor-label">当前语言正文</label><textarea id="bodyTextEditor" rows="8" spellcheck="false"></textarea><p class="hint">在需要换行的位置按 Enter。每个换行都会直接作用于手机预览；不需要空白行时，段落之间只按一次 Enter。编辑后保存或复制参数会一并包含正文换行。</p></fieldset><div id="controls"></div><div class="stickyactions"><button class="btn" id="reset">重置当前设备</button><button class="btn" id="restore">恢复已保存参数</button><button class="btn" id="copyAll">复制桌面参数与文案</button></div><div class="statusline" id="status">当前参数尚未保存</div></section></main>
 <script>
 const defaults={
   "desktop": {
-    "paperLeft": 7,
-    "paperTop": -20,
+    "paperLeft": 9,
+    "paperTop": -16,
     "paperWidth": 86,
-    "paperHeight": 86,
+    "paperHeight": 89,
     "paperScale": 0.88,
-    "paperStretchX": 1,
+    "paperStretchX": 1.14,
     "paperRotate": 0,
     "startY": 35,
     "endY": 9,
-    "textLeft": 12,
+    "textLeft": 14.5,
     "textTop": 13,
     "textWidth": 76,
-    "textHeight": 56,
+    "textHeight": 63,
     "titleLeft": 0,
     "titleTop": 0,
     "titleWidth": 100,
     "titleHeight": 18,
     "titleSize": 31.5,
-    "zhBodyLeft": 0,
+    "zhBodyLeft": 1,
     "zhBodyTop": 29,
     "zhBodyWidth": 100,
     "zhBodyHeight": 64,
@@ -68,7 +68,7 @@ const defaults={
     "enBodyTop": 29,
     "enBodyWidth": 100,
     "enBodyHeight": 64,
-    "enBodySize": 17.5,
+    "enBodySize": 22.5,
     "bodyLineHeight": 1.5,
     "zhBodyLineHeight": 1.5,
     "enBodyLineHeight": 1.4,
@@ -128,13 +128,13 @@ const defaults={
   }
 };
 const groups=[
-["纸张 · 宽度、高度与位置",[["paperLeft","纸张左侧",-10,40,.5,"%"],["paperTop","纸张顶部",-40,40,.5,"%"],["paperWidth","纸张区域宽度",40,110,.5,"%"],["paperHeight","纸张高度",35,110,.5,"%"],["paperStretchX","纸张横向拉伸",.6,1.8,.01,"×"],["paperScale","整体缩放",.5,1.3,.01,"×"],["paperRotate","纸张旋转",-12,12,.5,"°"],["startY","起始位置 Y",-40,50,.5,"%"],["endY","结束位置 Y",-40,30,.5,"%"]]],
-["文字区 · 整体",[["textLeft","文字区左侧",-10,50,.5,"%"],["textTop","文字区顶部",0,45,.5,"%"],["textWidth","文字区宽度",30,100,.5,"%"],["textHeight","文字区高度",20,100,.5,"%"]]],
-["标题 · 大小与位置",[["titleLeft","标题左侧",-20,30,.5,"%"],["titleTop","标题顶部",-10,40,.5,"%"],["titleWidth","标题宽度",40,140,1,"%"],["titleHeight","标题高度",5,35,.5,"%"],["titleSize","标题字号",8,40,.5,"px"]]],
-["中文正文",[["zhBodyLeft","中文左侧",-10,30,.5,"%"],["zhBodyTop","中文顶部",0,80,.5,"%"],["zhBodyWidth","中文宽度",40,130,.5,"%"],["zhBodyHeight","中文高度",10,90,.5,"%"],["zhBodySize","中文字体大小",5,24,.5,"px"],["zhBodyLineHeight","中文行距",.8,2.2,.02,"×"]]],
-["英文正文",[["enBodyLeft","英文左侧",-10,30,.5,"%"],["enBodyTop","英文顶部",0,80,.5,"%"],["enBodyWidth","英文宽度",40,130,.5,"%"],["enBodyHeight","英文高度",10,90,.5,"%"],["enBodySize","英文字体大小",5,24,.5,"px"],["enBodyLineHeight","英文行距",.8,2.2,.02,"×"]]],
-["副标题",[["subtitleLeft","副标题左侧",-10,30,.5,"%"],["zhSubtitleTop","中文副标题顶部",0,40,.5,"%"],["enSubtitleTop","英文副标题顶部",0,40,.5,"%"],["subtitleWidth","副标题宽度",40,130,.5,"%"],["subtitleHeight","副标题高度",4,20,.5,"%"],["subtitleSize","副标题字号",4,30,.5,"px"]]],
-["动画参数",[["riseMs","信纸升起时长",0,5000,50,"ms"],["typeGapMs","打字前等待",0,500,10,"ms"],["typeDelayZh","中文打字间隔",10,200,1,"ms"],["typeDelayEn","英文打字间隔",10,200,1,"ms"]]]];
+["纸张 · 宽度、高度与位置",[["paperLeft","纸张左侧",0,40,.5,"%"],["paperTop","纸张顶部",-20,40,.5,"%"],["paperWidth","纸张区域宽度",35,120,.5,"%"],["paperHeight","纸张高度",40,120,.5,"%"],["paperStretchX","纸张横向拉伸",.8,1.8,.01,"×"],["paperScale","整体缩放",.45,1.25,.01,"×"],["paperRotate","纸张旋转",-180,180,1,"°"],["startY","起始位置 Y",-100,140,1,"%"],["endY","结束位置 Y",-120,100,1,"%"]]],
+["文字区 · 整体",[["textLeft","文字区左侧",0,50,.5,"%"],["textTop","文字区顶部",0,60,.5,"%"],["textWidth","文字区宽度",30,100,.5,"%"],["textHeight","文字区高度",20,100,.5,"%"]]],
+["标题 · 大小与位置",[["titleLeft","标题左侧",0,100,.5,"%"],["titleTop","标题顶部",0,100,.5,"%"],["titleWidth","标题宽度",10,100,.5,"%"],["titleHeight","标题高度",5,40,.5,"%"],["titleSize","标题字号",8,48,.5,"px"]]],
+["中文正文",[["zhBodyLeft","中文左侧",0,100,.5,"%"],["zhBodyTop","中文顶部",0,100,.5,"%"],["zhBodyWidth","中文宽度",20,100,.5,"%"],["zhBodyHeight","中文高度",10,90,.5,"%"],["zhBodySize","中文字体大小",6,30,.5,"px"],["zhBodyLineHeight","中文行距",1,2.6,.02,"×"]]],
+["英文正文",[["enBodyLeft","英文左侧",0,100,.5,"%"],["enBodyTop","英文顶部",0,100,.5,"%"],["enBodyWidth","英文宽度",20,100,.5,"%"],["enBodyHeight","英文高度",10,90,.5,"%"],["enBodySize","英文字体大小",6,30,.5,"px"],["enBodyLineHeight","英文行距",1,2.6,.02,"×"]]],
+["副标题",[["subtitleLeft","副标题左侧",0,100,.5,"%"],["zhSubtitleTop","中文副标题顶部",0,100,.5,"%"],["enSubtitleTop","英文副标题顶部",0,100,.5,"%"],["subtitleWidth","副标题宽度",10,100,.5,"%"],["subtitleHeight","副标题高度",5,30,.5,"%"],["subtitleSize","副标题字号",5,30,.5,"px"]]],
+["动画参数",[["riseMs","信纸升起时长",200,4000,50,"ms"],["typeGapMs","打字前等待",0,1800,20,"ms"],["typeDelayZh","中文打字间隔",10,180,2,"ms"],["typeDelayEn","英文打字间隔",8,120,2,"ms"]]]];
 const copyText = {
   "zh": {
     "title": "关于 PawCream",
@@ -428,6 +428,32 @@ function syncBodyEditor() {
   $("bodyTextEditor").value = copyText[language].body;
 }
 
+function fitPreview() {
+  const phone = $("phone");
+  const previewCard = phone.parentElement;
+
+  if (window.innerWidth <= 900) {
+    phone.style.zoom = "1";
+    return;
+  }
+
+  const style = window.getComputedStyle(previewCard);
+  const children = Array.from(previewCard.children);
+  const paddingX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+  const paddingY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+  const gap = parseFloat(style.rowGap || style.gap) || 0;
+  const fixedHeight = children
+    .filter((child) => child !== phone)
+    .reduce((total, child) => total + child.getBoundingClientRect().height, 0);
+  const availableWidth = Math.max(0, previewCard.clientWidth - paddingX);
+  const availableHeight = Math.max(
+    0,
+    previewCard.clientHeight - paddingY - fixedHeight - gap * Math.max(0, children.length - 1)
+  );
+  const scale = Math.max(0.1, Math.min(1, availableWidth / 820, availableHeight / 615));
+  phone.style.zoom = scale.toFixed(4);
+}
+
 function replay() {
   clearReplayTimers();
   preview = "start";
@@ -520,4 +546,6 @@ $("reset").onclick = () => {
 renderControls();
 syncBodyEditor();
 draw();
+window.addEventListener("resize", fitPreview);
+window.requestAnimationFrame(fitPreview);
 </script></body></html>
