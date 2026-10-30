@@ -65,9 +65,10 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
-const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
-const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
+const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
+const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
+const OLDER_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -108,44 +109,44 @@ function preloadEnvelopeAssets(): Promise<void> {
 
 const DEFAULT_TUNE: LetterTuneProfiles = {
   desktop: {
-    paperLeft: 7,
-    paperTop: -20,
-    paperWidth: 89,
-    paperHeight: 98.5,
+    paperLeft: 9,
+    paperTop: -16,
+    paperWidth: 86,
+    paperHeight: 89,
     paperScale: 0.88,
-    paperStretchX: 1.17,
+    paperStretchX: 1.14,
     paperRotate: 0,
     startY: 35,
     endY: 9,
-    textLeft: 12,
+    textLeft: 14.5,
     textTop: 13,
     textWidth: 76,
-    textHeight: 56,
+    textHeight: 63,
     titleLeft: 0,
     titleTop: 0,
     titleWidth: 100,
     titleHeight: 18,
     titleSize: 31.5,
     zhBodyLeft: 1,
-    zhBodyTop: 28.5,
+    zhBodyTop: 29,
     zhBodyWidth: 100,
-    zhBodyHeight: 74,
+    zhBodyHeight: 64,
     zhBodySize: 18.5,
-    enBodyLeft: 0.5,
+    enBodyLeft: 0,
     enBodyTop: 29,
     enBodyWidth: 100,
-    enBodyHeight: 90,
-    enBodySize: 24,
+    enBodyHeight: 64,
+    enBodySize: 22.5,
     bodyLineHeight: 1.5,
-    zhBodyLineHeight: 1.7,
-    enBodyLineHeight: 1.28,
+    zhBodyLineHeight: 1.5,
+    enBodyLineHeight: 1.4,
     subtitleLeft: 0,
     subtitleTop: 18,
-    zhSubtitleTop: 13.5,
+    zhSubtitleTop: 18,
     enSubtitleTop: 18,
     subtitleWidth: 100,
     subtitleHeight: 10,
-    subtitleSize: 23,
+    subtitleSize: 20,
     riseMs: 4000,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -200,13 +201,13 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 const COPY = {
   zh: {
     title: '关于 PawCream',
-    body: '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n躲进糖分里，暂时逃离喧嚣的大人世界。\n甜蜜不止一点点，可爱也不止今天。',
+    body: '  你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n        愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                              甜蜜不止一点点，\n                              可爱也不止今天。',
     signature: 'made with a little sugar & lots of love ♡',
     close: '关闭品牌介绍',
   },
   en: {
     title: 'About PawCream',
-    body: 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.\nEvery outfit change is like unboxing a long-awaited sweet.\nHide in sweetness, escaping the adult world for a while. Sweetness and cuteness linger beyond today.',
+    body: 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit change is like unboxing a long-awaited sweet.\n             Hide in sweetness, escaping the adult world \n                      for a while. Sweetness and \n                           cuteness linger beyond\n                                    today.\n',
     signature: 'made with a little sugar & lots of love ♡',
     close: 'Close brand introduction',
   },
@@ -226,9 +227,10 @@ function readTuneProfiles(): LetterTuneProfiles {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previous = JSON.parse(window.localStorage.getItem(PREVIOUS_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const older = JSON.parse(window.localStorage.getItem(OLDER_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     return {
       desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
-      mobile: { ...DEFAULT_TUNE.mobile, ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(saved.mobile || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
