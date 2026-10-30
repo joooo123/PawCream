@@ -3,7 +3,20 @@ set -Eeuo pipefail
 
 APP_ROOT="${PAWCREAM_ROOT:-/opt/pawcream}"
 DEFAULT_ZIP="/home/admin/PawCream-main.zip"
-ZIP_PATH="${1:-$DEFAULT_ZIP}"
+DEFAULT_SOURCE="$APP_ROOT/source"
+DEPLOY_MODE="zip"
+SOURCE_PATH=""
+ZIP_PATH="$DEFAULT_ZIP"
+
+if [[ "${1:-}" == "--source" ]]; then
+  DEPLOY_MODE="source"
+  SOURCE_PATH="${2:-$DEFAULT_SOURCE}"
+elif [[ "${1:-}" == "--zip" ]]; then
+  ZIP_PATH="${2:-$DEFAULT_ZIP}"
+elif [[ -n "${1:-}" && "${1:-}" != "--rollback" ]]; then
+  ZIP_PATH="$1"
+fi
+
 NODE_IMAGE="${PAWCREAM_NODE_IMAGE:-node:22-alpine}"
 NPM_REGISTRY="${PAWCREAM_NPM_REGISTRY:-https://registry.npmmirror.com}"
 HEALTH_URL="${PAWCREAM_HEALTH_URL:-http://127.0.0.1/}"
@@ -29,7 +42,7 @@ trap cleanup EXIT
 
 require_root() {
   if [[ "${EUID}" -ne 0 ]]; then
-    die "请用 sudo 运行，例如：sudo bash $APP_ROOT/deploy.sh $ZIP_PATH"
+    die "请用 sudo 运行，例如：sudo bash $APP_ROOT/source/deploy.sh --source $APP_ROOT/source"
   fi
 }
 
@@ -193,7 +206,16 @@ ensure_webp_tools
 ensure_font_tools
 ensure_docker
 
-[[ -f "$ZIP_PATH" ]] || die "找不到 ZIP：$ZIP_PATH"
+SOURCE_COMMIT=""
+
+if [[ "$DEPLOY_MODE" == "zip" ]]; then
+  [[ -f "$ZIP_PATH" ]] || die "找不到 ZIP：$ZIP_PATH"
+else
+  [[ -d "$SOURCE_PATH" ]] || die "找不到源码目录：$SOURCE_PATH"
+  SOURCE_PATH="$(cd "$SOURCE_PATH" && pwd -P)"
+  [[ -f "$SOURCE_PATH/package.json" ]] || die "源码目录中未找到 package.json：$SOURCE_PATH"
+  SOURCE_COMMIT="$(git -C "$SOURCE_PATH" rev-parse HEAD 2>/dev/null || echo unknown)"
+fi
 
 mkdir -p "$APP_ROOT" "$APP_ROOT/.npm-cache"
 
@@ -201,17 +223,31 @@ log "检查磁盘空间"
 df -h "$APP_ROOT" | tail -n 1
 
 WORK_ROOT="$(mktemp -d "$APP_ROOT/.deploy-work.XXXXXX")"
-EXTRACT_DIR="$WORK_ROOT/extracted"
-mkdir -p "$EXTRACT_DIR"
 
-log "解压：$ZIP_PATH"
-unzip -q "$ZIP_PATH" -d "$EXTRACT_DIR"
+if [[ "$DEPLOY_MODE" == "zip" ]]; then
+  EXTRACT_DIR="$WORK_ROOT/extracted"
+  mkdir -p "$EXTRACT_DIR"
+  log "解压：$ZIP_PATH"
+  unzip -q "$ZIP_PATH" -d "$EXTRACT_DIR"
+  BUILD_ROOT="$EXTRACT_DIR"
+else
+  BUILD_ROOT="$WORK_ROOT/source"
+  mkdir -p "$BUILD_ROOT"
+  log "从 Git 源码目录创建临时构建副本：$SOURCE_PATH"
+  tar -C "$SOURCE_PATH" \
+    --exclude='./.git' \
+    --exclude='./node_modules' \
+    --exclude='./dist' \
+    --exclude='./backend/.env' \
+    --exclude='./nginx/pawcream.conf' \
+    -cf - . | tar -C "$BUILD_ROOT" -xf -
+fi
 
 PACKAGE_JSON="$(
-  find "$EXTRACT_DIR" -mindepth 1 -maxdepth 3 -type f -name package.json -print -quit
+  find "$BUILD_ROOT" -mindepth 1 -maxdepth 3 -type f -name package.json -print -quit
 )"
 
-[[ -n "$PACKAGE_JSON" ]] || die "ZIP 中未找到 package.json"
+[[ -n "$PACKAGE_JSON" ]] || die "源码中未找到 package.json"
 BUILD_SRC="$(dirname "$PACKAGE_JSON")"
 
 [[ -f "$BUILD_SRC/vite.config.ts" ]] || die "未找到 vite.config.ts，ZIP 结构不符合 PawCream 项目"
@@ -309,11 +345,17 @@ if ! health_check; then
   die "健康检查失败，并且上一版本也无法恢复正常，请检查 Docker/Nginx 日志"
 fi
 
-ZIP_SHA256="$(sha256sum "$ZIP_PATH" | awk '{print $1}')"
 {
   echo "deployed_at=$(date --iso-8601=seconds)"
-  echo "zip=$ZIP_PATH"
-  echo "zip_sha256=$ZIP_SHA256"
+  if [[ "$DEPLOY_MODE" == "zip" ]]; then
+    echo "source_type=zip"
+    echo "zip=$ZIP_PATH"
+    echo "zip_sha256=$(sha256sum "$ZIP_PATH" | awk '{print $1}')"
+  else
+    echo "source_type=git-directory"
+    echo "source_dir=$SOURCE_PATH"
+    echo "git_commit=$SOURCE_COMMIT"
+  fi
 } > "$APP_ROOT/DEPLOYED_VERSION"
 
 if [[ -f "$APP_ROOT/deploy.sh.next" ]]; then
