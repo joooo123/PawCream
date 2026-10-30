@@ -65,11 +65,12 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v7'
-const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
-const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
-const OLDER_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
-const OLDEST_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v8'
+const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v7'
+const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
+const OLDER_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
+const OLDEST_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
+const OLDESTEST_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -127,17 +128,17 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     titleTop: 0,
     titleWidth: 100,
     titleHeight: 18,
-    titleSize: 31.5,
+    titleSize: 3.8415,
     zhBodyLeft: 0,
     zhBodyTop: 29,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
-    zhBodySize: 18.5,
+    zhBodySize: 2.2561,
     enBodyLeft: 0,
     enBodyTop: 25.5,
     enBodyWidth: 100,
     enBodyHeight: 69,
-    enBodySize: 21,
+    enBodySize: 2.561,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.5,
     enBodyLineHeight: 1.4,
@@ -147,7 +148,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     enSubtitleTop: 14.5,
     subtitleWidth: 100,
     subtitleHeight: 10,
-    subtitleSize: 20,
+    subtitleSize: 2.439,
     riseMs: 4000,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -230,9 +231,27 @@ function readTuneProfiles(): LetterTuneProfiles {
     const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const older = JSON.parse(window.localStorage.getItem(OLDER_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const oldest = JSON.parse(window.localStorage.getItem(OLDEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const oldestest = JSON.parse(window.localStorage.getItem(OLDESTEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const oldDesktop: Partial<LetterTune> = {
+      ...(oldestest.desktop || {}),
+      ...(oldest.desktop || {}),
+      ...(older.desktop || {}),
+      ...(legacy.desktop || {}),
+      ...(previous.desktop || {}),
+    }
+    const desktop = saved.desktop
+      ? { ...DEFAULT_TUNE.desktop, ...saved.desktop }
+      : {
+          ...DEFAULT_TUNE.desktop,
+          ...oldDesktop,
+          titleSize: oldDesktop.titleSize == null ? DEFAULT_TUNE.desktop.titleSize : oldDesktop.titleSize / 8.2,
+          zhBodySize: oldDesktop.zhBodySize == null ? DEFAULT_TUNE.desktop.zhBodySize : oldDesktop.zhBodySize / 8.2,
+          enBodySize: oldDesktop.enBodySize == null ? DEFAULT_TUNE.desktop.enBodySize : oldDesktop.enBodySize / 8.2,
+          subtitleSize: oldDesktop.subtitleSize == null ? DEFAULT_TUNE.desktop.subtitleSize : oldDesktop.subtitleSize / 8.2,
+        }
     return {
-      desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
-      mobile: { ...DEFAULT_TUNE.mobile, ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(saved.mobile || {}) },
+      desktop,
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
@@ -571,6 +590,7 @@ export default function AtelierWithLetter(props: Props) {
               }
               .pawcream-envelope-stage {
                 position: relative;
+                container-type: inline-size;
                 width: 100%;
                 aspect-ratio: 4 / 3;
                 isolation: isolate;
@@ -876,7 +896,7 @@ export default function AtelierWithLetter(props: Props) {
                       height: `${tune.titleHeight}%`,
                       margin: 0,
                       overflow: 'visible',
-                      fontSize: mobile ? tune.titleSize : `${(tune.titleSize / 820) * 100}cqw`,
+                      fontSize: mobile ? tune.titleSize : `${tune.titleSize}cqw`,
                     }}
                   >
                     {visibleTitle}
@@ -893,7 +913,7 @@ export default function AtelierWithLetter(props: Props) {
                       height: `${tune.subtitleHeight}%`,
                       margin: 0,
                       overflow: 'hidden',
-                      fontSize: mobile ? tune.subtitleSize : `${(tune.subtitleSize / 820) * 100}cqw`,
+                      fontSize: mobile ? tune.subtitleSize : `${tune.subtitleSize}cqw`,
                     }}
                   >
                     {copy.signature}
@@ -911,7 +931,7 @@ export default function AtelierWithLetter(props: Props) {
                       overflow: 'hidden',
                       fontSize: mobile
                         ? (language === 'zh' ? tune.zhBodySize : tune.enBodySize)
-                        : `${((language === 'zh' ? tune.zhBodySize : tune.enBodySize) / 820) * 100}cqw`,
+                        : `${(language === 'zh' ? tune.zhBodySize : tune.enBodySize)}cqw`,
                       lineHeight: language === 'zh' ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight) : (tune.enBodyLineHeight ?? tune.bodyLineHeight),
                       letterSpacing: language === 'zh' ? '-.025em' : '.005em',
                     }}
@@ -1026,39 +1046,39 @@ export default function AtelierWithLetter(props: Props) {
               </fieldset>
 
               <fieldset>
-                <legend>标题 · 大小与位置</legend>
+                <legend>标题 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="标题左侧" value={tune.titleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleLeft', v)} />
                 <TuneControl label="标题顶部" value={tune.titleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleTop', v)} />
                 <TuneControl label="标题宽度" value={tune.titleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleWidth', v)} />
                 <TuneControl label="标题高度" value={tune.titleHeight} min={5} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('titleHeight', v)} />
-                <TuneControl label="标题字号" value={tune.titleSize} min={8} max={48} step={0.5} suffix="px" onChange={(v) => updateTune('titleSize', v)} />
+                <TuneControl label="标题字号" value={tune.titleSize} min={mobile ? 8 : 1} max={mobile ? 48 : 6} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('titleSize', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>中文正文 · 大小与位置</legend>
+                <legend>中文正文 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="中文左侧" value={tune.zhBodyLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyLeft', v)} />
                 <TuneControl label="中文顶部" value={tune.zhBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyTop', v)} />
                 <TuneControl label="中文宽度" value={tune.zhBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyWidth', v)} />
                 <TuneControl label="中文高度" value={tune.zhBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyHeight', v)} />
-                <TuneControl label="中文字体大小" value={tune.zhBodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('zhBodySize', v)} />
+                <TuneControl label="中文字体大小" value={tune.zhBodySize} min={mobile ? 6 : 0.75} max={mobile ? 30 : 3.75} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('zhBodySize', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>英文正文 · 大小与位置</legend>
+                <legend>英文正文 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="英文左侧" value={tune.enBodyLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyLeft', v)} />
                 <TuneControl label="英文顶部" value={tune.enBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyTop', v)} />
                 <TuneControl label="英文宽度" value={tune.enBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyWidth', v)} />
                 <TuneControl label="英文高度" value={tune.enBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyHeight', v)} />
-                <TuneControl label="英文字体大小" value={tune.enBodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('enBodySize', v)} />
+                <TuneControl label="英文字体大小" value={tune.enBodySize} min={mobile ? 6 : 0.75} max={mobile ? 30 : 3.75} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('enBodySize', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>副标题 · 大小与位置</legend>
+                <legend>副标题 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="副标题左侧" value={tune.subtitleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleLeft', v)} />
                 <TuneControl label="副标题顶部" value={tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleTop', v)} />
                 <TuneControl label="副标题宽度" value={tune.subtitleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleWidth', v)} />
                 <TuneControl label="副标题高度" value={tune.subtitleHeight} min={5} max={30} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleHeight', v)} />
-                <TuneControl label="副标题字号" value={tune.subtitleSize} min={5} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('subtitleSize', v)} />
+                <TuneControl label="副标题字号" value={tune.subtitleSize} min={mobile ? 5 : 0.6} max={mobile ? 30 : 3.75} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('subtitleSize', v)} />
               </fieldset>
 
               <fieldset>
