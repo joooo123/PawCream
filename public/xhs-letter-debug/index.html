@@ -36,7 +36,7 @@
 <main class="layout"><section class="card preview"><h2 class="heading">桌面实时预览</h2><div class="actions"><button class="btn active" id="langZh">中文</button><button class="btn" id="langEn">English</button></div>
 <div class="phone" id="phone"><div class="screen"><div class="status"><span>18:42</span><span>▮▮▮ ◉ ▰</span></div><div class="nav"><span>‹</span><div><span>↗</span><span>···</span></div></div><div class="ambient">PAWCREAM ATELIER</div>
 <div class="scene" id="scene"><img class="layer back" src="../assets/envelop/back.png" alt=""><div class="wrap" id="wrap"><img class="paper" id="paper" src="../assets/envelop/paper.png" alt=""></div><img class="layer front" src="../assets/envelop/front.png" alt=""><div class="text-layer" id="textLayer"><div class="copyarea" id="copyarea"><h2 class="title" id="title"></h2><div class="signature" id="signature">made with a little sugar & lots of love ♡</div><p class="bodytext" id="body"></p></div></div></div><button class="close">×</button><div class="homebar"></div></div></div>
-<p class="note">固定 820×615 逻辑画布。窗口空间不足时整体等比例缩放，字体和间距同步缩放；复制出的参数仍是正式版原始数值，不做二次换算。</p><div class="actions"><button class="btn" id="start">预览开始</button><button class="btn" id="end">预览结束</button><button class="btn" id="replay">重新播放</button></div></section>
+<p class="note">按正式版画布规则预览：常规 820×615，短屏（高度≤690px）720×540。调试区空间不足时整体等比例缩放，字体和间距同步缩放；复制参数不做二次换算。</p><div class="actions"><button class="btn" id="start">预览开始</button><button class="btn" id="end">预览结束</button><button class="btn" id="replay">重新播放</button></div></section>
 <section class="card controls"><div class="headrow"><h2 class="heading">桌面端调试面板</h2><span class="btn active">仅 Desktop 参数</span></div><p class="hint">预览画布、字体、字距和换行规则与正式版桌面信纸保持一致。参数保存在当前浏览器；复制导出为正式版可识别的平铺 JSON，完整复制会附带中英文文案。</p><fieldset class="body-editor"><legend>正文 · 手动换行</legend><label for="bodyTextEditor" class="editor-label">当前语言正文</label><textarea id="bodyTextEditor" rows="8" spellcheck="false"></textarea><p class="hint">在需要换行的位置按 Enter。每个换行都会直接作用于手机预览；不需要空白行时，段落之间只按一次 Enter。编辑后保存或复制参数会一并包含正文换行。</p></fieldset><div id="controls"></div><div class="stickyactions"><button class="btn" id="reset">重置当前设备</button><button class="btn" id="restore">恢复已保存参数</button><button class="btn" id="copyAll">复制桌面参数与文案</button></div><div class="statusline" id="status">当前参数尚未保存</div></section></main>
 <script>
 const defaults={
@@ -433,9 +433,15 @@ function fitPreview() {
   const previewCard = phone.parentElement;
 
   if (window.innerWidth <= 900) {
+    phone.style.width = "";
     phone.style.zoom = "1";
     return;
   }
+
+  // Match the production dialog width: 820px normally, 720px on short desktop screens.
+  const logicalWidth = window.innerHeight <= 690 ? 720 : 820;
+  const logicalHeight = logicalWidth * 3 / 4;
+  phone.style.width = logicalWidth + "px";
 
   const style = window.getComputedStyle(previewCard);
   const children = Array.from(previewCard.children);
@@ -450,7 +456,7 @@ function fitPreview() {
     0,
     previewCard.clientHeight - paddingY - fixedHeight - gap * Math.max(0, children.length - 1)
   );
-  const scale = Math.max(0.1, Math.min(1, availableWidth / 820, availableHeight / 615));
+  const scale = Math.max(0.1, Math.min(1, availableWidth / logicalWidth, availableHeight / logicalHeight));
   phone.style.zoom = scale.toFixed(4);
 }
 
