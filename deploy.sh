@@ -19,7 +19,8 @@ fi
 
 NODE_IMAGE="${PAWCREAM_NODE_IMAGE:-node:22-alpine}"
 NPM_REGISTRY="${PAWCREAM_NPM_REGISTRY:-https://registry.npmmirror.com}"
-HEALTH_URL="${PAWCREAM_HEALTH_URL:-http://127.0.0.1/}"
+HEALTH_HOST="${PAWCREAM_HEALTH_HOST:-pawcream.studio}"
+HEALTH_URL="${PAWCREAM_HEALTH_URL:-https://${HEALTH_HOST}/}"
 WORK_ROOT=""
 BUILD_SRC=""
 COMPOSE_FILE=""
@@ -158,7 +159,8 @@ health_check() {
   local i
 
   for ((i = 1; i <= retries; i++)); do
-    if curl --fail --silent --show-error --max-time 5 "$HEALTH_URL" >/dev/null 2>&1; then
+    if curl --resolve "${HEALTH_HOST}:443:127.0.0.1" \
+      --fail --silent --show-error --max-time 5 "$HEALTH_URL" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
