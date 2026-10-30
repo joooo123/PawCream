@@ -214,7 +214,9 @@ else
   [[ -d "$SOURCE_PATH" ]] || die "找不到源码目录：$SOURCE_PATH"
   SOURCE_PATH="$(cd "$SOURCE_PATH" && pwd -P)"
   [[ -f "$SOURCE_PATH/package.json" ]] || die "源码目录中未找到 package.json：$SOURCE_PATH"
-  SOURCE_COMMIT="$(git -C "$SOURCE_PATH" rev-parse HEAD 2>/dev/null || echo unknown)"
+  command -v git >/dev/null 2>&1 || die "源码模式需要 Git"
+  git -C "$SOURCE_PATH" rev-parse --verify HEAD >/dev/null 2>&1 || die "源码目录不是有效的 Git 仓库"
+  SOURCE_COMMIT="$(git -C "$SOURCE_PATH" rev-parse HEAD)"
 fi
 
 mkdir -p "$APP_ROOT" "$APP_ROOT/.npm-cache"
@@ -233,14 +235,10 @@ if [[ "$DEPLOY_MODE" == "zip" ]]; then
 else
   BUILD_ROOT="$WORK_ROOT/source"
   mkdir -p "$BUILD_ROOT"
-  log "从 Git 源码目录创建临时构建副本：$SOURCE_PATH"
-  tar -C "$SOURCE_PATH" \
-    --exclude='./.git' \
-    --exclude='./node_modules' \
-    --exclude='./dist' \
-    --exclude='./backend/.env' \
-    --exclude='./nginx/pawcream.conf' \
-    -cf - . | tar -C "$BUILD_ROOT" -xf -
+  log "从 Git 提交创建临时构建副本：$SOURCE_PATH（不包含服务器本地配置和未跟踪文件）"
+  git -C "$SOURCE_PATH" archive --format=tar HEAD -- . \
+    ':(exclude)nginx/pawcream.conf' \
+    ':(exclude)backend/.env' | tar -C "$BUILD_ROOT" -xf -
 fi
 
 PACKAGE_JSON="$(
