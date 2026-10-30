@@ -65,10 +65,11 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
-const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
-const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
-const OLDER_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v7'
+const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
+const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
+const OLDER_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
+const OLDEST_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -110,40 +111,40 @@ function preloadEnvelopeAssets(): Promise<void> {
 const DEFAULT_TUNE: LetterTuneProfiles = {
   desktop: {
     paperLeft: 9,
-    paperTop: -16,
+    paperTop: -20,
     paperWidth: 86,
-    paperHeight: 89,
+    paperHeight: 86,
     paperScale: 0.88,
-    paperStretchX: 1.14,
+    paperStretchX: 1.16,
     paperRotate: 0,
     startY: 35,
     endY: 9,
-    textLeft: 14.5,
+    textLeft: 12,
     textTop: 13,
     textWidth: 76,
-    textHeight: 63,
+    textHeight: 75,
     titleLeft: 0,
     titleTop: 0,
     titleWidth: 100,
     titleHeight: 18,
     titleSize: 31.5,
-    zhBodyLeft: 1,
+    zhBodyLeft: 0,
     zhBodyTop: 29,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
     zhBodySize: 18.5,
     enBodyLeft: 0,
-    enBodyTop: 29,
+    enBodyTop: 25.5,
     enBodyWidth: 100,
-    enBodyHeight: 64,
-    enBodySize: 22.5,
+    enBodyHeight: 69,
+    enBodySize: 21,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.5,
     enBodyLineHeight: 1.4,
     subtitleLeft: 0,
     subtitleTop: 18,
     zhSubtitleTop: 18,
-    enSubtitleTop: 18,
+    enSubtitleTop: 14.5,
     subtitleWidth: 100,
     subtitleHeight: 10,
     subtitleSize: 20,
@@ -199,19 +200,19 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 }
 
 const COPY = {
-  zh: {
-    title: '关于 PawCream',
-    body: '  你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n        愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                              甜蜜不止一点点，\n                              可爱也不止今天。',
-    signature: 'made with a little sugar & lots of love ♡',
-    close: '关闭品牌介绍',
+  "zh": {
+    "title": "关于 PawCream",
+    "body": "你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n   愿每一次换装，都像拆开一盒期待已久的小甜点。\n            躲进糖分里，暂时逃离喧嚣的大人世界。\n                           甜蜜不止一点点，\n                           可爱也不止今天。",
+    "signature": "made with a little sugar & lots of love ♡",
+    "close": "关闭品牌介绍"
   },
-  en: {
-    title: 'About PawCream',
-    body: 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit change is like unboxing a long-awaited sweet.\n             Hide in sweetness, escaping the adult world \n                      for a while. Sweetness and \n                           cuteness linger beyond\n                                    today.\n',
-    signature: 'made with a little sugar & lots of love ♡',
-    close: 'Close brand introduction',
-  },
-} as const
+  "en": {
+    "title": "About PawCream",
+    "body": "   Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit change is like \n      unboxing a long-awaited sweet.\n             Hide in sweetness, escaping the adult world \n                    for a while. Sweetness and \n                        cuteness linger beyond\n                             today.\n",
+    "signature": "made with a little sugar & lots of love ♡",
+    "close": "Close brand introduction"
+  }
+} as constt
 
 const MOBILE_ZH_BODY = '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。'
 const MOBILE_EN_BODY = 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \n    change is like unboxing a long-awaited sweet.\n       Hide in sweetness, escaping the adult world \n                for a while. Sweetness and \n                    cuteness linger beyond\n                             today.\n'
@@ -228,9 +229,10 @@ function readTuneProfiles(): LetterTuneProfiles {
     const previous = JSON.parse(window.localStorage.getItem(PREVIOUS_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const older = JSON.parse(window.localStorage.getItem(OLDER_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const oldest = JSON.parse(window.localStorage.getItem(OLDEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     return {
       desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
-      mobile: { ...DEFAULT_TUNE.mobile, ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(saved.mobile || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
@@ -550,8 +552,9 @@ export default function AtelierWithLetter(props: Props) {
               position: 'relative',
               width: mobile
                 ? 'min(580px, calc(100vw - 8px))'
-                : 'min(820px, calc(100vw - 44px))',
-              maxHeight: 'calc(100svh - 18px)',
+                : 'min(820px, calc(100vw - 44px), calc((100svh - 44px) * 4 / 3))',
+              maxHeight: mobile ? 'calc(100svh - 18px)' : 'calc(100svh - 44px)',
+              containerType: mobile ? undefined : 'inline-size',
               overflow: 'visible',
               padding: 0,
               border: 0,
@@ -571,6 +574,9 @@ export default function AtelierWithLetter(props: Props) {
                 isolation: isolate;
                 filter: drop-shadow(0 22px 34px rgba(74,108,134,.16));
                 animation: pawcream-envelope-enter 360ms ease-out both;
+              }
+              .pawcream-envelope-dialog:not(.is-mobile) .pawcream-envelope-stage {
+                filter: drop-shadow(0 2.68cqw 4.15cqw rgba(74,108,134,.16));
               }
               .pawcream-envelope-layer {
                 position: absolute;
@@ -868,7 +874,7 @@ export default function AtelierWithLetter(props: Props) {
                       height: `${tune.titleHeight}%`,
                       margin: 0,
                       overflow: 'visible',
-                      fontSize: tune.titleSize,
+                      fontSize: mobile ? tune.titleSize : `${(tune.titleSize / 820) * 100}cqw`,
                     }}
                   >
                     {visibleTitle}
@@ -885,7 +891,7 @@ export default function AtelierWithLetter(props: Props) {
                       height: `${tune.subtitleHeight}%`,
                       margin: 0,
                       overflow: 'hidden',
-                      fontSize: tune.subtitleSize,
+                      fontSize: mobile ? tune.subtitleSize : `${(tune.subtitleSize / 820) * 100}cqw`,
                     }}
                   >
                     {copy.signature}
@@ -901,7 +907,9 @@ export default function AtelierWithLetter(props: Props) {
                       height: `${language === 'zh' ? tune.zhBodyHeight : tune.enBodyHeight}%`,
                       margin: 0,
                       overflow: 'hidden',
-                      fontSize: language === 'zh' ? tune.zhBodySize : tune.enBodySize,
+                      fontSize: mobile
+                        ? (language === 'zh' ? tune.zhBodySize : tune.enBodySize)
+                        : `${((language === 'zh' ? tune.zhBodySize : tune.enBodySize) / 820) * 100}cqw`,
                       lineHeight: language === 'zh' ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight) : (tune.enBodyLineHeight ?? tune.bodyLineHeight),
                       letterSpacing: language === 'zh' ? '-.025em' : '.005em',
                     }}
@@ -932,11 +940,11 @@ export default function AtelierWithLetter(props: Props) {
               onClick={() => setOpen(false)}
               style={{
                 position: 'absolute',
-                top: mobile ? -2 : 4,
-                right: mobile ? 8 : 4,
+                top: mobile ? -2 : '0.49cqw',
+                right: mobile ? 8 : '0.49cqw',
                 zIndex: 8,
-                width: mobile ? 34 : 40,
-                height: mobile ? 34 : 40,
+                width: mobile ? 34 : '4.878cqw',
+                height: mobile ? 34 : '4.878cqw',
                 display: 'grid',
                 placeItems: 'center',
                 padding: 0,
@@ -946,7 +954,7 @@ export default function AtelierWithLetter(props: Props) {
                 color: '#6f8ca2',
                 boxShadow: '0 5px 18px rgba(78,112,138,.11)',
                 cursor: 'pointer',
-                fontSize: mobile ? 20 : 24,
+                fontSize: mobile ? 20 : '2.927cqw',
                 lineHeight: 1,
               }}
             >
