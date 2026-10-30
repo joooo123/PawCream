@@ -212,7 +212,7 @@ const COPY = {
     "signature": "made with a little sugar & lots of love ♡",
     "close": "Close brand introduction"
   }
-} as constt
+} as const
 
 const MOBILE_ZH_BODY = '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。'
 const MOBILE_EN_BODY = 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \n    change is like unboxing a long-awaited sweet.\n       Hide in sweetness, escaping the adult world \n                for a while. Sweetness and \n                    cuteness linger beyond\n                             today.\n'
