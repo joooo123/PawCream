@@ -241,9 +241,13 @@ else
     ':(exclude)backend/.env' | tar -C "$BUILD_ROOT" -xf -
 fi
 
-PACKAGE_JSON="$(
-  find "$BUILD_ROOT" -mindepth 1 -maxdepth 3 -type f -name package.json -print -quit
-)"
+if [[ -f "$BUILD_ROOT/package.json" ]]; then
+  PACKAGE_JSON="$BUILD_ROOT/package.json"
+else
+  PACKAGE_JSON="$(
+    find "$BUILD_ROOT" -mindepth 2 -maxdepth 4 -type f -name package.json -print -quit
+  )"
+fi
 
 [[ -n "$PACKAGE_JSON" ]] || die "源码中未找到 package.json"
 BUILD_SRC="$(dirname "$PACKAGE_JSON")"
