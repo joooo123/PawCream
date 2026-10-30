@@ -554,7 +554,6 @@ export default function AtelierWithLetter(props: Props) {
                 ? 'min(580px, calc(100vw - 8px))'
                 : 'min(820px, calc(100vw - 44px), calc((100svh - 44px) * 4 / 3))',
               maxHeight: mobile ? 'calc(100svh - 18px)' : 'calc(100svh - 44px)',
-              containerType: mobile ? undefined : 'inline-size',
               overflow: 'visible',
               padding: 0,
               border: 0,
@@ -567,6 +566,9 @@ export default function AtelierWithLetter(props: Props) {
             }}
           >
             <style>{`
+              .pawcream-envelope-dialog:not(.is-mobile) {
+                container-type: inline-size;
+              }
               .pawcream-envelope-stage {
                 position: relative;
                 width: 100%;
