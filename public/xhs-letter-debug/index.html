@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PawCream · 品牌理念信纸调试实验室</title>
 <style>
-@font-face{font-family:PawCN;src:url('../assets/font/AaZiTiGuanJiaWanWanTi-2.ttf')}@font-face{font-family:PawEN;src:url('../assets/font/Apple-Regular.ttf')}
-*{box-sizing:border-box}body{margin:0;background:#f3f7fb;color:#3c5d76;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.top{position:sticky;top:0;z-index:5;background:#f8fbffed;backdrop-filter:blur(14px);border-bottom:1px solid #dce8f2;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:750}.brand small{display:block;color:#829db0;font-size:12px;font-weight:400;margin-top:3px}button,input{font:inherit}.btn{border:1px solid #c8dce9;background:white;color:#456b88;border-radius:10px;padding:8px 12px;cursor:pointer}.btn.active,.btn.primary{background:#dcedf8;border-color:#a9cce3}.actions{display:flex;gap:7px;flex-wrap:wrap}.layout{display:grid;grid-template-columns:minmax(330px,.82fr) minmax(480px,1.3fr);gap:20px;max-width:1480px;margin:auto;padding:20px;align-items:start}.card{background:#fff;border:1px solid #dce8f1;border-radius:18px;padding:16px;box-shadow:0 12px 40px #7da4bf12}.preview{position:sticky;top:78px;display:flex;flex-direction:column;align-items:center;gap:12px}.heading{font-size:15px;font-weight:750;margin:0;align-self:flex-start}.hint{font-size:12px;color:#7f9bb0;line-height:1.6;margin:0}.phone{position:relative;width:min(100%,350px);aspect-ratio:390/844;border:9px solid #222;border-radius:45px;overflow:hidden;background:#e2eef6;box-shadow:0 12px 28px #29465b22}.screen{position:absolute;inset:0;border-radius:35px;overflow:hidden;background:radial-gradient(ellipse at 15% 45%,#e4f1e8,transparent 36%),radial-gradient(ellipse at 80% 58%,#eadff1,transparent 38%),linear-gradient(160deg,#dfeef6,#e6eff8 55%,#efe7f3)}.status{position:absolute;z-index:10;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;font-size:13px;font-weight:650;color:#101820}.nav{position:absolute;z-index:10;top:46px;left:12px;right:12px;display:flex;justify-content:space-between}.nav span{width:33px;height:33px;border-radius:50%;background:#ffffffb8;display:grid;place-items:center;color:#344f60;font-size:20px}.nav div{display:flex;gap:7px}.ambient{position:absolute;top:24%;width:100%;text-align:center;font-size:11px;letter-spacing:.18em;color:#8aa6b8;opacity:.7}.scene{position:absolute;left:0;right:0;top:39%;width:100%;aspect-ratio:4/3;filter:drop-shadow(0 15px 20px #526f8520)}.layer{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}.back{z-index:1}.front{z-index:4}.wrap{position:absolute;z-index:2;transform-origin:50% 84%}.paper{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:center}.text-layer{position:absolute;z-index:5;transform-origin:50% 84%;pointer-events:none}.copyarea{position:absolute;z-index:1;overflow:visible;color:#5b798f;font-family:PawCN,PawEN,sans-serif;pointer-events:none}.title{position:absolute;margin:0;text-align:center;overflow:visible;color:#527792;font-weight:400;line-height:1.28}.signature{position:absolute;overflow:hidden;margin:0;text-align:center;color:#88a2b5;font-family:PawEN,sans-serif;letter-spacing:.04em;line-height:1.35;white-space:nowrap}.bodytext{position:absolute;margin:0;overflow:hidden;color:#648198;letter-spacing:.012em;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}.close{position:absolute;z-index:8;right:8%;top:4%;width:34px;height:34px;border-radius:50%;border:1px solid #cbdfea;background:#ffffffed;color:#7293aa;font-size:24px}.homebar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:108px;height:4px;border-radius:5px;background:#111}.note{width:100%;border-radius:12px;background:#f5f9fc;padding:10px 12px;font-size:12px;color:#7893a8;line-height:1.6}.controls{min-width:0}.headrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.profiles{display:flex;gap:7px;flex-wrap:wrap}.profiles button{border:1px solid #c9dce9;background:#fff;color:#527590;border-radius:9px;padding:8px 11px;cursor:pointer}.profiles button.active{background:#dceef9;border-color:#9fc5df}fieldset{border:1px solid #d6e6f1;border-radius:13px;margin:12px 0;padding:10px 12px 12px;min-width:0}legend{padding:0 6px;font-size:12px;color:#7194ad}.control{display:grid;grid-template-columns:minmax(100px,1fr) minmax(100px,1.5fr) 68px 14px;gap:8px;align-items:center;margin:9px 0;font-size:12px;color:#64849c}.body-editor{border:1px solid #d6e6f1;border-radius:13px;margin:12px 0;padding:10px 12px 12px;min-width:0}.editor-label{display:block;font-size:12px;color:#64849c;margin:4px 0 8px}.body-editor textarea{display:block;width:100%;resize:vertical;border:1px solid #cfdfeb;border-radius:9px;padding:10px;color:#426985;background:#fbfdff;font:inherit;font-size:13px;line-height:1.65}.body-editor .hint{margin-top:8px}.control input[type=range]{width:100%;accent-color:#1681f5}.control input[type=number]{width:100%;min-width:0;border:1px solid #cfdfeb;border-radius:8px;padding:6px;color:#426985;background:#fbfdff}.unit{color:#9ab1c1}.stickyactions{position:sticky;bottom:0;padding:12px 0 2px;background:linear-gradient(#ffffffdd,#fff 18%);display:flex;gap:7px;flex-wrap:wrap}.statusline{font-size:12px;color:#a8755c;min-height:18px;margin-top:8px}
-@media(max-width:950px){.layout{grid-template-columns:1fr;max-width:650px}.preview{position:relative;top:auto}.phone{width:min(100%,330px)}.control{grid-template-columns:100px minmax(70px,1fr) 66px 12px}.top{padding:12px 14px}.layout{padding:12px}}@media(max-width:440px){.layout{padding:9px;gap:10px}.card{padding:12px}.phone{width:min(100%,290px);border-width:7px;border-radius:38px}.screen{border-radius:30px}.control{grid-template-columns:85px minmax(60px,1fr) 60px 10px;gap:5px;font-size:11px}.top{align-items:flex-start}.btn{padding:7px 9px;font-size:12px}}
-.phone{width:100%;max-width:920px;aspect-ratio:4/3;border:0;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 12% 48%,#e4f1e8,transparent 34%),radial-gradient(ellipse at 84% 58%,#eadff1,transparent 38%),linear-gradient(160deg,#dfeef6,#e6eff8 55%,#efe7f3);box-shadow:0 12px 28px #29465b22}.screen{border-radius:18px}.status,.nav,.ambient,.homebar{display:none!important}.scene{top:0!important;left:0!important;right:0!important;width:100%!important}.close{right:3%;top:3%}.layout{grid-template-columns:minmax(0,1.45fr) minmax(390px,1fr);max-width:1700px}.preview{min-width:0}.controls{min-width:0}@media(max-width:950px){.layout{grid-template-columns:1fr;max-width:100%}.phone{width:100%;max-width:100%}.preview{position:relative;top:auto}}@media(max-width:440px){.phone{width:100%;border:0;border-radius:12px}.screen{border-radius:12px}}
+@font-face{font-family:'PawCream CN';src:url('../assets/font/AaZiTiGuanJiaWanWanTi-2.ttf')}@font-face{font-family:'PawCream EN';src:url('../assets/font/Apple-Regular.ttf')}
+*{box-sizing:border-box}body{margin:0;background:#f3f7fb;color:#3c5d76;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.top{position:sticky;top:0;z-index:5;background:#f8fbffed;backdrop-filter:blur(14px);border-bottom:1px solid #dce8f2;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:750}.brand small{display:block;color:#829db0;font-size:12px;font-weight:400;margin-top:3px}button,input{font:inherit}.btn{border:1px solid #c8dce9;background:white;color:#456b88;border-radius:10px;padding:8px 12px;cursor:pointer}.btn.active,.btn.primary{background:#dcedf8;border-color:#a9cce3}.actions{display:flex;gap:7px;flex-wrap:wrap}.layout{display:grid;grid-template-columns:minmax(330px,.82fr) minmax(480px,1.3fr);gap:20px;max-width:1480px;margin:auto;padding:20px;align-items:start}.card{background:#fff;border:1px solid #dce8f1;border-radius:18px;padding:16px;box-shadow:0 12px 40px #7da4bf12}.preview{position:sticky;top:78px;display:flex;flex-direction:column;align-items:center;gap:12px}.heading{font-size:15px;font-weight:750;margin:0;align-self:flex-start}.hint{font-size:12px;color:#7f9bb0;line-height:1.6;margin:0}.phone{position:relative;width:min(100%,350px);aspect-ratio:390/844;border:9px solid #222;border-radius:45px;overflow:hidden;background:#e2eef6;box-shadow:0 12px 28px #29465b22}.screen{position:absolute;inset:0;border-radius:35px;overflow:hidden;background:radial-gradient(ellipse at 15% 45%,#e4f1e8,transparent 36%),radial-gradient(ellipse at 80% 58%,#eadff1,transparent 38%),linear-gradient(160deg,#dfeef6,#e6eff8 55%,#efe7f3)}.status{position:absolute;z-index:10;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;font-size:13px;font-weight:650;color:#101820}.nav{position:absolute;z-index:10;top:46px;left:12px;right:12px;display:flex;justify-content:space-between}.nav span{width:33px;height:33px;border-radius:50%;background:#ffffffb8;display:grid;place-items:center;color:#344f60;font-size:20px}.nav div{display:flex;gap:7px}.ambient{position:absolute;top:24%;width:100%;text-align:center;font-size:11px;letter-spacing:.18em;color:#8aa6b8;opacity:.7}.scene{position:absolute;left:0;right:0;top:39%;width:100%;aspect-ratio:4/3;filter:drop-shadow(0 22px 34px rgba(74,108,134,.16))}.layer{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}.back{z-index:1}.front{z-index:4}.wrap{position:absolute;z-index:2;transform-origin:50% 84%}.paper{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:center}.text-layer{position:absolute;z-index:5;transform-origin:50% 84%;pointer-events:none}.copyarea{position:absolute;z-index:1;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:visible;color:#5b798f;font-family:'PawCream CN','PawCream EN',sans-serif;pointer-events:none}.title{position:absolute;min-height:1.35em;margin:0;text-align:center;overflow:visible;color:#527792;font-weight:400;line-height:1.28}.signature{position:absolute;overflow:hidden;margin:0;text-align:center;color:#88a2b5;font-family:'PawCream EN',sans-serif;letter-spacing:.04em;line-height:1.35;white-space:nowrap;opacity:0;transform:translateY(3px);transition:opacity 520ms ease,transform 520ms ease}.signature.is-visible{opacity:1;transform:translateY(0)}.type-caret{display:inline-block;width:.08em;height:.95em;margin-left:.12em;vertical-align:-.08em;border-right:1.5px solid currentColor;animation:caret-blink 720ms steps(1,end) infinite}@keyframes caret-blink{0%,46%{opacity:1}47%,100%{opacity:0}}.bodytext{position:absolute;margin:0;overflow:hidden;color:#4c7188;letter-spacing:normal;text-align:left;white-space:pre-wrap;overflow-wrap:normal;word-break:normal}.close{position:absolute;z-index:8;right:8%;top:4%;width:34px;height:34px;border-radius:50%;border:1px solid #cbdfea;background:#ffffffed;color:#7293aa;font-size:24px}.homebar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:108px;height:4px;border-radius:5px;background:#111}.note{width:100%;border-radius:12px;background:#f5f9fc;padding:10px 12px;font-size:12px;color:#7893a8;line-height:1.6}.controls{min-width:0}.headrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.profiles{display:flex;gap:7px;flex-wrap:wrap}.profiles button{border:1px solid #c9dce9;background:#fff;color:#527590;border-radius:9px;padding:8px 11px;cursor:pointer}.profiles button.active{background:#dceef9;border-color:#9fc5df}fieldset{border:1px solid #d6e6f1;border-radius:13px;margin:12px 0;padding:10px 12px 12px;min-width:0}legend{padding:0 6px;font-size:12px;color:#7194ad}.control{display:grid;grid-template-columns:minmax(100px,1fr) minmax(100px,1.5fr) 68px 14px;gap:8px;align-items:center;margin:9px 0;font-size:12px;color:#64849c}.body-editor{border:1px solid #d6e6f1;border-radius:13px;margin:12px 0;padding:10px 12px 12px;min-width:0}.editor-label{display:block;font-size:12px;color:#64849c;margin:4px 0 8px}.body-editor textarea{display:block;width:100%;resize:vertical;border:1px solid #cfdfeb;border-radius:9px;padding:10px;color:#426985;background:#fbfdff;font:inherit;font-size:13px;line-height:1.65}.body-editor .hint{margin-top:8px}.control input[type=range]{width:100%;accent-color:#1681f5}.control input[type=number]{width:100%;min-width:0;border:1px solid #cfdfeb;border-radius:8px;padding:6px;color:#426985;background:#fbfdff}.unit{color:#9ab1c1}.stickyactions{position:sticky;bottom:0;padding:12px 0 2px;background:linear-gradient(#ffffffdd,#fff 18%);display:flex;gap:7px;flex-wrap:wrap}.statusline{font-size:12px;color:#a8755c;min-height:18px;margin-top:8px}
+@media(max-width:1450px){.layout{grid-template-columns:1fr;max-width:650px}.preview{position:relative;top:auto}.phone{width:min(100%,330px)}.control{grid-template-columns:100px minmax(70px,1fr) 66px 12px}.top{padding:12px 14px}.layout{padding:12px}}@media(max-width:440px){.layout{padding:9px;gap:10px}.card{padding:12px}.phone{width:min(100%,290px);border-width:7px;border-radius:38px}.screen{border-radius:30px}.control{grid-template-columns:85px minmax(60px,1fr) 60px 10px;gap:5px;font-size:11px}.top{align-items:flex-start}.btn{padding:7px 9px;font-size:12px}}
+.phone{width:min(820px,calc(100vw - 44px));max-width:820px;aspect-ratio:4/3;border:0;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 12% 48%,#e4f1e8,transparent 34%),radial-gradient(ellipse at 84% 58%,#eadff1,transparent 38%),linear-gradient(160deg,#dfeef6,#e6eff8 55%,#efe7f3);box-shadow:0 12px 28px #29465b22}.screen{border-radius:18px}.status,.nav,.ambient,.homebar{display:none!important}.scene{top:0!important;left:0!important;right:0!important;width:100%!important}.close{right:3%;top:3%}.layout{grid-template-columns:minmax(0,1.45fr) minmax(390px,1fr);max-width:1700px}.preview{min-width:0}.controls{min-width:0}@media(max-width:1450px){.layout{grid-template-columns:1fr;max-width:100%}.phone{width:min(820px,calc(100vw - 44px));max-width:820px}.preview{position:relative;top:auto}}@media(max-width:440px){.phone{width:min(820px,calc(100vw - 44px));border:0;border-radius:12px}.screen{border-radius:12px}}@media(max-height:690px) and (min-width:701px){.phone{width:min(720px,calc(100vw - 44px))}}
 </style></head><body>
 <header class="top"><div class="brand">PawCream <small>品牌理念介绍 · 独立调试实验室</small></div><div class="actions"><button class="btn" id="copy">复制当前参数</button><button class="btn primary" id="save">保存参数</button></div></header>
 <main class="layout"><section class="card preview"><h2 class="heading">桌面实时预览</h2><div class="actions"><button class="btn active" id="langZh">中文</button><button class="btn" id="langEn">English</button></div>
 <div class="phone" id="phone"><div class="screen"><div class="status"><span>18:42</span><span>▮▮▮ ◉ ▰</span></div><div class="nav"><span>‹</span><div><span>↗</span><span>···</span></div></div><div class="ambient">PAWCREAM ATELIER</div>
 <div class="scene" id="scene"><img class="layer back" src="../assets/envelop/back.png" alt=""><div class="wrap" id="wrap"><img class="paper" id="paper" src="../assets/envelop/paper.png" alt=""></div><img class="layer front" src="../assets/envelop/front.png" alt=""><div class="text-layer" id="textLayer"><div class="copyarea" id="copyarea"><h2 class="title" id="title"></h2><div class="signature" id="signature">made with a little sugar & lots of love ♡</div><p class="bodytext" id="body"></p></div></div></div><button class="close">×</button><div class="homebar"></div></div></div>
 <p class="note">仅调试电脑端。调整纸张、文字区域、主标题、副标题及中英文正文参数，修改会实时反映在预览中。</p><div class="actions"><button class="btn" id="start">预览开始</button><button class="btn" id="end">预览结束</button><button class="btn" id="replay">重新播放</button></div></section>
-<section class="card controls"><div class="headrow"><h2 class="heading">桌面端调试面板</h2><span class="btn active">仅 Desktop 参数</span></div><p class="hint">滑块与数字框双向同步；调整会实时预览。保存后参数仅保存在当前浏览器，复制后可将 JSON 发回用于正式版同步。</p><fieldset class="body-editor"><legend>正文 · 手动换行</legend><label for="bodyTextEditor" class="editor-label">当前语言正文</label><textarea id="bodyTextEditor" rows="8" spellcheck="false"></textarea><p class="hint">在需要换行的位置按 Enter。每个换行都会直接作用于手机预览；不需要空白行时，段落之间只按一次 Enter。编辑后保存或复制参数会一并包含正文换行。</p></fieldset><div id="controls"></div><div class="stickyactions"><button class="btn" id="reset">重置当前设备</button><button class="btn" id="restore">恢复已保存参数</button><button class="btn" id="copyAll">复制桌面参数与文案</button></div><div class="statusline" id="status">当前参数尚未保存</div></section></main>
+<section class="card controls"><div class="headrow"><h2 class="heading">桌面端调试面板</h2><span class="btn active">仅 Desktop 参数</span></div><p class="hint">预览画布、字体、字距和换行规则与正式版桌面信纸保持一致。参数保存在当前浏览器；复制导出为正式版可识别的平铺 JSON，完整复制会附带中英文文案。</p><fieldset class="body-editor"><legend>正文 · 手动换行</legend><label for="bodyTextEditor" class="editor-label">当前语言正文</label><textarea id="bodyTextEditor" rows="8" spellcheck="false"></textarea><p class="hint">在需要换行的位置按 Enter。每个换行都会直接作用于手机预览；不需要空白行时，段落之间只按一次 Enter。编辑后保存或复制参数会一并包含正文换行。</p></fieldset><div id="controls"></div><div class="stickyactions"><button class="btn" id="reset">重置当前设备</button><button class="btn" id="restore">恢复已保存参数</button><button class="btn" id="copyAll">复制桌面参数与文案</button></div><div class="statusline" id="status">当前参数尚未保存</div></section></main>
 <script>
 const defaults={
   "desktop": {
@@ -123,15 +123,375 @@ const copyText = {
     "close": "Close brand introduction"
   }
 };
-let profile="desktop",language="zh",preview="end",values=JSON.parse(JSON.stringify(defaults));
-function readSaved(){try{return JSON.parse(localStorage.getItem("pawcream-letter-lab-desktop-v1"))}catch(e){return null}}
-const prior=readSaved();if(prior)if(prior.desktop)values.desktop=Object.assign({},values.desktop,prior.desktop);
-const $=id=>document.getElementById(id);
-function renderControls(){const root=$("controls");root.innerHTML="";groups.forEach(g=>{const fs=document.createElement("fieldset"),legend=document.createElement("legend");legend.textContent=g[0];fs.append(legend);g[1].forEach(item=>{const key=item[0],row=document.createElement("label");row.className="control";const name=document.createElement("span");name.textContent=item[1];const range=document.createElement("input");range.type="range";range.min=item[2];range.max=item[3];range.step=item[4];range.value=values[profile][key];range.dataset.key=key;const num=document.createElement("input");num.type="number";num.min=item[2];num.max=item[3];num.step=item[4];num.value=values[profile][key];num.dataset.key=key;const unit=document.createElement("span");unit.className="unit";unit.textContent=item[5];range.oninput=()=>update(key,Number(range.value));num.onchange=()=>update(key,Number(num.value));row.append(name,range,num,unit);fs.append(row)});root.append(fs)})}
-function update(key,v){if(!Number.isFinite(v))return;const item=groups.flatMap(g=>g[1]).find(x=>x[0]===key);v=Math.max(item[2],Math.min(item[3],v));values[profile][key]=v;const inputs=$("controls").querySelectorAll("input[data-key]");inputs.forEach(x=>{if(x.dataset.key===key)x.value=v});draw();$("status").textContent="有未保存的修改"}
-function draw(){const t=values.desktop,txt=copyText[language],wrap=$("wrap"),textLayer=$("textLayer"),copy=$("copyarea"),title=$("title"),sig=$("signature"),body=$("body"),scene=$("scene");scene.style.top="0";scene.style.left="0";scene.style.right="0";scene.style.width="100%";wrap.style.left=t.paperLeft+"%";wrap.style.top=t.paperTop+"%";wrap.style.width=t.paperWidth+"%";wrap.style.height=t.paperHeight+"%";wrap.style.transform="translate3d(0,"+(preview==="start"?t.startY:t.endY)+"%,0) rotate("+t.paperRotate+"deg) scale("+t.paperScale+")";textLayer.style.left=t.paperLeft+"%";textLayer.style.top=t.paperTop+"%";textLayer.style.width=t.paperWidth+"%";textLayer.style.height=t.paperHeight+"%";textLayer.style.transform=wrap.style.transform;$("paper").style.transform="scaleX("+t.paperStretchX+")";copy.style.left=t.textLeft+"%";copy.style.top=t.textTop+"%";copy.style.width=t.textWidth+"%";copy.style.height=t.textHeight+"%";copy.style.fontFamily=language==="zh"?"PawCN,PawEN,sans-serif":"PawEN,sans-serif";title.textContent=txt.title;sig.textContent=txt.signature;title.style.left=t.titleLeft+"%";title.style.top=t.titleTop+"%";title.style.width=t.titleWidth+"%";title.style.height=t.titleHeight+"%";title.style.fontSize=t.titleSize+"px";sig.style.left=t.subtitleLeft+"%";sig.style.top=(language==="zh"?(t.zhSubtitleTop??t.subtitleTop):(t.enSubtitleTop??t.subtitleTop))+"%";sig.style.width=t.subtitleWidth+"%";sig.style.height=t.subtitleHeight+"%";sig.style.fontSize=t.subtitleSize+"px";body.textContent=txt.body;body.style.left=(language==="zh"?t.zhBodyLeft:t.enBodyLeft)+"%";body.style.top=(language==="zh"?t.zhBodyTop:t.enBodyTop)+"%";body.style.width=(language==="zh"?t.zhBodyWidth:t.enBodyWidth)+"%";body.style.height=(language==="zh"?t.zhBodyHeight:t.enBodyHeight)+"%";body.style.fontSize=(language==="zh"?t.zhBodySize:t.enBodySize)+"px";body.style.lineHeight=language==="zh"?(t.zhBodyLineHeight??t.bodyLineHeight):(t.enBodyLineHeight??t.bodyLineHeight);$("langZh").classList.toggle("active",language==="zh");$("langEn").classList.toggle("active",language==="en")}
-function switchProfile(p){profile=p;renderControls();draw()}
-function save(){localStorage.setItem("pawcream-letter-lab-desktop-v1",JSON.stringify({desktop:values.desktop,__copyText:copyText}));$("status").textContent="桌面参数与正文换行已保存到当前浏览器"}
-function copyData(all){const text=JSON.stringify(all?{profile:"desktop",parameters:values.desktop,copyText:copyText}:{profile:"desktop",language:language,parameters:values.desktop,bodyText:copyText[language].body},null,2);if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(()=>$("status").textContent="参数已复制").catch(()=>prompt("复制参数",text));else prompt("复制参数",text)}
-function syncBodyEditor(){$("bodyTextEditor").value=copyText[language].body} $("bodyTextEditor").addEventListener("input",()=>{copyText[language].body=$("bodyTextEditor").value;draw();$("status").textContent="正文换行有未保存的修改"}); $("langZh").onclick=()=>{language="zh";syncBodyEditor();draw()};$("langEn").onclick=()=>{language="en";syncBodyEditor();draw()};$("start").onclick=()=>{preview="start";draw()};$("end").onclick=()=>{preview="end";draw()};$("replay").onclick=()=>{preview="start";draw();setTimeout(()=>{preview="end";draw()},values[profile].riseMs)};$("save").onclick=save;$("copy").onclick=()=>copyData(false);$("copyAll").onclick=()=>copyData(true);$("restore").onclick=()=>{const v=readSaved();if(v){values.desktop=Object.assign({},defaults.desktop,v.desktop||{});if(v.__copyText)for(const lang of ["zh","en"])if(v.__copyText[lang])copyText[lang]=Object.assign({},copyText[lang],v.__copyText[lang])}renderControls();syncBodyEditor();draw();$("status").textContent=v?"已恢复参数与正文换行":"当前浏览器没有已保存参数"};$("reset").onclick=()=>{values[profile]=Object.assign({},defaults[profile]);renderControls();draw();$("status").textContent="已重置当前设备参数，尚未保存"};renderControls();syncBodyEditor();draw();
+let profile = "desktop";
+let language = "zh";
+let preview = "end";
+let values = JSON.parse(JSON.stringify(defaults));
+const PAPER_START_DELAY_MS = 120;
+let typedChars = copyText.zh.title.length + copyText.zh.body.length;
+let riseTimer = null;
+let typingTimer = null;
+
+function readSaved() {
+  try {
+    return JSON.parse(localStorage.getItem("pawcream-letter-lab-desktop-v1"));
+  } catch (error) {
+    return null;
+  }
+}
+
+function mergeParameters(base, source) {
+  const merged = { ...base };
+  if (!source || typeof source !== "object") return merged;
+  Object.keys(base).forEach((key) => {
+    if (typeof source[key] === "number" && Number.isFinite(source[key])) {
+      merged[key] = source[key];
+    }
+  });
+  return merged;
+}
+
+function restoreSavedData(saved) {
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return false;
+
+  const parameterSource = saved.desktop || saved.parameters || saved;
+  values.desktop = mergeParameters(defaults.desktop, parameterSource);
+
+  const savedCopyText = saved.__copyText || saved.copyText;
+  if (savedCopyText && typeof savedCopyText === "object") {
+    ["zh", "en"].forEach((lang) => {
+      const source = savedCopyText[lang];
+      if (!source || typeof source !== "object") return;
+      ["title", "body", "signature", "close"].forEach((key) => {
+        if (typeof source[key] === "string") copyText[lang][key] = source[key];
+      });
+    });
+  }
+
+  if ((saved.language === "zh" || saved.language === "en") && typeof saved.bodyText === "string") {
+    copyText[saved.language].body = saved.bodyText;
+  }
+  return true;
+}
+
+const prior = readSaved();
+if (prior) restoreSavedData(prior);
+typedChars = copyText[language].title.length + copyText[language].body.length;
+
+const $ = (id) => document.getElementById(id);
+
+function clearReplayTimers() {
+  if (riseTimer !== null) window.clearTimeout(riseTimer);
+  if (typingTimer !== null) window.clearTimeout(typingTimer);
+  riseTimer = null;
+  typingTimer = null;
+}
+
+function totalTypingLength() {
+  return copyText[language].title.length + copyText[language].body.length;
+}
+
+function appendCaret(element) {
+  const caret = document.createElement("span");
+  caret.className = "type-caret";
+  caret.setAttribute("aria-hidden", "true");
+  element.append(caret);
+}
+
+function renderControls() {
+  const root = $("controls");
+  root.innerHTML = "";
+  groups.forEach((group) => {
+    const fieldset = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = group[0];
+    fieldset.append(legend);
+
+    group[1].forEach((item) => {
+      const [key, label, min, max, step, unitText] = item;
+      const row = document.createElement("label");
+      row.className = "control";
+
+      const name = document.createElement("span");
+      name.textContent = label;
+
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = min;
+      range.max = max;
+      range.step = step;
+      range.value = values[profile][key];
+      range.dataset.key = key;
+
+      const number = document.createElement("input");
+      number.type = "number";
+      number.min = min;
+      number.max = max;
+      number.step = step;
+      number.value = values[profile][key];
+      number.dataset.key = key;
+
+      const unit = document.createElement("span");
+      unit.className = "unit";
+      unit.textContent = unitText;
+
+      range.oninput = () => update(key, Number(range.value));
+      number.onchange = () => update(key, Number(number.value));
+      row.append(name, range, number, unit);
+      fieldset.append(row);
+    });
+    root.append(fieldset);
+  });
+}
+
+function update(key, value) {
+  if (!Number.isFinite(value)) return;
+  const item = groups.flatMap((group) => group[1]).find((entry) => entry[0] === key);
+  if (!item) return;
+
+  value = Math.max(item[2], Math.min(item[3], value));
+  values[profile][key] = value;
+  $("controls").querySelectorAll("input[data-key]").forEach((input) => {
+    if (input.dataset.key === key) input.value = value;
+  });
+
+  if (key === "startY") {
+    clearReplayTimers();
+    preview = "start";
+    typedChars = 0;
+  } else if (key === "endY") {
+    clearReplayTimers();
+    preview = "end";
+    typedChars = totalTypingLength();
+  }
+  draw();
+  $("status").textContent = "有未保存的修改";
+}
+
+function draw(animate = false) {
+  const tune = values.desktop;
+  const text = copyText[language];
+  const titleLength = text.title.length;
+  const totalLength = titleLength + text.body.length;
+  const visibleTitle = text.title.slice(0, Math.min(typedChars, titleLength));
+  const visibleBody = text.body.slice(0, Math.max(0, typedChars - titleLength));
+  const typingTitle = typedChars > 0 && typedChars < titleLength;
+  const typingBody = typedChars >= titleLength && typedChars < totalLength;
+  const wrap = $("wrap");
+  const textLayer = $("textLayer");
+  const copy = $("copyarea");
+  const title = $("title");
+  const signature = $("signature");
+  const body = $("body");
+  const scene = $("scene");
+  const y = preview === "start" ? tune.startY : tune.endY;
+  const transform = "translate3d(0," + y + "%,0) rotate(" + tune.paperRotate + "deg) scale(" + tune.paperScale + ")";
+  const transition = animate
+    ? "transform " + tune.riseMs + "ms cubic-bezier(.2,.76,.28,1)"
+    : "none";
+
+  scene.style.top = "0";
+  scene.style.left = "0";
+  scene.style.right = "0";
+  scene.style.width = "100%";
+
+  wrap.style.left = tune.paperLeft + "%";
+  wrap.style.top = tune.paperTop + "%";
+  wrap.style.width = tune.paperWidth + "%";
+  wrap.style.height = tune.paperHeight + "%";
+  wrap.style.transition = transition;
+  wrap.style.transform = transform;
+
+  textLayer.style.left = tune.paperLeft + "%";
+  textLayer.style.top = tune.paperTop + "%";
+  textLayer.style.width = tune.paperWidth + "%";
+  textLayer.style.height = tune.paperHeight + "%";
+  textLayer.style.transition = transition;
+  textLayer.style.transform = transform;
+
+  $("paper").style.transform = "scaleX(" + tune.paperStretchX + ")";
+
+  copy.style.left = tune.textLeft + "%";
+  copy.style.top = tune.textTop + "%";
+  copy.style.width = tune.textWidth + "%";
+  copy.style.height = tune.textHeight + "%";
+  copy.style.fontFamily = language === "zh"
+    ? "'PawCream CN', 'PawCream EN', sans-serif"
+    : "'PawCream EN', sans-serif";
+
+  title.textContent = visibleTitle;
+  title.style.left = tune.titleLeft + "%";
+  title.style.top = tune.titleTop + "%";
+  title.style.width = tune.titleWidth + "%";
+  title.style.height = tune.titleHeight + "%";
+  title.style.fontSize = tune.titleSize + "px";
+  if (typingTitle) appendCaret(title);
+
+  signature.textContent = text.signature;
+  signature.classList.toggle("is-visible", visibleTitle === text.title);
+  signature.style.left = tune.subtitleLeft + "%";
+  signature.style.top = (language === "zh"
+    ? (tune.zhSubtitleTop ?? tune.subtitleTop)
+    : (tune.enSubtitleTop ?? tune.subtitleTop)) + "%";
+  signature.style.width = tune.subtitleWidth + "%";
+  signature.style.height = tune.subtitleHeight + "%";
+  signature.style.fontSize = tune.subtitleSize + "px";
+
+  body.textContent = visibleBody;
+  body.style.left = (language === "zh" ? tune.zhBodyLeft : tune.enBodyLeft) + "%";
+  body.style.top = (language === "zh" ? tune.zhBodyTop : tune.enBodyTop) + "%";
+  body.style.width = (language === "zh" ? tune.zhBodyWidth : tune.enBodyWidth) + "%";
+  body.style.height = (language === "zh" ? tune.zhBodyHeight : tune.enBodyHeight) + "%";
+  body.style.fontSize = (language === "zh" ? tune.zhBodySize : tune.enBodySize) + "px";
+  body.style.lineHeight = language === "zh"
+    ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight)
+    : (tune.enBodyLineHeight ?? tune.bodyLineHeight);
+  body.style.letterSpacing = language === "zh" ? "-.025em" : ".005em";
+  body.style.overflowWrap = "normal";
+  body.style.wordBreak = "normal";
+  if (typingBody) appendCaret(body);
+
+  $("langZh").classList.toggle("active", language === "zh");
+  $("langEn").classList.toggle("active", language === "en");
+}
+
+function switchProfile(nextProfile) {
+  profile = nextProfile;
+  renderControls();
+  draw();
+}
+
+function save() {
+  localStorage.setItem("pawcream-letter-lab-desktop-v1", JSON.stringify({
+    desktop: values.desktop,
+    __copyText: copyText
+  }));
+  $("status").textContent = "桌面参数与中英文正文已保存到当前浏览器";
+}
+
+function copyData(includeAllText) {
+  const missing = Object.keys(defaults.desktop).filter((key) => !Number.isFinite(values.desktop[key]));
+  if (missing.length) {
+    $("status").textContent = "复制失败，缺少有效参数：" + missing.join(", ");
+    return;
+  }
+
+  const payload = { profile: "desktop" };
+  Object.keys(defaults.desktop).forEach((key) => {
+    payload[key] = values.desktop[key];
+  });
+
+  if (includeAllText) {
+    payload.copyText = copyText;
+  } else {
+    payload.language = language;
+    payload.bodyText = copyText[language].body;
+  }
+
+  const text = JSON.stringify(payload, null, 2);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => $("status").textContent = "参数与文案已复制")
+      .catch(() => prompt("复制参数", text));
+  } else {
+    prompt("复制参数", text);
+  }
+}
+
+function syncBodyEditor() {
+  $("bodyTextEditor").value = copyText[language].body;
+}
+
+function replay() {
+  clearReplayTimers();
+  preview = "start";
+  typedChars = 0;
+  draw();
+
+  riseTimer = window.setTimeout(() => {
+    preview = "end";
+    draw(true);
+    riseTimer = null;
+  }, PAPER_START_DELAY_MS);
+
+  typingTimer = window.setTimeout(() => {
+    let current = 0;
+    const delay = language === "zh" ? values.desktop.typeDelayZh : values.desktop.typeDelayEn;
+    const step = () => {
+      current += 1;
+      typedChars = current;
+      draw();
+      if (current < totalTypingLength()) {
+        typingTimer = window.setTimeout(step, delay);
+      } else {
+        typingTimer = null;
+      }
+    };
+    step();
+  }, PAPER_START_DELAY_MS + values.desktop.riseMs + values.desktop.typeGapMs);
+}
+
+$("bodyTextEditor").addEventListener("input", () => {
+  clearReplayTimers();
+  copyText[language].body = $("bodyTextEditor").value;
+  typedChars = totalTypingLength();
+  draw();
+  $("status").textContent = "正文换行有未保存的修改";
+});
+
+$("langZh").onclick = () => {
+  clearReplayTimers();
+  language = "zh";
+  typedChars = totalTypingLength();
+  syncBodyEditor();
+  draw();
+};
+$("langEn").onclick = () => {
+  clearReplayTimers();
+  language = "en";
+  typedChars = totalTypingLength();
+  syncBodyEditor();
+  draw();
+};
+$("start").onclick = () => {
+  clearReplayTimers();
+  preview = "start";
+  typedChars = 0;
+  draw();
+};
+$("end").onclick = () => {
+  clearReplayTimers();
+  preview = "end";
+  typedChars = totalTypingLength();
+  draw();
+};
+$("replay").onclick = replay;
+$("save").onclick = save;
+$("copy").onclick = () => copyData(false);
+$("copyAll").onclick = () => copyData(true);
+$("restore").onclick = () => {
+  clearReplayTimers();
+  const restored = restoreSavedData(readSaved());
+  preview = "end";
+  typedChars = totalTypingLength();
+  renderControls();
+  syncBodyEditor();
+  draw();
+  $("status").textContent = restored
+    ? "已恢复桌面参数与中英文正文"
+    : "当前浏览器没有已保存参数";
+};
+$("reset").onclick = () => {
+  clearReplayTimers();
+  values[profile] = { ...defaults[profile] };
+  preview = "end";
+  typedChars = totalTypingLength();
+  renderControls();
+  draw();
+  $("status").textContent = "已重置当前设备参数，尚未保存";
+};
+
+renderControls();
+syncBodyEditor();
+draw();
 </script></body></html>
