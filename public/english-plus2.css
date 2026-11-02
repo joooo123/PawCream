@@ -88,7 +88,9 @@ html body section[role="dialog"][aria-label="About PawCream"] h2 {
   font-size: 35px !important;
 }
 
-html body section[role="dialog"][aria-label="About PawCream"] p {
+/* Preserve the original mobile Letter size; desktop body uses its own cqw sizing. */
+html body section[role="dialog"][aria-label="About PawCream"] p:not(.pawcream-paper-body),
+html body section[role="dialog"][aria-label="About PawCream"].is-mobile p.pawcream-paper-body {
   font-size: 21px !important;
 }
 
@@ -200,7 +202,8 @@ html.pawcream-lang-en body section[aria-label^="PawCream Atelier Room"]
     font-size: 25px !important;
   }
 
-  html body section[role="dialog"][aria-label="About PawCream"] p {
+  html body section[role="dialog"][aria-label="About PawCream"] p:not(.pawcream-paper-body),
+  html body section[role="dialog"][aria-label="About PawCream"].is-mobile p.pawcream-paper-body {
     font-size: 16px !important;
   }
 
