@@ -217,7 +217,7 @@ const COPY = {
   },
   "en": {
     "title": "About PawCream",
-    "body": "Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \n    change is like unboxing a long-awaited sweet.\n       Hide in sweetness, escaping the adult world \n                for a while. Sweetness and \n                    cuteness linger beyond\n                             today.\n",
+    "body": "Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit change is like unboxing a long-awaited sweet.\n       Hide in sweetness, escaping the adult world \n                for a while. Sweetness and \n                    cuteness linger beyond\n                             today.\n",
     "signature": "made with a little sugar & lots of love ♡",
     "close": "Close brand introduction"
   }
