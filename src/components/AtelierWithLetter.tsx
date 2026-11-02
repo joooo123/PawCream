@@ -874,14 +874,14 @@ export default function AtelierWithLetter(props: Props) {
 
             <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div
               className="pawcream-envelope-stage"
-              style={mobile || !desktopBottomMask ? undefined : {
+              style={mobile ? undefined : desktopBottomMask ? {
                 maskImage: `url("${desktopBottomMask}")`,
                 WebkitMaskImage: `url("${desktopBottomMask}")`,
                 maskSize: '100% 100%',
                 WebkitMaskSize: '100% 100%',
                 maskRepeat: 'no-repeat',
                 WebkitMaskRepeat: 'no-repeat',
-              }}
+              } : { clipPath: 'inset(0 0 8% 0)' }}
             >
               <img
                 src={ENVELOPE_BACK_URL}
