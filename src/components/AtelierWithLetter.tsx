@@ -65,7 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v14'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v15'
+const PREVIOUS_V14_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v14'
 const PREVIOUS_MOBILE_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v13'
 const PREVIOUS_DESKTOP_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v12'
 const PREVIOUS_40_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v10'
@@ -139,11 +140,11 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     zhBodyWidth: 100,
     zhBodyHeight: 76,
     zhBodySize: 2.93293,
-    enBodyLeft: -5.5,
-    enBodyTop: 13.5,
-    enBodyWidth: 111.5,
+    enBodyLeft: 0,
+    enBodyTop: 14,
+    enBodyWidth: 100,
     enBodyHeight: 82,
-    enBodySize: 3.5670731707,
+    enBodySize: 5.35060975605,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.6,
     enBodyLineHeight: 1.1,
@@ -232,6 +233,7 @@ function readTuneProfiles(): LetterTuneProfiles {
   if (typeof window === 'undefined') return DEFAULT_TUNE
   try {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousV14 = JSON.parse(window.localStorage.getItem(PREVIOUS_V14_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previousMobile = JSON.parse(window.localStorage.getItem(PREVIOUS_MOBILE_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previousDesktop = JSON.parse(window.localStorage.getItem(PREVIOUS_DESKTOP_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previous40 = JSON.parse(window.localStorage.getItem(PREVIOUS_40_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
@@ -246,7 +248,7 @@ function readTuneProfiles(): LetterTuneProfiles {
     const desktop = { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) }
     return {
       desktop,
-      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(previousDesktop.mobile || {}), ...(previousMobile.mobile || {}), ...(saved.mobile || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(previousDesktop.mobile || {}), ...(previousMobile.mobile || {}), ...(previousV14.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
