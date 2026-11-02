@@ -65,7 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v16'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v17'
+const PREVIOUS_V16_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v16'
 const PREVIOUS_V15_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v15'
 const PREVIOUS_V14_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v14'
 const PREVIOUS_MOBILE_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v13'
@@ -142,13 +143,13 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     zhBodyHeight: 76,
     zhBodySize: 2.93293,
     enBodyLeft: 0,
-    enBodyTop: 12,
+    enBodyTop: 14,
     enBodyWidth: 100,
-    enBodyHeight: 94,
-    enBodySize: 8,
+    enBodyHeight: 82,
+    enBodySize: 4.2,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.6,
-    enBodyLineHeight: 0.75,
+    enBodyLineHeight: 1.1,
     subtitleLeft: 0,
     subtitleTop: 8.5,
     zhSubtitleTop: 8.5,
@@ -234,6 +235,7 @@ function readTuneProfiles(): LetterTuneProfiles {
   if (typeof window === 'undefined') return DEFAULT_TUNE
   try {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousV16 = JSON.parse(window.localStorage.getItem(PREVIOUS_V16_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previousV15 = JSON.parse(window.localStorage.getItem(PREVIOUS_V15_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previousV14 = JSON.parse(window.localStorage.getItem(PREVIOUS_V14_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previousMobile = JSON.parse(window.localStorage.getItem(PREVIOUS_MOBILE_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
@@ -250,7 +252,7 @@ function readTuneProfiles(): LetterTuneProfiles {
     const desktop = { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) }
     return {
       desktop,
-      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(previousDesktop.mobile || {}), ...(previousMobile.mobile || {}), ...(previousV14.mobile || {}), ...(previousV15.mobile || {}), ...(saved.mobile || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(previousDesktop.mobile || {}), ...(previousMobile.mobile || {}), ...(previousV14.mobile || {}), ...(previousV15.mobile || {}), ...(previousV16.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
@@ -1065,7 +1067,7 @@ export default function AtelierWithLetter(props: Props) {
                 <TuneControl label="英文顶部" value={tune.enBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyTop', v)} />
                 <TuneControl label="英文宽度" value={tune.enBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyWidth', v)} />
                 <TuneControl label="英文高度" value={tune.enBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyHeight', v)} />
-                <TuneControl label="英文字体大小" value={tune.enBodySize} min={mobile ? 6 : 0.75} max={mobile ? 30 : 3.75} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('enBodySize', v)} />
+                <TuneControl label="英文字体大小" value={tune.enBodySize} min={mobile ? 6 : 0.75} max={mobile ? 30 : 6} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('enBodySize', v)} />
               </fieldset>
 
               <fieldset>
