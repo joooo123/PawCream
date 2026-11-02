@@ -602,6 +602,7 @@ export default function AtelierWithLetter(props: Props) {
               }
               .pawcream-envelope-dialog:not(.is-mobile) .pawcream-envelope-stage {
                 filter: drop-shadow(0 2.68cqw 4.15cqw rgba(74,108,134,.16));
+                overflow: clip;
               }
               .pawcream-envelope-layer {
                 position: absolute;
@@ -863,7 +864,8 @@ export default function AtelierWithLetter(props: Props) {
                 className="pawcream-envelope-text-wrap"
                 style={{
                   position: 'absolute',
-                  zIndex: 5,
+                  zIndex: mobile ? 5 : 3,
+                  clipPath: mobile ? undefined : 'inset(-100% -100% 0 -100%)',
                   left: `${tune.paperLeft}%`,
                   top: `${tune.paperTop}%`,
                   width: `${tune.paperWidth}%`,
