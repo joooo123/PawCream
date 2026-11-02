@@ -212,7 +212,7 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 const COPY = {
   "zh": {
     "title": "关于 PawCream",
-    "body": "你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。",
+    "body": "你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n 愿每一次换装，都像拆开一盒期待已久的小甜点。\n            躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。",
     "signature": "made with a little sugar & lots of love ♡",
     "close": "关闭品牌介绍"
   },
@@ -308,6 +308,7 @@ export default function AtelierWithLetter(props: Props) {
   const [tuneProfiles, setTuneProfiles] = useState<LetterTuneProfiles>(readTuneProfiles)
   const [copyStatus, setCopyStatus] = useState('')
   const [dirty, setDirty] = useState(false)
+  const [desktopBottomMask, setDesktopBottomMask] = useState<string | null>(null)
 
   const query = useMemo(
     () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
@@ -422,6 +423,52 @@ export default function AtelierWithLetter(props: Props) {
     setCopyStatus('已恢复上次保存')
     window.setTimeout(() => setCopyStatus(''), 1600)
   }
+
+  // Clip the desktop scene at the bottommost non-transparent envelope pixel, per column.
+  useEffect(() => {
+    if (mobile) return
+    let cancelled = false
+    const image = new Image()
+    image.onload = () => {
+      if (cancelled) return
+      try {
+        const width = Math.min(image.naturalWidth, 1200)
+        const height = Math.round(width * 3 / 4)
+        const sample = document.createElement('canvas')
+        sample.width = width
+        sample.height = height
+        const context = sample.getContext('2d')
+        if (!context) return
+
+        // Match the foreground image's object-fit: contain in the 4:3 stage.
+        const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight)
+        const drawnWidth = image.naturalWidth * scale
+        const drawnHeight = image.naturalHeight * scale
+        context.drawImage(image, (width - drawnWidth) / 2, (height - drawnHeight) / 2, drawnWidth, drawnHeight)
+        const pixels = context.getImageData(0, 0, width, height).data
+        const mask = document.createElement('canvas')
+        mask.width = width
+        mask.height = height
+        const maskContext = mask.getContext('2d')
+        if (!maskContext) return
+        maskContext.fillStyle = '#000'
+
+        for (let x = 0; x < width; x += 1) {
+          for (let y = height - 1; y >= 0; y -= 1) {
+            if (pixels[(y * width + x) * 4 + 3] > 32) {
+              maskContext.fillRect(x, 0, 1, y + 1)
+              break
+            }
+          }
+        }
+        if (!cancelled) setDesktopBottomMask(mask.toDataURL('image/png'))
+      } catch {
+        // Retain the existing rectangular overflow clipping if canvas access fails.
+      }
+    }
+    image.src = ENVELOPE_FRONT_URL
+    return () => { cancelled = true }
+  }, [mobile])
 
   useEffect(() => {
     if (!letterTuneMode) return
@@ -825,7 +872,17 @@ export default function AtelierWithLetter(props: Props) {
               }
             `}</style>
 
-            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div className="pawcream-envelope-stage">
+            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div
+              className="pawcream-envelope-stage"
+              style={mobile || !desktopBottomMask ? undefined : {
+                maskImage: `url("${desktopBottomMask}")`,
+                WebkitMaskImage: `url("${desktopBottomMask}")`,
+                maskSize: '100% 100%',
+                WebkitMaskSize: '100% 100%',
+                maskRepeat: 'no-repeat',
+                WebkitMaskRepeat: 'no-repeat',
+              }}
+            >
               <img
                 src={ENVELOPE_BACK_URL}
                 alt=""
