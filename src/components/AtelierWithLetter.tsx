@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import AtelierWithInstax from './AtelierWithInstax'
 
 type DeviceProfile = 'desktop' | 'mobile'
@@ -65,7 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v11'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v12'
+const PREVIOUS_DESKTOP_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v11'
 const PREVIOUS_40_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v10'
 const PREVIOUS_BODY_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v9'
 const PRIOR_FONT_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v8'
@@ -115,40 +116,40 @@ function preloadEnvelopeAssets(): Promise<void> {
 const DEFAULT_TUNE: LetterTuneProfiles = {
   desktop: {
     paperLeft: 9,
-    paperTop: -20,
+    paperTop: -16,
     paperWidth: 86,
-    paperHeight: 86,
+    paperHeight: 89,
     paperScale: 0.88,
-    paperStretchX: 1.16,
+    paperStretchX: 1.14,
     paperRotate: 0,
     startY: 35,
     endY: 9,
-    textLeft: 12,
+    textLeft: 14.5,
     textTop: 13,
     textWidth: 76,
-    textHeight: 75,
+    textHeight: 63,
     titleLeft: 0,
     titleTop: 0,
     titleWidth: 100,
     titleHeight: 18,
     titleSize: 3.8415,
-    zhBodyLeft: 0,
+    zhBodyLeft: 1,
     zhBodyTop: 29,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
-    zhBodySize: 3.9797604,
+    zhBodySize: 2.2561,
     enBodyLeft: 0,
-    enBodyTop: 25.5,
+    enBodyTop: 29,
     enBodyWidth: 100,
-    enBodyHeight: 69,
-    enBodySize: 4.517604,
+    enBodyHeight: 64,
+    enBodySize: 2.743902439,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.5,
     enBodyLineHeight: 1.4,
     subtitleLeft: 0,
     subtitleTop: 18,
     zhSubtitleTop: 18,
-    enSubtitleTop: 14.5,
+    enSubtitleTop: 18,
     subtitleWidth: 100,
     subtitleHeight: 10,
     subtitleSize: 2.439,
@@ -206,13 +207,13 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 const COPY = {
   "zh": {
     "title": "关于 PawCream",
-    "body": "你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n   愿每一次换装，都像拆开一盒期待已久的小甜点。\n            躲进糖分里，暂时逃离喧嚣的大人世界。\n                           甜蜜不止一点点，\n                           可爱也不止今天。",
+    "body": "  你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n        愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                              甜蜜不止一点点，\n                              可爱也不止今天。",
     "signature": "made with a little sugar & lots of love ♡",
     "close": "关闭品牌介绍"
   },
   "en": {
     "title": "About PawCream",
-    "body": "   Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit change is like \n      unboxing a long-awaited sweet.\n             Hide in sweetness, escaping the adult world \n                    for a while. Sweetness and \n                        cuteness linger beyond\n                             today.\n",
+    "body": "Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit change is like unboxing a long-awaited sweet.\n             Hide in sweetness, escaping the adult world \n                      for a while. Sweetness and \n                           cuteness linger beyond\n                                    today.\n",
     "signature": "made with a little sugar & lots of love ♡",
     "close": "Close brand introduction"
   }
@@ -230,6 +231,7 @@ function readTuneProfiles(): LetterTuneProfiles {
   if (typeof window === 'undefined') return DEFAULT_TUNE
   try {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousDesktop = JSON.parse(window.localStorage.getItem(PREVIOUS_DESKTOP_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previous40 = JSON.parse(window.localStorage.getItem(PREVIOUS_40_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previousBody = JSON.parse(window.localStorage.getItem(PREVIOUS_BODY_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const priorFonts = JSON.parse(window.localStorage.getItem(PRIOR_FONT_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
@@ -238,48 +240,11 @@ function readTuneProfiles(): LetterTuneProfiles {
     const older = JSON.parse(window.localStorage.getItem(OLDER_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const oldest = JSON.parse(window.localStorage.getItem(OLDEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const oldestest = JSON.parse(window.localStorage.getItem(OLDESTEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
-    const oldDesktop: Partial<LetterTune> = {
-      ...(oldestest.desktop || {}),
-      ...(oldest.desktop || {}),
-      ...(older.desktop || {}),
-      ...(legacy.desktop || {}),
-      ...(previous.desktop || {}),
-    }
-    const oldPercentDesktop = priorFonts.desktop || null
-    const desktop = saved.desktop
-      ? { ...DEFAULT_TUNE.desktop, ...saved.desktop }
-      : previous40.desktop
-        ? {
-            ...DEFAULT_TUNE.desktop,
-            ...previous40.desktop,
-            zhBodySize: (previous40.desktop.zhBodySize ?? 2.842686) * 1.4,
-            enBodySize: (previous40.desktop.enBodySize ?? 3.22686) * 1.4,
-          }
-        : previousBody.desktop
-          ? {
-              ...DEFAULT_TUNE.desktop,
-              ...previousBody.desktop,
-              zhBodySize: (previousBody.desktop.zhBodySize ?? 2.368905) * 1.2 * 1.4,
-              enBodySize: (previousBody.desktop.enBodySize ?? 2.68905) * 1.2 * 1.4,
-            }
-          : oldPercentDesktop
-            ? {
-                ...DEFAULT_TUNE.desktop,
-                ...oldPercentDesktop,
-                zhBodySize: (oldPercentDesktop.zhBodySize ?? 2.2561) * 1.05 * 1.2 * 1.4,
-                enBodySize: (oldPercentDesktop.enBodySize ?? 2.561) * 1.05 * 1.2 * 1.4,
-              }
-            : {
-                ...DEFAULT_TUNE.desktop,
-                ...oldDesktop,
-                titleSize: oldDesktop.titleSize == null ? DEFAULT_TUNE.desktop.titleSize : oldDesktop.titleSize / 8.2,
-                zhBodySize: oldDesktop.zhBodySize == null ? DEFAULT_TUNE.desktop.zhBodySize : oldDesktop.zhBodySize / 8.2 * 1.05 * 1.2 * 1.4,
-                enBodySize: oldDesktop.enBodySize == null ? DEFAULT_TUNE.desktop.enBodySize : oldDesktop.enBodySize / 8.2 * 1.05 * 1.2 * 1.4,
-                subtitleSize: oldDesktop.subtitleSize == null ? DEFAULT_TUNE.desktop.subtitleSize : oldDesktop.subtitleSize / 8.2,
-              }
+    // Use the new desktop reference layout; migrate only mobile settings from older versions.
+    const desktop = { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) }
     return {
       desktop,
-      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(saved.mobile || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(previousDesktop.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
@@ -333,6 +298,8 @@ export default function AtelierWithLetter(props: Props) {
   const [tuneProfiles, setTuneProfiles] = useState<LetterTuneProfiles>(readTuneProfiles)
   const [copyStatus, setCopyStatus] = useState('')
   const [dirty, setDirty] = useState(false)
+  const desktopBodyRef = useRef<HTMLParagraphElement>(null)
+  const [desktopBodyScale, setDesktopBodyScale] = useState(1)
 
   const query = useMemo(
     () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
@@ -447,6 +414,58 @@ export default function AtelierWithLetter(props: Props) {
     setCopyStatus('已恢复上次保存')
     window.setTimeout(() => setCopyStatus(''), 1600)
   }
+
+  useLayoutEffect(() => {
+    if (!open || mobile) return
+    const body = desktopBodyRef.current
+    const parent = body?.parentElement
+    if (!body || !parent) return
+
+    let disposed = false
+    const fitBody = () => {
+      if (disposed || !body.clientHeight) return
+
+      // Measure the complete text, not the currently typed substring.
+      const probe = body.cloneNode(false) as HTMLParagraphElement
+      probe.textContent = copy.body
+      probe.setAttribute('aria-hidden', 'true')
+      probe.style.height = 'auto'
+      probe.style.overflow = 'visible'
+      probe.style.visibility = 'hidden'
+      probe.style.pointerEvents = 'none'
+      parent.appendChild(probe)
+
+      const fontSize = language === 'zh' ? tune.zhBodySize : tune.enBodySize
+      const fits = (scale: number) => {
+        probe.style.fontSize = `${fontSize * scale}cqw`
+        return probe.scrollHeight <= body.clientHeight - 1
+      }
+
+      let scale = 1
+      if (!fits(1)) {
+        let low = 0.1
+        let high = 1
+        for (let i = 0; i < 12; i += 1) {
+          const mid = (low + high) / 2
+          if (fits(mid)) low = mid
+          else high = mid
+        }
+        scale = low
+      }
+      probe.remove()
+      setDesktopBodyScale((current) => Math.abs(current - scale) < 0.002 ? current : scale)
+    }
+
+    const observer = new ResizeObserver(fitBody)
+    observer.observe(body)
+    observer.observe(parent)
+    fitBody()
+    void document.fonts.ready.then(fitBody)
+    return () => {
+      disposed = true
+      observer.disconnect()
+    }
+  }, [open, mobile, language, copy.body, tune])
 
   useEffect(() => {
     if (!letterTuneMode) return
@@ -834,9 +853,6 @@ export default function AtelierWithLetter(props: Props) {
                 0%, 46% { opacity: 1; }
                 47%, 100% { opacity: 0; }
               }
-              @media (max-height: 690px) and (min-width: 701px) {
-                .pawcream-envelope-dialog { width: min(720px, calc(100vw - 44px)) !important; }
-              }
               @media (max-width: 700px) {
                 .pawcream-letter-tune-panel {
                   top: auto;
@@ -948,6 +964,7 @@ export default function AtelierWithLetter(props: Props) {
                   </div>
 
                   <p
+                    ref={desktopBodyRef}
                     className="pawcream-paper-body"
                     style={{
                       position: 'absolute',
@@ -959,7 +976,7 @@ export default function AtelierWithLetter(props: Props) {
                       overflow: 'hidden',
                       fontSize: mobile
                         ? (language === 'zh' ? tune.zhBodySize : tune.enBodySize)
-                        : `${(language === 'zh' ? tune.zhBodySize : tune.enBodySize)}cqw`,
+                        : `${(language === 'zh' ? tune.zhBodySize : tune.enBodySize) * desktopBodyScale}cqw`,
                       lineHeight: language === 'zh' ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight) : (tune.enBodyLineHeight ?? tune.bodyLineHeight),
                       letterSpacing: language === 'zh' ? '-.025em' : '.005em',
                     }}
