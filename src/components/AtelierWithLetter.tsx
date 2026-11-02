@@ -65,8 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v12'
-const PREVIOUS_DESKTOP_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v11'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v13'
+const PREVIOUS_DESKTOP_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v12'
 const PREVIOUS_40_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v10'
 const PREVIOUS_BODY_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v9'
 const PRIOR_FONT_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v8'
@@ -122,9 +122,9 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     paperScale: 0.88,
     paperStretchX: 1.14,
     paperRotate: 0,
-    startY: 35,
+    startY: 30,
     endY: 9,
-    textLeft: 14.5,
+    textLeft: 12,
     textTop: 13,
     textWidth: 76,
     textHeight: 63,
@@ -133,16 +133,16 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     titleWidth: 100,
     titleHeight: 18,
     titleSize: 3.8415,
-    zhBodyLeft: 1,
+    zhBodyLeft: 0,
     zhBodyTop: 29,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
-    zhBodySize: 2.2561,
+    zhBodySize: 2.93293,
     enBodyLeft: 0,
     enBodyTop: 29,
     enBodyWidth: 100,
     enBodyHeight: 64,
-    enBodySize: 2.743902439,
+    enBodySize: 3.5670731707,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.5,
     enBodyLineHeight: 1.4,
