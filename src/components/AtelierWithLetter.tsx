@@ -65,7 +65,8 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v9'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v10'
+const PREVIOUS_BODY_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v9'
 const PRIOR_FONT_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v8'
 const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v7'
 const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
@@ -134,12 +135,12 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
     zhBodyTop: 29,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
-    zhBodySize: 2.368905,
+    zhBodySize: 2.842686,
     enBodyLeft: 0,
     enBodyTop: 25.5,
     enBodyWidth: 100,
     enBodyHeight: 69,
-    enBodySize: 2.68905,
+    enBodySize: 3.22686,
     bodyLineHeight: 1.5,
     zhBodyLineHeight: 1.5,
     enBodyLineHeight: 1.4,
@@ -228,6 +229,7 @@ function readTuneProfiles(): LetterTuneProfiles {
   if (typeof window === 'undefined') return DEFAULT_TUNE
   try {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousBody = JSON.parse(window.localStorage.getItem(PREVIOUS_BODY_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const priorFonts = JSON.parse(window.localStorage.getItem(PRIOR_FONT_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const previous = JSON.parse(window.localStorage.getItem(PREVIOUS_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
     const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
@@ -244,24 +246,31 @@ function readTuneProfiles(): LetterTuneProfiles {
     const oldPercentDesktop = priorFonts.desktop || null
     const desktop = saved.desktop
       ? { ...DEFAULT_TUNE.desktop, ...saved.desktop }
-      : oldPercentDesktop
+      : previousBody.desktop
         ? {
             ...DEFAULT_TUNE.desktop,
-            ...oldPercentDesktop,
-            zhBodySize: (oldPercentDesktop.zhBodySize ?? 2.2561) * 1.05,
-            enBodySize: (oldPercentDesktop.enBodySize ?? 2.561) * 1.05,
+            ...previousBody.desktop,
+            zhBodySize: (previousBody.desktop.zhBodySize ?? 2.368905) * 1.2,
+            enBodySize: (previousBody.desktop.enBodySize ?? 2.68905) * 1.2,
           }
-        : {
-            ...DEFAULT_TUNE.desktop,
-            ...oldDesktop,
-            titleSize: oldDesktop.titleSize == null ? DEFAULT_TUNE.desktop.titleSize : oldDesktop.titleSize / 8.2,
-            zhBodySize: oldDesktop.zhBodySize == null ? DEFAULT_TUNE.desktop.zhBodySize : oldDesktop.zhBodySize / 8.2 * 1.05,
-            enBodySize: oldDesktop.enBodySize == null ? DEFAULT_TUNE.desktop.enBodySize : oldDesktop.enBodySize / 8.2 * 1.05,
-            subtitleSize: oldDesktop.subtitleSize == null ? DEFAULT_TUNE.desktop.subtitleSize : oldDesktop.subtitleSize / 8.2,
-          }
+        : oldPercentDesktop
+          ? {
+              ...DEFAULT_TUNE.desktop,
+              ...oldPercentDesktop,
+              zhBodySize: (oldPercentDesktop.zhBodySize ?? 2.2561) * 1.05 * 1.2,
+              enBodySize: (oldPercentDesktop.enBodySize ?? 2.561) * 1.05 * 1.2,
+            }
+          : {
+              ...DEFAULT_TUNE.desktop,
+              ...oldDesktop,
+              titleSize: oldDesktop.titleSize == null ? DEFAULT_TUNE.desktop.titleSize : oldDesktop.titleSize / 8.2,
+              zhBodySize: oldDesktop.zhBodySize == null ? DEFAULT_TUNE.desktop.zhBodySize : oldDesktop.zhBodySize / 8.2 * 1.05 * 1.2,
+              enBodySize: oldDesktop.enBodySize == null ? DEFAULT_TUNE.desktop.enBodySize : oldDesktop.enBodySize / 8.2 * 1.05 * 1.2,
+              subtitleSize: oldDesktop.subtitleSize == null ? DEFAULT_TUNE.desktop.subtitleSize : oldDesktop.subtitleSize / 8.2,
+            }
     return {
       desktop,
-      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(saved.mobile || {}) },
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
