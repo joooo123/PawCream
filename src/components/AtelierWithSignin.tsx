@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type CSSProperties, type FormEvent, useEffect, useState } from 'react'
 import {
   AUTH_CHANGED_EVENT,
   OPEN_SIGNIN_EVENT,
@@ -116,7 +116,7 @@ export default function AtelierWithSignin(props: Props) {
   const tune = tuneByDevice[props.deviceProfile]
   const registerPaper = mode === 'register'
   // The long registration sheet should fit mobile WebViews without a scrollbar.
-  const printerScale = tune.printerScale / 100 * (mobile && registerPaper ? 0.90 : 1)
+  const printerScale = tune.printerScale / 100
   const formFontBoost = mobile && registerPaper ? Math.min(tune.fontBoost, 2) : tune.fontBoost
   const typewriterUrl = registerPaper ? TYPEWRITER_REGISTER_URL : TYPEWRITER_LOGIN_URL
   const typewriterAspectRatio = registerPaper ? TYPEWRITER_REGISTER_RATIO : TYPEWRITER_LOGIN_RATIO
@@ -488,6 +488,28 @@ export default function AtelierWithSignin(props: Props) {
     boxShadow: '0 5px 14px rgba(117, 157, 184, .14)',
   }
 
+  const statusStyle: CSSProperties = {
+    boxSizing: 'border-box',
+    width: '100%',
+    height: status ? (mobile ? 22 : 27) : 0,
+    minHeight: status ? (mobile ? 22 : 27) : 0,
+    marginTop: status ? (mobile ? 5 : 8) : 0,
+    padding: status ? (mobile ? '0 7px' : '0 9px') : 0,
+    border: status ? '1px solid rgba(151, 185, 207, .78)' : '1px solid transparent',
+    borderRadius: mobile ? 8 : 9,
+    background: status ? '#F3F9FD' : 'transparent',
+    boxShadow: status ? '0 4px 12px rgba(117, 157, 184, .10)' : 'none',
+    color: '#55768B',
+    fontSize: mobile ? 10 : 11,
+    fontWeight: 600,
+    lineHeight: mobile ? '20px' : '25px',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    position: 'relative',
+    zIndex: 5,
+  }
+
   return (
     <>
       <AtelierWithCollection {...props} />
@@ -571,6 +593,7 @@ export default function AtelierWithSignin(props: Props) {
               paddingBottom: registerPaper ? 4 : undefined,
               color: '#66859a',
               fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              zIndex: 2,
             }}
           >
             <button
@@ -632,10 +655,7 @@ export default function AtelierWithSignin(props: Props) {
                   <button type="submit" className="pawcream-signin-action" style={primaryActionStyle}
                     disabled={savingProfile}>{savingProfile ? copy.working : copy.saveNickname}</button>
                 </div>
-                <div aria-live="polite" style={{
-                  minHeight: status ? (mobile ? 18 : 27) : 0, marginTop: status ? (mobile ? 3 : 8) : 0,
-                  fontSize: (mobile ? 7.5 : 9) + formFontBoost, color: '#7894a7',
-                }}>{status}</div>
+                <div className="pawcream-signin-status" aria-live="polite" style={statusStyle}>{status}</div>
               </form>
             ) : (
             <form noValidate onSubmit={submit}>
@@ -800,23 +820,7 @@ export default function AtelierWithSignin(props: Props) {
                 </button>
               )}
 
-              <div
-                aria-live="polite"
-                style={{
-                  minHeight: mobile ? 22 : 27,
-                  marginTop: mobile ? 6 : 8,
-                  padding: status ? (mobile ? '5px 7px' : '6px 9px') : 0,
-                  border: status ? '1px solid rgba(190, 214, 230, .55)' : '1px solid transparent',
-                  borderRadius: mobile ? 8 : 9,
-                  background: status ? 'rgba(238, 247, 252, .66)' : 'transparent',
-                  boxShadow: status ? '0 4px 12px rgba(117, 157, 184, .07)' : 'none',
-                  fontSize: (mobile ? 7.5 : 9) + tune.fontBoost,
-                  lineHeight: 1.4,
-                  color: '#7894a7',
-                }}
-              >
-                {status}
-              </div>
+              <div className="pawcream-signin-status" aria-live="polite" style={statusStyle}>{status}</div>
             </form>
             )}
           </div>
