@@ -421,12 +421,12 @@ for(const relative of walk(sourceAssets)){
  const q=returnPhoto?50:(paper||opening)?65:bg?57:studio?61:66;
  cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',input,'-o',output]);optimizedImages++;
 }
-// Pack the 40 return photos into the app bundle so the upload stays under the
+// Pack the 48 return photos into the app bundle so the upload stays under the
 // platform's 200-file limit without dropping any photos or frame assets.
 const returnPhotoSource=path.join(sourceAssets,'return_photo');
 check(fs.existsSync(returnPhotoSource),'Missing return_photo source directory');
 const returnPhotoFiles=walk(returnPhotoSource).filter(relative=>/\.(?:png|jpe?g|webp)$/i.test(relative));
-check(returnPhotoFiles.length===40,'Expected 40 return photos, found '+returnPhotoFiles.length);
+check(returnPhotoFiles.length===48,'Expected 48 return photos, found '+returnPhotoFiles.length);
 const returnPhotoSourceBytes=returnPhotoFiles.reduce((sum,relative)=>sum+fs.statSync(path.join(returnPhotoSource,relative)).size,0);
 let returnPhotoOptimizedBytes=0;
 const returnPhotoData={};
@@ -440,7 +440,7 @@ for(const relative of returnPhotoFiles){
  fs.unlinkSync(optimizedPath);
 }
 fs.rmSync(path.join(assets,'return_photo'),{recursive:true,force:true});
-check(Object.keys(returnPhotoData).length===40,'Return photo pack must contain 40 photos');
+check(Object.keys(returnPhotoData).length===48,'Return photo pack must contain 48 photos');
 fs.writeFileSync(jsFile,'window.__PAWCREAM_RETURN_PHOTOS__='+JSON.stringify(returnPhotoData)+String.fromCharCode(59,10)+fs.readFileSync(jsFile,'utf8'));
 // No audio files: the XHS upload whitelist rejects MP3.
 for(const font of ['pawcream-en.woff2','pawcream-cn.woff2']){
