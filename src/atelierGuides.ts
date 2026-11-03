@@ -102,8 +102,12 @@ if (!isTuneMode) {
     const language = currentLanguage()
     const labels = FUNCTION_LABELS[language]
     const stageRect = stage.getBoundingClientRect()
+    const mobileLayout = stage.getAttribute('aria-label')?.endsWith('mobile layout') ?? false
     const images = Array.from(stage.querySelectorAll<HTMLImageElement>('img[alt]'))
-      .filter((image) => Boolean(labels[image.alt]))
+      .filter((image) =>
+        Boolean(labels[image.alt]) &&
+        !(mobileLayout && (image.alt === 'Wall cabinet' || image.alt === 'Bear')),
+      )
 
     const seen = new Set<string>()
     const entries: Array<{ key: string; label: string; x: number; y: number }> = []
