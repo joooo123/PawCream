@@ -229,6 +229,8 @@ div[role="dialog"][aria-label="Sign in"] {
 /* In guide mode, replace the original image-label buttons with text only.
    Keep the image boxes in the layout so label positions and hit areas stay unchanged. */
 section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  > img[alt]:not([alt="Light"]),
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
   > div:has(> img[alt]) > img[alt]:not([alt="Light"]) {
   opacity: 0 !important;
 }
