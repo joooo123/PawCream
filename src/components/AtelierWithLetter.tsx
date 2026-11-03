@@ -224,9 +224,6 @@ const COPY = {
   }
 } as const
 
-const MOBILE_ZH_BODY = '你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n愿每一次换装，都像拆开一盒期待已久的小甜点。\n           躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。'
-const MOBILE_EN_BODY = 'Hello and welcome to PawCream. This is a sweet doll-clothes shop. We stitch girly colors, sweet ideas, and fairy-tale touches into each piece.Every outfit \n    change is like unboxing a long-awaited sweet.\n       Hide in sweetness, escaping the adult world \n                for a while. Sweetness and \n                    cuteness linger beyond\n                             today.\n'
-
 function readLanguage(): Language {
   if (typeof window === 'undefined') return 'zh'
   return window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'zh'
@@ -320,9 +317,8 @@ export default function AtelierWithLetter(props: Props) {
   const mobile = props.deviceProfile === 'mobile'
   const activeProfile: DeviceProfile = mobile ? 'mobile' : 'desktop'
   const tune = tuneProfiles[activeProfile]
-  const copy = mobile
-    ? { ...COPY[language], body: language === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY }
-    : COPY[language]
+  // Keep the brand message identical on both devices; only the tune profile changes layout and size.
+  const copy = COPY[language]
   const titleLength = copy.title.length
   const totalTypingLength = titleLength + copy.body.length
   const visibleTitle = copy.title.slice(0, Math.min(typedChars, titleLength))
@@ -399,7 +395,7 @@ export default function AtelierWithLetter(props: Props) {
     setLanguage(nextLanguage)
     setPreviewMode('end')
     setPaperRaised(true)
-    const nextBody = mobile ? (nextLanguage === 'zh' ? MOBILE_ZH_BODY : MOBILE_EN_BODY) : COPY[nextLanguage].body
+    const nextBody = COPY[nextLanguage].body
     setTypedChars(COPY[nextLanguage].title.length + nextBody.length)
   }
 
