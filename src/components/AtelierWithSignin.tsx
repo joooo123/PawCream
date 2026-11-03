@@ -114,8 +114,10 @@ export default function AtelierWithSignin(props: Props) {
 
   const mobile = props.deviceProfile === 'mobile'
   const tune = tuneByDevice[props.deviceProfile]
-  const printerScale = tune.printerScale / 100
   const registerPaper = mode === 'register'
+  // The long registration sheet should fit mobile WebViews without a scrollbar.
+  const printerScale = tune.printerScale / 100 * (mobile && registerPaper ? 0.90 : 1)
+  const formFontBoost = mobile && registerPaper ? Math.min(tune.fontBoost, 2) : tune.fontBoost
   const typewriterUrl = registerPaper ? TYPEWRITER_REGISTER_URL : TYPEWRITER_LOGIN_URL
   const typewriterAspectRatio = registerPaper ? TYPEWRITER_REGISTER_RATIO : TYPEWRITER_LOGIN_RATIO
   // Use the taller image as the viewport-fit limit in BOTH modes. This way
@@ -441,7 +443,7 @@ export default function AtelierWithSignin(props: Props) {
 
   const inputStyle = {
     width: '100%',
-    height: mobile ? 27 : 32,
+    height: mobile && registerPaper ? 23 : mobile ? 27 : 32,
     boxSizing: 'border-box' as const,
     border: '1px solid rgba(176, 204, 222, .74)',
     borderRadius: mobile ? 9 : 10,
@@ -450,21 +452,21 @@ export default function AtelierWithSignin(props: Props) {
     outline: 'none',
     padding: mobile ? '4px 8px' : '5px 10px',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: (mobile ? 9 : 11) + tune.fontBoost,
+    fontSize: (mobile ? 9 : 11) + formFontBoost,
     boxShadow: '0 4px 14px rgba(117, 157, 184, .10), inset 0 1px 0 rgba(255,255,255,.96)',
     transition: 'border-color 160ms ease, box-shadow 160ms ease, background 160ms ease',
   }
 
   const actionStyle = {
-    minWidth: mobile ? 62 : 78,
-    height: mobile ? 28 : 32,
+    minWidth: mobile && registerPaper ? 0 : mobile ? 62 : 78,
+    height: mobile && registerPaper ? 24 : mobile ? 28 : 32,
     border: '1px solid rgba(166, 198, 219, .64)',
     borderRadius: mobile ? 10 : 11,
     background: 'rgba(251,253,255,.95)',
     color: '#66859c',
     cursor: 'pointer',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: (mobile ? 9 : 10) + tune.fontBoost,
+    fontSize: (mobile ? 9 : 10) + formFontBoost,
     boxShadow: '0 4px 12px rgba(117, 157, 184, .10)',
     transition: 'transform 160ms ease, background 160ms ease, box-shadow 160ms ease',
   }
@@ -474,7 +476,7 @@ export default function AtelierWithSignin(props: Props) {
     marginBottom: registerPaper ? (mobile ? 4 : 6) : (mobile ? 7 : 9),
     color: '#6f8da2',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontSize: (mobile ? 8 : 10) + tune.fontBoost,
+    fontSize: (mobile ? 8 : 10) + formFontBoost,
     fontWeight: 600,
     letterSpacing: '.02em',
   }
@@ -560,14 +562,12 @@ export default function AtelierWithSignin(props: Props) {
               // Its content starts higher; the login/profile typography and
               // positions are left untouched.
               left: registerPaper ? '25%' : '25.8%',
-              top: registerPaper ? (mobile ? '4.4%' : '5.4%') : (mobile ? '10.1%' : '10.5%'),
+              top: registerPaper ? (mobile ? '3.5%' : '5.4%') : (mobile ? '10.1%' : '10.5%'),
               width: registerPaper ? '50%' : '48.4%',
               // Small laptop/mobile screens can still type into every field:
               // scroll *within the paper*, never push the typewriter base away.
-              maxHeight: registerPaper ? '68%' : undefined,
-              overflowY: registerPaper ? 'auto' : 'visible',
-              scrollbarWidth: 'thin',
-              overscrollBehavior: 'contain',
+              maxHeight: registerPaper ? '74%' : undefined,
+              overflowY: 'visible',
               paddingBottom: registerPaper ? 4 : undefined,
               color: '#66859a',
               fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -633,8 +633,8 @@ export default function AtelierWithSignin(props: Props) {
                     disabled={savingProfile}>{savingProfile ? copy.working : copy.saveNickname}</button>
                 </div>
                 <div aria-live="polite" style={{
-                  minHeight: mobile ? 22 : 27, marginTop: mobile ? 6 : 8,
-                  fontSize: (mobile ? 7.5 : 9) + tune.fontBoost, color: '#7894a7',
+                  minHeight: status ? (mobile ? 18 : 27) : 0, marginTop: status ? (mobile ? 3 : 8) : 0,
+                  fontSize: (mobile ? 7.5 : 9) + formFontBoost, color: '#7894a7',
                 }}>{status}</div>
               </form>
             ) : (
