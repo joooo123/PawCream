@@ -729,11 +729,9 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
             </div>
             <button type="button" onClick={onBack} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}>{copy.toolbarHome}</button>
             <button type="button" onClick={() => setLoginNoticeOpen((v) => !v)} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}>{copy.toolbarLogin}</button>
-            <button type="button" onClick={closeToolbar} aria-label={copy.toolbarClose} title={copy.toolbarClose} style={{ width: mobile ? 28 : 32, height: mobile ? 28 : 32, border       whiteSpace: 'nowrap', boxShadow: 'none',
-              pointerEvents: 'none',
-            }}>{language === 'zh' ? hint.zh : hint.en}</span>
-          ))}
-        </div>
+            <button type="button" onClick={closeToolbar} aria-label={copy.toolbarClose} title={copy.toolbarClose} style={{ width: mobile ? 28 : 32, height: mobile ? 28 : 32, border: '1px solid rgba(198,133,157,.2)', borderRadius: '50%', background: 'rgba(255,255,255,.78)', color: '#9b7682', cursor: 'pointer' }}>×</button>
+          </div>
+        </nav>
       )}
 
       {!tuneMode && loginNoticeOpen && topBarOpen && (
