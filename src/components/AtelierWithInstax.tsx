@@ -1019,7 +1019,7 @@ export default function AtelierWithInstax(props: Props) {
               height: mobile && step === 'select' ? 'min(660px, calc(100dvh - 20px))' : undefined,
               maxHeight: mobile && step === 'select' ? 'calc(100dvh - 20px)' : 'calc(100svh - 20px)',
               overflow: mobile && step === 'select' ? 'hidden' : 'auto',
-              boxSizing: 'border-box',
+              boxSizing: mobile && step === 'select' ? 'border-box' : undefined,
               display: mobile && step === 'select' ? 'flex' : undefined,
               flexDirection: mobile && step === 'select' ? 'column' : undefined,
               padding: mobile && step === 'select' ? '16px 14px 14px' : mobile ? '26px 18px 22px' : '32px 34px 28px',
@@ -1218,7 +1218,7 @@ export default function AtelierWithInstax(props: Props) {
                     })}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', minHeight: mobile ? 0 : undefined }}>
+                  <div style={{ display: mobile ? 'flex' : undefined, flexDirection: mobile ? 'column' : undefined, minHeight: mobile ? 0 : undefined }}>
                     {!mobile && (
                       <div
                         style={{
