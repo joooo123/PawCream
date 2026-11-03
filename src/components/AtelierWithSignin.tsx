@@ -117,7 +117,7 @@ export default function AtelierWithSignin(props: Props) {
   const registerPaper = mode === 'register'
   // The long registration sheet should fit mobile WebViews without a scrollbar.
   const printerScale = tune.printerScale / 100
-  const formFontBoost = mobile && registerPaper ? Math.min(tune.fontBoost, 2) : tune.fontBoost
+  const formFontBoost = mobile && registerPaper ? Math.min(tune.fontBoost, 4) : tune.fontBoost
   const typewriterUrl = registerPaper ? TYPEWRITER_REGISTER_URL : TYPEWRITER_LOGIN_URL
   const typewriterAspectRatio = registerPaper ? TYPEWRITER_REGISTER_RATIO : TYPEWRITER_LOGIN_RATIO
   // Use the taller image as the viewport-fit limit in BOTH modes. This way
@@ -450,7 +450,7 @@ export default function AtelierWithSignin(props: Props) {
     background: 'rgba(252,254,255,.95)',
     color: '#5f7d92',
     outline: 'none',
-    padding: mobile ? '4px 8px' : '5px 10px',
+    padding: mobile ? (registerPaper ? '2px 8px' : '4px 8px') : '5px 10px',
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     fontSize: (mobile ? 9 : 11) + formFontBoost,
     boxShadow: '0 4px 14px rgba(117, 157, 184, .10), inset 0 1px 0 rgba(255,255,255,.96)',
