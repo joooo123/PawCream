@@ -636,7 +636,14 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
       >
         <img
           src={asset.src} alt={asset.label} draggable={false} decoding="async"
-          style={{ display: 'block', width: '100%', height: 'auto', pointerEvents: 'none', userSelect: 'none' }}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 'auto',
+            opacity: topBarOpen && ['people', 'instax', 'sewing', 'note', 'music', 'color'].includes(key) ? 0 : 1,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
         />
 
         {selectedAsset && (
@@ -722,31 +729,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
             </div>
             <button type="button" onClick={onBack} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}>{copy.toolbarHome}</button>
             <button type="button" onClick={() => setLoginNoticeOpen((v) => !v)} style={{ ...smallButtonStyle, minHeight: mobile ? 28 : 32, padding: '0 10px' }}>{copy.toolbarLogin}</button>
-            <button type="button" onClick={closeToolbar} aria-label={copy.toolbarClose} title={copy.toolbarClose} style={{ width: mobile ? 28 : 32, height: mobile ? 28 : 32, border: '1px solid rgba(198,133,157,.2)', borderRadius: '50%', background: 'rgba(255,255,255,.78)', color: '#9b7682', cursor: 'pointer' }}>×</button>
-          </div>
-        </nav>
-      )}
-
-      {!tuneMode && topBarOpen && (
-        <div aria-label={language === 'zh' ? '房间功能提示' : 'Room feature guide'}
-          style={{ position: 'absolute', inset: 0, zIndex: 53, pointerEvents: 'none' }}>
-          {([
-            { x: 19, y: 33, zh: '音乐播放器 ♫', en: 'Music player ♫' },
-            { x: 28, y: 46, zh: '公共照片墙 ♡', en: 'Photo wall ♡' },
-            { x: 76, y: 60, zh: '娃衣收藏册', en: 'Outfit lookbook' },
-            { x: 18, y: 64, zh: '留言便签 ✎', en: 'Message notes ✎' },
-            { x: 55, y: 79, zh: '制作拍立得', en: 'Make Instax' },
-            { x: 83, y: 36, zh: '切换背景', en: 'Change color' },
-          ] as const).map((hint) => (
-            <span key={hint.zh} style={{
-              position: 'absolute', left: `${hint.x}%`, top: `${hint.y}%`,
-              transform: 'translate(-50%, -50%)', borderRadius: 999,
-              padding: mobile ? '5px 8px' : '7px 11px',
-              background: 'transparent',
-              border: 'none', color: '#fff',
-              textShadow: '0 1px 5px rgba(0,0,0,.75), 0 2px 9px rgba(0,0,0,.42)',
-              fontFamily: uiFont, fontSize: mobile ? 10 : 12,
-              whiteSpace: 'nowrap', boxShadow: 'none',
+            <button type="button" onClick={closeToolbar} aria-label={copy.toolbarClose} title={copy.toolbarClose} style={{ width: mobile ? 28 : 32, height: mobile ? 28 : 32, border       whiteSpace: 'nowrap', boxShadow: 'none',
               pointerEvents: 'none',
             }}>{language === 'zh' ? hint.zh : hint.en}</span>
           ))}
