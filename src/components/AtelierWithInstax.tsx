@@ -1016,10 +1016,14 @@ export default function AtelierWithInstax(props: Props) {
             style={{
               position: 'relative',
               width: mobile ? 'min(410px, calc(100vw - 20px))' : 'min(720px, calc(100vw - 48px))',
-              maxHeight: 'calc(100svh - 20px)',
-              overflow: 'auto',
-              padding: mobile ? '26px 18px 22px' : '32px 34px 28px',
-              paddingTop: mobile && step !== 'boxing' ? 70 : mobile ? 26 : 32,
+              height: mobile && step === 'select' ? 'min(660px, calc(100dvh - 20px))' : undefined,
+              maxHeight: mobile && step === 'select' ? 'calc(100dvh - 20px)' : 'calc(100svh - 20px)',
+              overflow: mobile && step === 'select' ? 'hidden' : 'auto',
+              boxSizing: 'border-box',
+              display: mobile && step === 'select' ? 'flex' : undefined,
+              flexDirection: mobile && step === 'select' ? 'column' : undefined,
+              padding: mobile && step === 'select' ? '16px 14px 14px' : mobile ? '26px 18px 22px' : '32px 34px 28px',
+              paddingTop: mobile && step === 'select' ? 62 : mobile && step !== 'boxing' ? 70 : mobile ? 26 : 32,
               border: `1px solid ${theme.panelBorder}`,
               borderRadius: mobile ? 24 : 30,
               background: theme.panelBg,
@@ -1090,10 +1094,10 @@ export default function AtelierWithInstax(props: Props) {
 
             {step === 'select' && (
               <>
-                <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                <div style={{ textAlign: 'center', marginBottom: mobile ? 10 : 18, flex: '0 0 auto' }}>
                   <div
                     style={{
-                      fontSize: mobile ? 29 : 32,
+                      fontSize: mobile ? 23 : 32,
                       fontWeight: 750,
                       letterSpacing: '.04em',
                       color: theme.selectedText,
@@ -1105,11 +1109,11 @@ export default function AtelierWithInstax(props: Props) {
                   <div
                     key={colorKey}
                     style={{
-                      marginTop: 7,
-                      minHeight: '1.6em',
-                      fontSize: 20,
+                      marginTop: mobile ? 4 : 7,
+                      minHeight: mobile ? '1.45em' : '1.6em',
+                      fontSize: mobile ? 16 : 20,
                       color: theme.selectedText,
-                      lineHeight: 1.6,
+                      lineHeight: mobile ? 1.45 : 1.6,
                       transition: 'color 220ms ease',
                     }}
                   >
@@ -1123,15 +1127,66 @@ export default function AtelierWithInstax(props: Props) {
                   </div>
                 )}
 
+                {mobile && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 4,
+                      flex: '0 0 auto',
+                      minHeight: 28,
+                      marginBottom: 9,
+                      padding: '0 3px',
+                    }}
+                  >
+                    {COLOR_OPTIONS.map((option) => {
+                      const selected = option.key === colorKey
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          className="pawcream-instax-dot"
+                          aria-label={option.label}
+                          title={option.label}
+                          onClick={() => selectColor(option.key)}
+                          style={{
+                            flex: '0 0 auto',
+                            width: selected ? 25 : 20,
+                            height: selected ? 25 : 20,
+                            padding: 0,
+                            borderRadius: '50%',
+                            border: selected ? '3px solid white' : '2px solid white',
+                            outline: selected ? `2px solid ${theme.selectedBorder}` : '1px solid rgba(130,103,113,.14)',
+                            background: option.swatch,
+                            boxShadow: '0 3px 9px rgba(91,68,77,.12)',
+                            cursor: 'pointer',
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
+
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: mobile ? '86px minmax(0,1fr)' : '110px minmax(0,1fr)',
-                    gap: mobile ? 14 : 22,
-                    alignItems: 'start',
+                    gridTemplateColumns: mobile ? '72px minmax(0,1fr)' : '110px minmax(0,1fr)',
+                    gap: mobile ? 10 : 22,
+                    alignItems: mobile ? 'stretch' : 'start',
+                    flex: mobile ? '1 1 0' : undefined,
+                    minHeight: mobile ? 0 : undefined,
                   }}
                 >
-                  <div style={{ display: 'grid', gap: 8, paddingTop: 44 }}>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateRows: mobile ? 'repeat(6, minmax(0, 1fr))' : undefined,
+                      gap: mobile ? 6 : 8,
+                      paddingTop: mobile ? 0 : 44,
+                      minHeight: mobile ? 0 : undefined,
+                    }}
+                  >
                     {SIZE_OPTIONS.map((option) => {
                       const enabled = Boolean(FRAME_MAP[colorKey][option.key])
                       const selected = option.key === sizeKey
@@ -1143,9 +1198,9 @@ export default function AtelierWithInstax(props: Props) {
                           className="pawcream-instax-size"
                           onClick={() => selectSize(option.key)}
                           style={{
-                            minHeight: 44,
-                            padding: '6px 9px',
-                            borderRadius: 14,
+                            minHeight: mobile ? 0 : 44,
+                            padding: mobile ? '4px 7px' : '6px 9px',
+                            borderRadius: mobile ? 12 : 14,
                             border: selected
                               ? `1px solid ${theme.selectedBorder}`
                               : `1px solid ${theme.panelBorder}`,
@@ -1156,54 +1211,58 @@ export default function AtelierWithInstax(props: Props) {
                             textAlign: 'left',
                           }}
                         >
-                          <span style={{ display: 'block', fontSize: 21, fontWeight: 720 }}>{option.label}</span>
-                          <span style={{ display: 'block', marginTop: 2, fontSize: 18, opacity: .72 }}>{option.hint}</span>
+                          <span style={{ display: 'block', fontSize: mobile ? 17 : 21, fontWeight: 720 }}>{option.label}</span>
+                          <span style={{ display: 'block', marginTop: mobile ? 1 : 2, fontSize: mobile ? 12 : 18, opacity: .72 }}>{option.hint}</span>
                         </button>
                       )
                     })}
                   </div>
 
-                  <div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: mobile ? 9 : 12,
-                        minHeight: 38,
-                        marginBottom: 8,
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      {COLOR_OPTIONS.map((option) => {
-                        const selected = option.key === colorKey
-                        return (
-                          <button
-                            key={option.key}
-                            type="button"
-                            className="pawcream-instax-dot"
-                            aria-label={option.label}
-                            title={option.label}
-                            onClick={() => selectColor(option.key)}
-                            style={{
-                              width: selected ? 25 : 20,
-                              height: selected ? 25 : 20,
-                              padding: 0,
-                              borderRadius: '50%',
-                              border: selected ? '3px solid white' : '2px solid white',
-                              outline: selected ? `2px solid ${theme.selectedBorder}` : '1px solid rgba(130,103,113,.14)',
-                              background: option.swatch,
-                              boxShadow: '0 3px 9px rgba(91,68,77,.12)',
-                              cursor: 'pointer',
-                            }}
-                          />
-                        )
-                      })}
-                    </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', minHeight: mobile ? 0 : undefined }}>
+                    {!mobile && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: 12,
+                          minHeight: 38,
+                          marginBottom: 8,
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        {COLOR_OPTIONS.map((option) => {
+                          const selected = option.key === colorKey
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              className="pawcream-instax-dot"
+                              aria-label={option.label}
+                              title={option.label}
+                              onClick={() => selectColor(option.key)}
+                              style={{
+                                width: selected ? 25 : 20,
+                                height: selected ? 25 : 20,
+                                padding: 0,
+                                borderRadius: '50%',
+                                border: selected ? '3px solid white' : '2px solid white',
+                                outline: selected ? `2px solid ${theme.selectedBorder}` : '1px solid rgba(130,103,113,.14)',
+                                background: option.swatch,
+                                boxShadow: '0 3px 9px rgba(91,68,77,.12)',
+                                cursor: 'pointer',
+                              }}
+                            />
+                          )
+                        })}
+                      </div>
+                    )}
 
                     <div
                       style={{
-                        minHeight: mobile ? 380 : 430,
+                        minHeight: mobile ? 0 : 430,
+                        height: mobile ? '100%' : undefined,
+                        flex: mobile ? '1 1 auto' : undefined,
                         display: 'grid',
                         placeItems: 'center',
                         padding: 8,
@@ -1219,7 +1278,7 @@ export default function AtelierWithInstax(props: Props) {
                           draggable={false}
                           style={{
                             maxWidth: '100%',
-                            maxHeight: mobile ? '355px' : '405px',
+                            maxHeight: mobile ? '100%' : '405px',
                             objectFit: 'contain',
                             filter: 'drop-shadow(0 12px 20px rgba(92,69,78,.12))',
                             userSelect: 'none',
@@ -1233,12 +1292,12 @@ export default function AtelierWithInstax(props: Props) {
                 </div>
 
                 {frameError && (
-                  <div style={{ marginTop: 10, textAlign: 'center', fontSize: 20, color: theme.selectedText }}>
+                  <div style={{ marginTop: mobile ? 4 : 10, textAlign: 'center', fontSize: mobile ? 11 : 20, whiteSpace: mobile ? 'nowrap' : undefined, overflow: mobile ? 'hidden' : undefined, textOverflow: mobile ? 'ellipsis' : undefined, flex: '0 0 auto', color: theme.selectedText }}>
                     {frameError}
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: mobile ? 10 : 18, flex: '0 0 auto' }}>
                   <button
                     type="button"
                     className="pawcream-instax-button"
@@ -1246,11 +1305,11 @@ export default function AtelierWithInstax(props: Props) {
                     onClick={startPhotoPicking}
                     style={{
                       ...themedButtonStyle,
-                      minWidth: 116,
-                      minHeight: 42,
+                      minWidth: mobile ? 108 : 116,
+                      minHeight: mobile ? 38 : 42,
                       borderRadius: 999,
-                      padding: '9px 26px',
-                      fontSize: 24,
+                      padding: mobile ? '7px 22px' : '9px 26px',
+                      fontSize: mobile ? 18 : 24,
                       fontWeight: 750,
                       opacity: frameMeta && frameName ? 1 : .42,
                     }}
