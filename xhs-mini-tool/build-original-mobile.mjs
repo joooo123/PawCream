@@ -403,14 +403,29 @@ css += [
   '}',
 ].join('\n');
 fs.writeFileSync(cssFile,css);
-// Copy all original visual resources after reducing to mobile resolution.
-let optimizedImages=0;
+// Copy original visual resources after reducing to mobile resolution.
+// JPEGs are physically EXIF-auto-oriented before WebP conversion. cwebp's
+// default metadata mode strips EXIF, so converting raw JPEG pixels directly
+// can make camera photos appear rotated in the mini-tool.
+const orientationWork=path.join(root,'.orientation-work');
+const rotationRegressionPhotos=new Set([
+ 'return_photo/ae74e949f0d9c8c06b084beceefd83aa.jpg',
+ 'return_photo/83d66baa1f607b0c7a9e093d9d27d402.jpg',
+]);
+const rotationChecks=[];
+let normalizedJpegs=0,optimizedImages=0;
 for(const relative of walk(sourceAssets)){
  const ext=path.extname(relative).toLowerCase();
  if(ext!=='.png'&&ext!=='.jpg'&&ext!=='.jpeg'&&ext!=='.webp'&&ext!=='.svg')continue;
  const input=path.join(sourceAssets,relative);
  const output=path.join(assets,relative.replace(/\.(?:png|jpe?g)$/i,'.webp'));mkdir(output);
  if(ext==='.webp'||ext==='.svg'){fs.copyFileSync(input,output);continue}
+ let conversionInput=input;
+ if(ext==='.jpg'||ext==='.jpeg'){
+  conversionInput=path.join(orientationWork,relative+'.png');mkdir(conversionInput);
+  cmd('convert',[input,'-auto-orient','-strip',conversionInput]);
+  normalizedJpegs++;
+ }
  const studio=relative.startsWith('atelier/');
  const paper=relative.startsWith('instax/');
  const opening=relative.startsWith('instax-transparent/');
@@ -419,8 +434,17 @@ for(const relative of walk(sourceAssets)){
  const star=relative.startsWith('stars/');
  const width=returnPhoto?640:(paper||opening)?1000:bg?1240:star?180:studio?1100:850;
  const q=returnPhoto?50:(paper||opening)?65:bg?57:studio?61:66;
- cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',input,'-o',output]);optimizedImages++;
+ cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',conversionInput,'-o',output]);optimizedImages++;
+ if(conversionInput!==input)fs.rmSync(conversionInput,{force:true});
+ if(rotationRegressionPhotos.has(relative)){
+  const dimensions=cmd('identify',['-format','%w %h',output]).trim().split(/\s+/).map(Number);
+  check(dimensions.length===2&&dimensions[1]>dimensions[0],
+   'Return photo orientation regression: '+relative+' produced '+dimensions.join('x')+' instead of portrait');
+  rotationChecks.push({file:path.basename(relative),width:dimensions[0],height:dimensions[1]});
+ }
 }
+fs.rmSync(orientationWork,{recursive:true,force:true});
+check(rotationChecks.length===2,'Expected both known rotated return photos to pass orientation checks');
 // Pack the 48 return photos into the app bundle so the upload stays under the
 // platform's 200-file limit without dropping any photos or frame assets.
 const returnPhotoSource=path.join(sourceAssets,'return_photo');
@@ -484,7 +508,7 @@ const official=path.join(repo,'.skill/minitool-zip-builder/scripts/audit_artifac
 const directoryAudit=cmd('python3',[official,dist]).trim(),zipAudit=cmd('python3',[official,zip]).trim();
 const summary={status:'STATIC_PASS_DEVICE_PENDING',architecture:'ORIGINAL_REACT_COMPONENTS',
  originalSiteEntry:'src/main.tsx',sourceWebsiteChanged:false,networkRequestsRemoved:true,
- runtime:'classic JS IIFE, Chrome61+',zipBytes,assetCount:entries.length,fileCount:packagedFiles.length,optimizedRasterImages:optimizedImages,returnPhotoCount:returnPhotoFiles.length,returnPhotoSourceBytes,returnPhotoOptimizedBytes,
+ runtime:'classic JS IIFE, Chrome61+',zipBytes,assetCount:entries.length,fileCount:packagedFiles.length,optimizedRasterImages:optimizedImages,normalizedJpegs,rotationChecks,returnPhotoCount:returnPhotoFiles.length,returnPhotoSourceBytes,returnPhotoOptimizedBytes,
  simulator:'PENDING',android:'PENDING',ios:'PENDING',directoryAudit,zipAudit};
 fs.writeFileSync(path.join(release,'validation-summary.json'),JSON.stringify(summary,null,2)+'\n');
 console.log('PawCream ORIGINAL mobile UI bundle PASS');
