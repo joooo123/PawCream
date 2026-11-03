@@ -226,11 +226,18 @@ div[role="dialog"][aria-label="Sign in"] {
   }
 }
 
-/* In guide mode, replace the original image-label buttons with text only.
-   Keep the image boxes in the layout so label positions and hit areas stay unchanged. */
+/* Hide only the six pill-style shortcuts; keep room objects and hit areas unchanged. */
 section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
-  > img[alt]:not([alt="Light"]),
+  [data-atelier-asset="people"] > img[alt],
 section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
-  > div:has(> img[alt]) > img[alt]:not([alt="Light"]) {
+  [data-atelier-asset="instax"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="sewing"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="note"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="music"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="color"] > img[alt] {
   opacity: 0 !important;
 }
