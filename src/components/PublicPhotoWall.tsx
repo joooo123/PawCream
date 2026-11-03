@@ -57,7 +57,15 @@ const RETURN_PHOTO_FILES = [
   'e15835259feda9bae05d8eb838f473ae.jpg',
   'fa12ee52ded64e1b44426c8067c8a962.jpg',
   'fa977a8bebd47d3beff298451a457dfa.jpg',
-  'ff8b5248845e636c38dd9721a71c3e2d.jpg',
+  'ff8b5248845e636c38dd9721a71c3e2d.jpg',,
+  '微信图片_20261028215532_458_740.jpg',
+  '微信图片_20261028215538_459_740.jpg',
+  '微信图片_20261028215551_460_740.jpg',
+  '微信图片_20261028215552_461_740.jpg',
+  '微信图片_20261028215552_462_740.jpg',
+  '微信图片_20261028215553_463_740.jpg',
+  '微信图片_20261103163904_483_740.jpg',
+  '微信图片_20261103163921_484_740.jpg',
 ]
 const BUNDLED_RETURN_PHOTOS: DisplayPhoto[] = RETURN_PHOTO_FILES.map((filename, index) => ({
   id: `return-${index + 1}`,
