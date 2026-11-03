@@ -53,11 +53,13 @@ jobs:
             git commit -m "chore(xhs): install official minitool skill and record source hash"
             git push origin "HEAD:refs/heads/feat/xiaohongshu-mini-tool"
           fi
-      - name: Install WebP optimizer
+      - name: Install WebP and EXIF orientation tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq webp
+          sudo apt-get install -y -qq webp imagemagick
           command -v cwebp
+          command -v convert
+          command -v identify
       - name: Install original PawCream React build dependencies
         run: |
           npm install --no-audit --no-fund
