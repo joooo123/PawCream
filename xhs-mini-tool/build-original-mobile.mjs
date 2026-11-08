@@ -413,6 +413,13 @@ const rotationRegressionPhotos=new Set([
  'return_photo/83d66baa1f607b0c7a9e093d9d27d402.jpg',
 ]);
 const rotationChecks=[];
+const newReturnPhotoNames=new Set([
+ '4ef9c57b5ce47256dcf072ddd4536837.jpg',
+ '510465b48a16abc42afc2e76abc890e3.jpg',
+ '81b1fdb1f58cde2f62d9a49e488e98c9.jpg',
+ 'ef347ef1d631ebfc0c1f7624cc774578.jpg',
+]);
+const newPhotoOrientationChecks=[];
 let normalizedJpegs=0,optimizedImages=0;
 for(const relative of walk(sourceAssets)){
  const ext=path.extname(relative).toLowerCase();
@@ -435,6 +442,15 @@ for(const relative of walk(sourceAssets)){
  const width=returnPhoto?640:(paper||opening)?1000:bg?1240:star?180:studio?1100:850;
  const q=returnPhoto?50:(paper||opening)?65:bg?57:studio?61:66;
  cmd('cwebp',['-quiet','-mt','-m','5','-q',String(q),'-alpha_q','100','-resize',String(width),'0',conversionInput,'-o',output]);optimizedImages++;
+ if(newReturnPhotoNames.has(path.basename(relative))&&returnPhoto){
+  const sourceDimensions=cmd('identify',['-format','%w %h',conversionInput]).trim().split(/\s+/).map(Number);
+  const outputDimensions=cmd('identify',['-format','%w %h',output]).trim().split(/\s+/).map(Number);
+  check(sourceDimensions.length===2&&outputDimensions.length===2 &&
+   (sourceDimensions[0]>sourceDimensions[1])===(outputDimensions[0]>outputDimensions[1]) &&
+   (sourceDimensions[0]<sourceDimensions[1])===(outputDimensions[0]<outputDimensions[1]),
+   'New return photo orientation mismatch: '+relative);
+  newPhotoOrientationChecks.push(path.basename(relative));
+ }
  if(conversionInput!==input)fs.rmSync(conversionInput,{force:true});
  if(rotationRegressionPhotos.has(relative)){
   const dimensions=cmd('identify',['-format','%w %h',output]).trim().split(/\s+/).map(Number);
@@ -445,12 +461,13 @@ for(const relative of walk(sourceAssets)){
 }
 fs.rmSync(orientationWork,{recursive:true,force:true});
 check(rotationChecks.length===2,'Expected both known rotated return photos to pass orientation checks');
-// Pack the 48 return photos into the app bundle so the upload stays under the
+check(newPhotoOrientationChecks.length===4,'Expected all four new return photos to pass orientation checks');
+// Pack the 52 return photos into the app bundle so the upload stays under the
 // platform's 200-file limit without dropping any photos or frame assets.
 const returnPhotoSource=path.join(sourceAssets,'return_photo');
 check(fs.existsSync(returnPhotoSource),'Missing return_photo source directory');
 const returnPhotoFiles=walk(returnPhotoSource).filter(relative=>/\.(?:png|jpe?g|webp)$/i.test(relative));
-check(returnPhotoFiles.length===48,'Expected 48 return photos, found '+returnPhotoFiles.length);
+check(returnPhotoFiles.length===52,'Expected 52 return photos, found '+returnPhotoFiles.length);
 const returnPhotoSourceBytes=returnPhotoFiles.reduce((sum,relative)=>sum+fs.statSync(path.join(returnPhotoSource,relative)).size,0);
 let returnPhotoOptimizedBytes=0;
 const returnPhotoData={};
@@ -464,7 +481,7 @@ for(const relative of returnPhotoFiles){
  fs.unlinkSync(optimizedPath);
 }
 fs.rmSync(path.join(assets,'return_photo'),{recursive:true,force:true});
-check(Object.keys(returnPhotoData).length===48,'Return photo pack must contain 48 photos');
+check(Object.keys(returnPhotoData).length===52,'Return photo pack must contain 52 photos');
 fs.writeFileSync(jsFile,'window.__PAWCREAM_RETURN_PHOTOS__='+JSON.stringify(returnPhotoData)+String.fromCharCode(59,10)+fs.readFileSync(jsFile,'utf8'));
 // No audio files: the XHS upload whitelist rejects MP3.
 for(const font of ['pawcream-en.woff2','pawcream-cn.woff2']){
@@ -508,7 +525,7 @@ const official=path.join(repo,'.skill/minitool-zip-builder/scripts/audit_artifac
 const directoryAudit=cmd('python3',[official,dist]).trim(),zipAudit=cmd('python3',[official,zip]).trim();
 const summary={status:'STATIC_PASS_DEVICE_PENDING',architecture:'ORIGINAL_REACT_COMPONENTS',
  originalSiteEntry:'src/main.tsx',sourceWebsiteChanged:false,networkRequestsRemoved:true,
- runtime:'classic JS IIFE, Chrome61+',zipBytes,assetCount:entries.length,fileCount:packagedFiles.length,optimizedRasterImages:optimizedImages,normalizedJpegs,rotationChecks,returnPhotoCount:returnPhotoFiles.length,returnPhotoSourceBytes,returnPhotoOptimizedBytes,
+ runtime:'classic JS IIFE, Chrome61+',zipBytes,assetCount:entries.length,fileCount:packagedFiles.length,optimizedRasterImages:optimizedImages,normalizedJpegs,rotationChecks,newPhotoOrientationChecks,returnPhotoCount:returnPhotoFiles.length,returnPhotoSourceBytes,returnPhotoOptimizedBytes,
  simulator:'PENDING',android:'PENDING',ios:'PENDING',directoryAudit,zipAudit};
 fs.writeFileSync(path.join(release,'validation-summary.json'),JSON.stringify(summary,null,2)+'\n');
 console.log('PawCream ORIGINAL mobile UI bundle PASS');
