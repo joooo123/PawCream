@@ -738,6 +738,7 @@ export default function AtelierPlaceholderV2({ onBack, deviceProfile, onDeviceCh
         <div aria-label={language === 'zh' ? '房间功能提示' : 'Room feature guide'}
           style={{ position: 'absolute', inset: 0, zIndex: 53, pointerEvents: 'none' }}>
           {([
+            { x: 31.5, y: 27, zh: '品牌介绍', en: 'About PawCream' },
             { x: 19, y: 33, zh: '音乐播放器 ♫', en: 'Music player ♫' },
             { x: 28, y: 46, zh: '公共照片墙 ♡', en: 'Photo wall ♡' },
             { x: 76, y: 60, zh: '娃衣收藏册', en: 'Outfit lookbook' },
