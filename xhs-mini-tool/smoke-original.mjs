@@ -255,11 +255,11 @@ try{
  const wallText=await page.locator('.pawcream-public-wall').innerText();
  if(wallText.includes('离线返图展示')||wallText.includes('张实拍返图'))throw Error('Internal offline-demo label should not be visible: '+wallText.slice(0,180));
  const returnTiles=page.locator('.pawcream-public-wall-tile img');
- if(await returnTiles.count()!==52)throw Error('Expected 52 return photos, got '+await returnTiles.count());
+ if(await returnTiles.count()!==53)throw Error('Expected 52 return photos, got '+await returnTiles.count());
  await returnTiles.evaluateAll(imgs=>imgs.forEach(img=>{img.loading='eager'}));
  await page.waitForFunction(()=>{
   const imgs=Array.from(document.querySelectorAll('.pawcream-public-wall-tile img'));
-  return imgs.length===52&&imgs.every(img=>img.complete&&img.naturalWidth>0&&(img.currentSrc||img.src).startsWith('data:image/webp;base64,'));
+  return imgs.length===53&&imgs.every(img=>img.complete&&img.naturalWidth>0&&(img.currentSrc||img.src).startsWith('data:image/webp;base64,'));
  },null,{timeout:20000});
  await page.screenshot({path:path.join(release,'mobile-return-wall.png')});
  await page.locator('.pawcream-public-wall-tile').first().click();

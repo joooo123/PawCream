@@ -70,6 +70,7 @@ const RETURN_PHOTO_FILES = [
   '微信图片_20261028215553_463_740.jpg',
   '微信图片_20261103163904_483_740.jpg',
   '微信图片_20261103163921_484_740.jpg',
+  '微信图片_20261109160151_262_4419.jpg',
 ]
 // Array.from turns accidental sparse slots into undefined so they can be
 // detected and removed before building the list used by find() and map().

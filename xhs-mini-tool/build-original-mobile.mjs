@@ -418,6 +418,7 @@ const newReturnPhotoNames=new Set([
  '510465b48a16abc42afc2e76abc890e3.jpg',
  '81b1fdb1f58cde2f62d9a49e488e98c9.jpg',
  'ef347ef1d631ebfc0c1f7624cc774578.jpg',
+ '微信图片_20261109160151_262_4419.jpg',
 ]);
 const newPhotoOrientationChecks=[];
 let normalizedJpegs=0,optimizedImages=0;
@@ -461,13 +462,13 @@ for(const relative of walk(sourceAssets)){
 }
 fs.rmSync(orientationWork,{recursive:true,force:true});
 check(rotationChecks.length===2,'Expected both known rotated return photos to pass orientation checks');
-check(newPhotoOrientationChecks.length===4,'Expected all four new return photos to pass orientation checks');
-// Pack the 52 return photos into the app bundle so the upload stays under the
+check(newPhotoOrientationChecks.length===5,'Expected all five new return photos to pass orientation checks');
+// Pack the 53 return photos into the app bundle so the upload stays under the
 // platform's 200-file limit without dropping any photos or frame assets.
 const returnPhotoSource=path.join(sourceAssets,'return_photo');
 check(fs.existsSync(returnPhotoSource),'Missing return_photo source directory');
 const returnPhotoFiles=walk(returnPhotoSource).filter(relative=>/\.(?:png|jpe?g|webp)$/i.test(relative));
-check(returnPhotoFiles.length===52,'Expected 52 return photos, found '+returnPhotoFiles.length);
+check(returnPhotoFiles.length===53,'Expected 53 return photos, found '+returnPhotoFiles.length);
 const returnPhotoSourceBytes=returnPhotoFiles.reduce((sum,relative)=>sum+fs.statSync(path.join(returnPhotoSource,relative)).size,0);
 let returnPhotoOptimizedBytes=0;
 const returnPhotoData={};
@@ -481,7 +482,7 @@ for(const relative of returnPhotoFiles){
  fs.unlinkSync(optimizedPath);
 }
 fs.rmSync(path.join(assets,'return_photo'),{recursive:true,force:true});
-check(Object.keys(returnPhotoData).length===52,'Return photo pack must contain 52 photos');
+check(Object.keys(returnPhotoData).length===53,'Return photo pack must contain 53 photos');
 fs.writeFileSync(jsFile,'window.__PAWCREAM_RETURN_PHOTOS__='+JSON.stringify(returnPhotoData)+String.fromCharCode(59,10)+fs.readFileSync(jsFile,'utf8'));
 // No audio files: the XHS upload whitelist rejects MP3.
 for(const font of ['pawcream-en.woff2','pawcream-cn.woff2']){
