@@ -1,0 +1,112 @@
+.pawcream-phone-demo {
+  min-height: 100svh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 24px;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle, rgba(119, 177, 214, 0.72) 2.5px, transparent 2.8px);
+  background-size: 34px 34px;
+  background-position: 3px 3px;
+}
+
+.pawcream-phone-demo__stage {
+  position: relative;
+  flex: none;
+}
+
+.pawcream-phone-demo__device {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 422px;
+  height: 876px;
+  padding: 14px;
+  border: 2px solid #a9d4ef;
+  border-radius: 62px;
+  background: linear-gradient(145deg, #eaf7ff 0%, #b9def4 48%, #91c5e7 100%);
+  box-shadow:
+    0 28px 70px rgba(69, 126, 164, 0.22),
+    0 8px 18px rgba(69, 126, 164, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72),
+    inset 0 0 12px rgba(255, 255, 255, 0.48);
+  transform-origin: top left;
+}
+
+.pawcream-phone-demo__device::before,
+.pawcream-phone-demo__device::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #a3d0ed, #75b2dc);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+}
+
+.pawcream-phone-demo__device::before {
+  left: -5px;
+  top: 148px;
+  height: 84px;
+}
+
+.pawcream-phone-demo__device::after {
+  right: -5px;
+  top: 190px;
+  height: 116px;
+}
+
+.pawcream-phone-demo__screen {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  border-radius: 46px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(40, 83, 111, 0.18);
+  isolation: isolate;
+}
+
+.pawcream-phone-demo__screen iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 390px;
+  height: 844px;
+  border: 0;
+  border-radius: inherit;
+  background: #ffffff;
+}
+
+.pawcream-phone-demo__island {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  left: 50%;
+  width: 124px;
+  height: 32px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #101012;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.pawcream-phone-demo__home-indicator {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: 8px;
+  width: 132px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(20, 18, 22, 0.72);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pawcream-phone-demo__device {
+    scroll-behavior: auto;
+  }
+}

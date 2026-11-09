@@ -1,0 +1,38 @@
+name: PawCream phone demo check
+
+on:
+  push:
+    branches:
+      - 'demo/**'
+  pull_request:
+    branches:
+      - 'demo/**'
+
+jobs:
+  phone-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install app dependencies
+        run: npm install --no-package-lock
+      - name: Install browser test dependency
+        run: npm install --no-save --no-package-lock playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Run mobile-frame browser smoke test
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/pawcream-preview.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS 'http://127.0.0.1:4173/?demo=1' >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS 'http://127.0.0.1:4173/?demo=1' >/dev/null
+          node scripts/phone-demo-smoke.mjs
