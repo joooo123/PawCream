@@ -142,14 +142,20 @@ try{
  if(!await night())throw Error('Opaque lamp does not open night mode');
  if(!await page.locator('[aria-label="房间功能提示"]').isVisible())
   throw Error('Missing component feature hints in night mode');
- if(await page.locator('[aria-label="房间功能提示"] span').count()<5)
+ if(await page.locator('[aria-label="房间功能提示"] span').count()<6)
   throw Error('Night component guide is incomplete');
+ const brandIntroHint=page.locator('[aria-label="房间功能提示"] span').filter({hasText:/^品牌介绍$/});
+ if(await brandIntroHint.count()!==1)
+  throw Error('Night mode is missing the 品牌介绍 hint');
  const chip=await page.locator('[aria-label="房间功能提示"] > span').first().evaluate(el=>{
   const c=getComputedStyle(el);return {bg:c.backgroundColor,color:c.color,pad:c.padding};
  });
  if(chip.bg!=='rgba(0, 0, 0, 0)'||chip.color!=='rgb(255, 255, 255)'||chip.pad!=='0px')
   throw Error('Night guide still has a tinted chip: '+JSON.stringify(chip));
  await page.getByRole('button',{name:'EN',exact:true}).click();
+ const englishBrandIntroHint=page.locator('[aria-label="Room feature guide"] span').filter({hasText:/^About PawCream$/});
+ if(await englishBrandIntroHint.count()!==1)
+  throw Error('English night mode is missing the About PawCream hint');
  const englishHintFont=await page.locator('[aria-label="Room feature guide"] > span').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
  if(englishHintFont!==17)throw Error('English room hints should be 17px after switching to English: '+englishHintFont);
  await page.mouse.click(lampPoints.transparent.x,lampPoints.transparent.y);
