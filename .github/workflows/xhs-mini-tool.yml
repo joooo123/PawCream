@@ -67,6 +67,7 @@ jobs:
           python3 -m pip install --disable-pip-version-check fonttools brotli
           python3 scripts/convert-fonts.py
       - name: Build, audit, and package mini-tool
+        id: build_package
         run: |
           set -euo pipefail
           node xhs-mini-tool/build-original-mobile.mjs
@@ -98,3 +99,19 @@ jobs:
             xhs-mini-tool/release/mobile-return-wall.png
           if-no-files-found: warn
           retention-days: 30
+      - name: Publish downloadable ZIP release fallback
+        if: always() && steps.build_package.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ZIP="xhs-mini-tool/release/pawcream-xhs-mini-tool.zip"
+          test -s "$ZIP"
+          TAG="xhs-53-photos-20261109"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ZIP" --clobber
+          else
+            gh release create "$TAG" "$ZIP" \
+              --title "PawCream XHS Mini Tool - 53 Return Photos" \
+              --notes "Built from feat/xiaohongshu-mini-tool. Includes 53 return-wall photos with EXIF orientation normalization and regression checks."
+          fi
