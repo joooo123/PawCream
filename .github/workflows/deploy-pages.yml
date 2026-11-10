@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["PawCream phone demo check"]
+    types: [completed]
+    branches: [demo/xiaohongshu-phone]
 
 permissions:
   contents: read
@@ -16,10 +20,19 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout main site source
         uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Checkout Xiaohongshu demo source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || 'demo/xiaohongshu-phone' }}
+          path: xhs-demo-source
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -52,10 +65,34 @@ jobs:
       - name: Check backend syntax
         run: node --check backend/src/server.js
 
-      - name: Build
+      - name: Build main PawCream site
         env:
           VITE_API_BASE_URL: ${{ vars.PAWCREAM_API_BASE_URL }}
         run: npm run build:webp
+
+      - name: Install Xiaohongshu demo dependencies
+        working-directory: xhs-demo-source
+        run: npm install
+
+      - name: Optimize Xiaohongshu demo assets and fonts
+        working-directory: xhs-demo-source
+        run: |
+          npm run optimize:atelier
+          npm run optimize:home
+          python3 scripts/convert-fonts.py
+
+      - name: Build Xiaohongshu demo with backend API disabled
+        working-directory: xhs-demo-source
+        env:
+          VITE_API_BASE_URL: ${{ vars.PAWCREAM_API_BASE_URL }}
+        run: npm run build:xhs-demo
+
+      - name: Add Xiaohongshu demo under /xhs-demo
+        run: |
+          test -s xhs-demo-source/dist/index.html
+          grep -q '/PawCream/xhs-demo/' xhs-demo-source/dist/index.html
+          mkdir -p dist/xhs-demo
+          cp -a xhs-demo-source/dist/. dist/xhs-demo/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
