@@ -1,78 +1,112 @@
-// Run before React and the individual overlay handlers. Transparent artwork
-// must not intercept a tap simply because the PNG has a large rectangular box.
+// XHS-only per-pixel hit testing. React assets are layered absolute images,
+// not native alpha-aware hit regions. Pass through transparent overlaid art to
+// the underlying lamp / sewing machine / window while keeping Color's behavior.
 const ALPHA_THRESHOLD = 40
-const UNCHANGED = new Set(['bear', 'cabinet', 'note', 'window', 'pawcream'])
+const SOFT_HIT = new Set(['light', 'sewing'])
+const UNCHANGED = new Set(['bear', 'cabinet', 'pawcream'])
+const fakeEvents = new WeakSet<Event>()
 let canvas: HTMLCanvasElement | null = null
 
 function isTuning() {
   return new URLSearchParams(location.search).get('tune') === '1'
 }
-
-function targetArtwork(target: EventTarget | null) {
-  if (!(target instanceof Element)) return null
-  const control = target.closest<HTMLElement>('[data-atelier-asset]')
-  const key = control?.dataset.atelierAsset
-  if (!control || !key || UNCHANGED.has(key)) return null
-  if (!control.closest('section[aria-label^="PawCream Atelier Room"]')) return null
-  const image = control.querySelector<HTMLImageElement>(':scope > img')
-  return image ? { control, image, key } : null
+function artworks() {
+  return document.querySelector<HTMLElement>('section[aria-label^="PawCream Atelier Room"]')
 }
-
+function imageFor(control: HTMLElement) {
+  return control.querySelector<HTMLImageElement>(':scope > img')
+}
 function isPainted(control: HTMLElement, image: HTMLImageElement, key: string, x: number, y: number) {
   if (!image.complete || !image.naturalWidth || !image.naturalHeight) return false
-  const width = control.offsetWidth
-  const height = control.offsetHeight
+  const width = control.offsetWidth, height = control.offsetHeight
   const rect = control.getBoundingClientRect()
   if (!width || !height) return false
-  // The browser reports the axis-aligned bounds after CSS rotation. Undo that
-  // rotation around the actual rendered center, rather than using tune values.
-  const transform = getComputedStyle(control).transform
-  let angle = 0
-  const m = transform.match(/^matrix\(([^)]+)\)$/)
-  if (m) {
-    const fields = m[1].split(',').map(Number)
-    angle = -Math.atan2(fields[1], fields[0])
-  } else {
-    const match = control.style.transform.match(/rotate\(([-+\d.]+)deg\)/)
-    if (match) angle = -Number(match[1]) * Math.PI / 180
-  }
+  const matrix = getComputedStyle(control).transform.match(/^matrix\(([^)]+)\)$/)
+  const fields = matrix ? matrix[1].split(',').map(Number) : [1, 0]
+  const angle = -Math.atan2(fields[1], fields[0])
   const dx = x - (rect.left + rect.width / 2)
   const dy = y - (rect.top + rect.height / 2)
   const u = (dx * Math.cos(angle) - dy * Math.sin(angle) + width / 2) / width
   const v = (dx * Math.sin(angle) + dy * Math.cos(angle) + height / 2) / height
   if (u < 0 || u >= 1 || v < 0 || v >= 1) return false
-
   try {
     canvas ??= document.createElement('canvas')
     canvas.width = canvas.height = 1
     const ctx = canvas.getContext('2d', { willReadFrequently: true })
     if (!ctx) return false
-    const sx = Math.min(image.naturalWidth - 1, Math.floor(u * image.naturalWidth))
-    const sy = Math.min(image.naturalHeight - 1, Math.floor(v * image.naturalHeight))
-    // A tiny 5 CSS-pixel touch allowance helps with narrow lamp outlines.
-    const allowance = key === 'light' ? 5 : 0
-    const checks = allowance ? [[0,0],[-allowance,0],[allowance,0],[0,-allowance],[0,allowance]] : [[0,0]]
+    const radius = key === 'light' ? 6 : key === 'sewing' ? 4 : 0
+    const checks = radius
+      ? [[0, 0], [-radius, 0], [radius, 0], [0, -radius], [0, radius],
+        [-radius * .65, -radius * .65], [radius * .65, radius * .65],
+        [-radius * .65, radius * .65], [radius * .65, -radius * .65]]
+      : [[0, 0]]
+    // Window/PawCream lettering and illustration are pale: every nonzero-alpha
+    // pixel must count, rather than the generic alpha >= 40 threshold.
+    const threshold = key === 'window' || key === 'note' ? 1 : SOFT_HIT.has(key) ? 12 : ALPHA_THRESHOLD
     for (const [ox, oy] of checks) {
-      const px = Math.max(0, Math.min(image.naturalWidth - 1, sx + Math.round(ox * image.naturalWidth / width)))
-      const py = Math.max(0, Math.min(image.naturalHeight - 1, sy + Math.round(oy * image.naturalHeight / height)))
+      const px = Math.max(0, Math.min(image.naturalWidth - 1,
+        Math.floor((u + ox / width) * image.naturalWidth)))
+      const py = Math.max(0, Math.min(image.naturalHeight - 1,
+        Math.floor((v + oy / height) * image.naturalHeight)))
       ctx.clearRect(0, 0, 1, 1)
       ctx.drawImage(image, px, py, 1, 1, 0, 0, 1, 1)
-      if (ctx.getImageData(0, 0, 1, 1).data[3] >= ALPHA_THRESHOLD) return true
+      if (ctx.getImageData(0, 0, 1, 1).data[3] >= threshold) return true
     }
   } catch { return false }
   return false
 }
 
+function routeToVisibleArt(stage: HTMLElement, originalKey: string | null,
+                           event: MouseEvent) {
+  // Window is drawn behind other art: route to it only when the closer
+  // controls did not accept the tap, and only for painted pixels.
+  for (const key of ['note', 'light', 'sewing', 'window']) {
+    if (key === originalKey) continue
+    // The Window sits behind the transparent rectangular Light/Cabinet art.
+    // Its lower painted half was unreachable because we blocked forwarding
+    // from these overlaid wrappers. Preserve the upper-half lamp behavior,
+    // but allow the lower painted half of Window to receive the click.
+    if (key === 'window' && originalKey !== null) {
+      const windowArt = stage.querySelector<HTMLElement>('[data-atelier-asset="window"]')
+      if (!windowArt) continue
+      const bounds = windowArt.getBoundingClientRect()
+      if (event.clientY < bounds.top + bounds.height * 0.48) continue
+    }
+    const control = stage.querySelector<HTMLElement>('[data-atelier-asset="' + key + '"]')
+    const image = control && imageFor(control)
+    if (!control || !image || !isPainted(control, image, key, event.clientX, event.clientY)) continue
+    const forwarded = new MouseEvent('click', {
+      bubbles: true, cancelable: true,
+      clientX: event.clientX, clientY: event.clientY, detail: 1
+    })
+    fakeEvents.add(forwarded)
+    control.dispatchEvent(forwarded)
+    return
+  }
+}
+
 function intercept(event: MouseEvent | PointerEvent) {
-  if (isTuning()) return
-  // Preserve keyboard-generated clicks, but not zero-detail touch clicks
-  // carrying a real on-screen coordinate (a known mobile WebView behavior).
-  if (event.type === 'click' && event.detail === 0 && event.clientX === 0 && event.clientY === 0) return
-  const asset = targetArtwork(event.target)
-  if (!asset) return
-  if (isPainted(asset.control, asset.image, asset.key, event.clientX, event.clientY)) return
+  if (isTuning() || fakeEvents.has(event)) return
+  if (event.type === 'click' && event.detail === 0 &&
+      event.clientX === 0 && event.clientY === 0) return
+  const target = event.target
+  if (!(target instanceof Element)) return
+  const stage = artworks()
+  if (!stage || !stage.contains(target)) return
+  const control = target.closest<HTMLElement>('[data-atelier-asset]')
+  const key = control?.dataset.atelierAsset
+  // Empty stage targets may still correspond to painted pixels behind an
+  // element with pointer-events:none or a transparent foreground image.
+  if (!control || !key) {
+    if (event.type === 'click') routeToVisibleArt(stage, null, event as MouseEvent)
+    return
+  }
+  if (UNCHANGED.has(key)) return
+  const image = imageFor(control)
+  if (!image || isPainted(control, image, key, event.clientX, event.clientY)) return
   event.preventDefault()
   event.stopImmediatePropagation()
+  if (event.type === 'click') routeToVisibleArt(stage, key, event as MouseEvent)
 }
 document.addEventListener('pointerdown', intercept, true)
 document.addEventListener('click', intercept, true)

@@ -73,9 +73,86 @@ try {
   await appFrame.waitForSelector('.pawcream-app--atelier', { timeout: 12000 })
   await appFrame.waitForSelector('section[aria-label^="PawCream Atelier Room"]', { timeout: 12000 })
 
-  await appFrame.locator('[data-atelier-asset="light"]').click({ force: true })
+  // Exercise XHS alpha-aware routing: a transparent overlay over the lamp must pass the tap through.
+  await appFrame.waitForFunction(() => {
+    const image = document.querySelector('section[aria-label^="PawCream Atelier Room"] [data-atelier-asset="light"] > img')
+    return image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0
+  }, null, { timeout: 10000 })
+
+  await appFrame.evaluate(() => {
+    const stage = document.querySelector('section[aria-label^="PawCream Atelier Room"]')
+    const light = stage?.querySelector('[data-atelier-asset="light"]')
+    const lightImage = light?.querySelector(':scope > img')
+    if (!stage || !light || !lightImage?.complete || !lightImage.naturalWidth) {
+      throw new Error('Light artwork is not ready for the transparent-hit test')
+    }
+
+    const stageRect = stage.getBoundingClientRect()
+    const rect = light.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const overlay = document.createElement('div')
+    overlay.dataset.atelierAsset = 'color'
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      left: `${x - stageRect.left - 3}px`,
+      top: `${y - stageRect.top - 3}px`,
+      width: '6px',
+      height: '6px',
+      zIndex: '999',
+    })
+
+    const transparentCanvas = document.createElement('canvas')
+    transparentCanvas.width = 1
+    transparentCanvas.height = 1
+    const transparentImage = document.createElement('img')
+    transparentImage.alt = ''
+    transparentImage.src = transparentCanvas.toDataURL('image/png')
+    transparentImage.style.width = '100%'
+    transparentImage.style.height = '100%'
+    overlay.appendChild(transparentImage)
+    stage.appendChild(overlay)
+    overlay.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: x,
+      clientY: y,
+      detail: 1,
+    }))
+    overlay.remove()
+  })
+
   const featureGuide = appFrame.locator('[aria-label="房间功能提示"]')
   await featureGuide.getByText('品牌介绍', { exact: true }).waitFor({ state: 'visible', timeout: 5000 })
+  await appFrame.waitForFunction(() => {
+    const stage = document.querySelector('section[aria-label^="PawCream Atelier Room"]')
+    const lightOn = stage?.querySelector('img[data-pawcream-lightline="true"]')
+    return Boolean(
+      stage?.classList.contains('atelier-night-active') &&
+      lightOn?.classList.contains('is-visible') &&
+      Number.parseFloat(lightOn ? getComputedStyle(lightOn).opacity : '0') > 0,
+    )
+  }, null, { timeout: 5000 })
+
+  const lightLayerOrder = await appFrame.evaluate(() => {
+    const stage = document.querySelector('section[aria-label^="PawCream Atelier Room"]')
+    const lightOn = stage?.querySelector('img[data-pawcream-lightline="true"]')
+    const toolbar = stage?.querySelector('nav[aria-label="PawCream Atelier toolbar"]')
+    const lamp = stage?.querySelector('[data-atelier-asset="light"]')
+    if (!stage || !lightOn || !toolbar || !lamp) throw new Error('Light-on layers are incomplete')
+    return {
+      veil: Number.parseInt(getComputedStyle(stage, '::after').zIndex, 10),
+      lightOn: Number.parseInt(getComputedStyle(lightOn).zIndex, 10),
+      toolbar: Number.parseInt(getComputedStyle(toolbar).zIndex, 10),
+      lampOutline: getComputedStyle(lamp).outlineStyle,
+      lampShadow: getComputedStyle(lamp).boxShadow,
+    }
+  })
+  if (!(lightLayerOrder.veil < lightLayerOrder.lightOn && lightLayerOrder.lightOn < lightLayerOrder.toolbar) ||
+      lightLayerOrder.lampOutline !== 'none' || lightLayerOrder.lampShadow !== 'none') {
+    throw new Error('Light-on layer/interaction styling mismatch: ' + JSON.stringify(lightLayerOrder))
+  }
 
   const windowInteraction = appFrame.locator('[aria-label="Window interaction"]')
   await windowInteraction.waitFor({ state: 'attached', timeout: 5000 })
@@ -163,6 +240,7 @@ try {
   console.log('PASS: cream background with the reference diamond polka-dot pattern')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: latest Atelier feature guide includes the brand introduction hint')
+  console.log('PASS: transparent overlay taps pass through to Light; LightOn is above the night veil and below the toolbar')
   console.log('PASS: all 53 return-wall photos load from the GitHub Pages subpath')
   console.log('PASS: login and registration show demo-only messaging')
   console.log('PASS: no backend/API requests were made')
