@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
 
-declare global {
-  interface Window {
-    __PAWCREAM_RETURN_PHOTOS__?: Record<string, string>
-  }
-}
 import {
   isPawCreamApiEnabled,
   listPublicPhotos,
@@ -85,7 +80,7 @@ const BUNDLED_RETURN_PHOTOS: DisplayPhoto[] = DENSE_RETURN_PHOTO_FILES.map((file
   authorName: 'PawCream',
   frameName: '精选返图',
   createdAt: '2026-10-23T00:00:00Z',
-  localSrc: window.__PAWCREAM_RETURN_PHOTOS__?.[filename.replace(/\.(?:jpe?g)$/i, '.webp')] ?? '',
+  localSrc: `${import.meta.env.BASE_URL}assets/return_photo/${filename.replace(/\.(?:jpe?g)$/i, '.webp')}`,
 }))
 
 export default function PublicPhotoWall({ mobile, onClose }: Props) {
