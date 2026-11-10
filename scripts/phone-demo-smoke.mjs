@@ -79,7 +79,19 @@ try {
 
   const windowInteraction = appFrame.locator('[aria-label="Window interaction"]')
   await windowInteraction.waitFor({ state: 'attached', timeout: 5000 })
-  await windowInteraction.click({ force: true })
+  const interactionDebug = await windowInteraction.evaluate((element) => ({
+    tag: element.tagName,
+    rect: (() => {
+      const value = element.getBoundingClientRect()
+      return { x: value.x, y: value.y, width: value.width, height: value.height }
+    })(),
+    notesBoardOpen: Boolean(document.querySelector('[data-pawcream-notes-board="true"]')),
+    tune: new URLSearchParams(window.location.search).get('tune'),
+  }))
+  console.log('Brand introduction hotspot:', JSON.stringify(interactionDebug))
+  await windowInteraction.evaluate((element) => {
+    element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+  })
   const letter = appFrame.locator('.pawcream-letter-overlay')
   await letter.waitFor({ state: 'visible', timeout: 10000 })
   await appFrame.waitForFunction(() => {
