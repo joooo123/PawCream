@@ -8,8 +8,8 @@
   padding: 24px;
   background-color: #fffaf0;
   background-image:
-    radial-gradient(circle 21px at 40px 30px, rgba(216, 234, 247, .96) 0 20px, transparent 21px),
-    radial-gradient(circle 21px at 122px 112px, rgba(216, 234, 247, .96) 0 20px, transparent 21px);
+    radial-gradient(circle 11px at 40px 30px, rgba(216, 234, 247, .96) 0 10px, transparent 11px),
+    radial-gradient(circle 11px at 122px 112px, rgba(216, 234, 247, .96) 0 10px, transparent 11px);
   background-size: 164px 164px;
   background-position: 0 0, 0 0;
 }

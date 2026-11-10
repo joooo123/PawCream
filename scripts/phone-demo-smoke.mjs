@@ -61,6 +61,9 @@ try {
   })
   if (shell.backgroundColor !== 'rgb(255, 250, 240)') throw new Error('Cream background color mismatch: ' + shell.backgroundColor)
   if ((shell.backgroundImage.match(/radial-gradient/g) || []).length !== 2) throw new Error('Diamond blue polka-dot pattern is missing')
+  if (!shell.backgroundImage.includes('circle 11px') || shell.backgroundImage.includes('circle 21px')) {
+    throw new Error('Phone demo polka dots must be half the original diameter: ' + shell.backgroundImage)
+  }
   if (shell.bezelColor !== 'rgb(199, 224, 237)' || shell.bezelImage !== 'none') {
     throw new Error('Phone bezel must be a solid light blue, received ' + JSON.stringify(shell))
   }
@@ -257,6 +260,38 @@ try {
   await appFrame.locator('[data-atelier-asset="people"]').click({ force: true })
   const wall = appFrame.locator('section[aria-label="PawCream 公共返图墙"]')
   await wall.waitFor({ state: 'visible', timeout: 10000 })
+  const wallLayout = await wall.evaluate((element) => {
+    const overlay = element.parentElement
+    const header = element.querySelector('header')
+    const close = element.querySelector('.pawcream-public-wall-icon-close')
+    if (!overlay || !header || !close) throw new Error('Mobile photo-wall header elements are incomplete')
+    const overlayRect = overlay.getBoundingClientRect()
+    const headerRect = header.getBoundingClientRect()
+    const closeRect = close.getBoundingClientRect()
+    const overlayStyle = getComputedStyle(overlay)
+    const closeStyle = getComputedStyle(close)
+    return {
+      paddingTop: overlayStyle.paddingTop,
+      wallTop: element.getBoundingClientRect().top,
+      overlayTop: overlayRect.top,
+      headerTop: headerRect.top,
+      closeText: close.textContent?.trim(),
+      closeWidth: closeRect.width,
+      closeHeight: closeRect.height,
+      closeRadius: closeStyle.borderRadius,
+    }
+  })
+  if (
+    wallLayout.paddingTop !== '42px' ||
+    wallLayout.wallTop < 42 ||
+    wallLayout.headerTop < 58 ||
+    wallLayout.closeText !== '×' ||
+    wallLayout.closeWidth !== 38 ||
+    wallLayout.closeHeight !== 38 ||
+    wallLayout.closeRadius !== '50%'
+  ) {
+    throw new Error('Mobile photo-wall safe-area/close-button mismatch: ' + JSON.stringify(wallLayout))
+  }
   const photoImages = wall.locator('.pawcream-public-wall-grid img')
   const photoCount = await photoImages.count()
   if (photoCount !== 53) throw new Error('Expected 53 return-wall photos, found ' + photoCount)
@@ -272,6 +307,24 @@ try {
   if (photoResult.loaded !== 53 || photoResult.wrongBase !== 0 || photoFailures.length) {
     throw new Error('Return-wall image check failed: ' + JSON.stringify({ photoResult, photoFailures }))
   }
+  await photoImages.first().click()
+  const quickPreview = appFrame.locator('section[aria-label="返图快速预览"]')
+  await quickPreview.waitFor({ state: 'visible', timeout: 5000 })
+  await quickPreview.getByRole('button', { name: '查看大图' }).click()
+  const detail = appFrame.locator('div[role="dialog"][aria-label="返图详情"]')
+  await detail.waitFor({ state: 'visible', timeout: 5000 })
+  const detailClose = detail.locator('.pawcream-public-wall-icon-close')
+  const detailCloseStyle = await detailClose.evaluate((element) => ({
+    text: element.textContent?.trim(),
+    width: element.getBoundingClientRect().width,
+    height: element.getBoundingClientRect().height,
+    radius: getComputedStyle(element).borderRadius,
+  }))
+  if (detailCloseStyle.text !== '×' || detailCloseStyle.width !== 38 ||
+      detailCloseStyle.height !== 38 || detailCloseStyle.radius !== '50%') {
+    throw new Error('Photo detail close button is not a circular ×: ' + JSON.stringify(detailCloseStyle))
+  }
+  await detailClose.click()
   await wall.getByRole('button', { name: '关闭公共返图墙' }).click()
 
   await appFrame.evaluate(() => {
@@ -300,12 +353,12 @@ try {
     throw new Error('Browser runtime errors: ' + runtimeErrors.join(' | '))
   }
 
-  console.log('PASS: cream background with the reference diamond polka-dot pattern')
+  console.log('PASS: cream background with the reference diamond polka-dot pattern at half dot diameter')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
   console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')
   console.log('PASS: transparent overlay taps pass through to Light; LightOn is above the night veil and below the toolbar')
-  console.log('PASS: all 53 return-wall photos load from the GitHub Pages subpath')
+  console.log('PASS: mobile photo wall clears the Dynamic Island, uses circular × close buttons, and loads all 53 photos')
   console.log('PASS: login and registration show demo-only messaging')
   console.log('PASS: no backend/API requests were made')
 } finally {

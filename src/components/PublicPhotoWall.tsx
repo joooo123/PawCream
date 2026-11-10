@@ -189,7 +189,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
   }
 
   return (
-    <div className="pawcream-public-wall-overlay" role="presentation">
+    <div className={`pawcream-public-wall-overlay${mobile ? ' is-mobile' : ''}`} role="presentation">
       <style>{`
         .pawcream-public-wall-overlay {
           position: fixed; inset: 0; z-index: 180; background: rgba(57,45,56,.4);
@@ -206,6 +206,11 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         .pawcream-public-wall-close {
           border: 1px solid #ecdee7; background: #fff; color: #98788e;
           border-radius: 999px; padding: 8px 14px;
+        }
+        .pawcream-public-wall-icon-close {
+          box-sizing: border-box; width: 38px; height: 38px; flex: 0 0 38px;
+          display: inline-flex; align-items: center; justify-content: center;
+          padding: 0; border-radius: 50%; font-size: 22px; line-height: 1;
         }
         .pawcream-public-wall-layout { display: grid; grid-template-columns: minmax(230px, .8fr) minmax(0, 1.4fr); gap: 24px; }
         .pawcream-public-wall-hero { position: sticky; top: 0; align-self: start; }
@@ -313,6 +318,13 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         .pawcream-public-wall.is-mobile .pawcream-public-wall-grid {
           columns: 2; column-gap: 11px;
         }
+        .pawcream-public-wall-overlay.is-mobile {
+          padding: 42px 8px 8px;
+          place-items: start center;
+        }
+        .pawcream-public-wall.is-mobile {
+          max-height: calc(100dvh - 50px);
+        }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-grid.is-demo {
           columns: 2; column-gap: 11px;
         }
@@ -331,7 +343,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
               {mobile ? '轻点照片预览' : '悬停照片预览，点击查看大图'}
             </div>
           </div>
-          <button type="button" className="pawcream-public-wall-close" onClick={onClose} aria-label="关闭公共返图墙">× 关闭</button>
+          <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close" onClick={onClose} aria-label="关闭公共返图墙" title="关闭">×</button>
         </header>
         <>
 
@@ -413,8 +425,8 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
         <div className="pawcream-public-wall-detail" role="presentation" onClick={() => setDetail(null)}>
           <div className="pawcream-public-wall-detail-inner" role="dialog" aria-modal="true"
             aria-label="返图详情" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="pawcream-public-wall-close"
-              onClick={() => setDetail(null)} style={{ justifySelf: 'end' }}>关闭 ×</button>
+            <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close"
+              onClick={() => setDetail(null)} aria-label="关闭返图详情" title="关闭" style={{ justifySelf: 'end' }}>×</button>
             {artwork(detailPhoto, 'detail')}
             <div style={{ textAlign: 'center', color: '#92778c', fontSize: 13 }}>
               {demoMode ? `精选返图 ${detailPhoto.id.replace('return-', '')} / ${displayedTotal}` : `@${detailPhoto.authorName} · ${detailPhoto.frameName} · ${new Date(detailPhoto.createdAt).toLocaleDateString('zh-CN')}`}
