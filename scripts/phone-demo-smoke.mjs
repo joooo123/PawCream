@@ -77,6 +77,31 @@ try {
   const featureGuide = appFrame.locator('[aria-label="房间功能提示"]')
   await featureGuide.getByText('品牌介绍', { exact: true }).waitFor({ state: 'visible', timeout: 5000 })
 
+  const windowInteraction = appFrame.locator('[aria-label="Window interaction"]')
+  await windowInteraction.waitFor({ state: 'attached', timeout: 5000 })
+  await windowInteraction.click({ force: true })
+  const letter = appFrame.locator('.pawcream-letter-overlay')
+  await letter.waitFor({ state: 'visible', timeout: 10000 })
+  await appFrame.waitForFunction(() => {
+    const body = document.querySelector('.pawcream-paper-body')
+    return body?.textContent?.includes('可爱也不止今天。')
+  }, null, { timeout: 30000 })
+  const brandCopy = await letter.locator('.pawcream-paper-body').textContent() ?? ''
+  const brandSignature = await letter.locator('.pawcream-paper-signature').textContent() ?? ''
+  const brandTextFits = await letter.locator('.pawcream-paper-body').evaluate((element) =>
+    element.scrollHeight <= element.clientHeight + 2,
+  )
+  if (!brandCopy.includes('你好呀，欢迎来到 PawCream') ||
+      !brandCopy.includes('装满甜蜜的娃衣小店') ||
+      brandCopy.includes('收集柔软日常')) {
+    throw new Error('Latest Chinese brand introduction copy mismatch: ' + brandCopy)
+  }
+  if (!brandSignature.includes('made with a little sugar & lots of love')) {
+    throw new Error('Latest brand signature is missing: ' + brandSignature)
+  }
+  if (!brandTextFits) throw new Error('Latest brand introduction text overflows the paper area')
+  await letter.locator('.pawcream-letter-close').click({ force: true })
+
   await appFrame.locator('[data-atelier-asset="people"]').click({ force: true })
   const wall = appFrame.locator('section[aria-label="PawCream 公共返图墙"]')
   await wall.waitFor({ state: 'visible', timeout: 10000 })
