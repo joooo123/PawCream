@@ -129,37 +129,65 @@ try {
     const labelLayer = stage?.querySelector(':scope > .pawcream-guide-label-layer')
     const labels = Array.from(labelLayer?.querySelectorAll('.pawcream-guide-label') ?? [])
       .map((label) => label.textContent ?? '')
+    const toolbar = stage?.querySelector('nav[aria-label="PawCream Atelier toolbar"]')
+    const brand = toolbar?.querySelector(':scope > strong')
+    const shortcutImages = ['people', 'instax', 'sewing', 'note', 'music', 'color']
+      .map((key) => stage?.querySelector(`[data-atelier-asset="${key}"] > img[alt]`))
     return Boolean(
       stage?.classList.contains('pawcream-guides-active') &&
       legacyGuide &&
       getComputedStyle(legacyGuide).display === 'none' &&
-      labels.includes('看看收藏') &&
-      labels.includes('看看手作') &&
-      labels.includes('发现小熊') &&
-      labels.includes('拖动信封')
+      labels.includes('品牌介绍') &&
+      labels.includes('公共照片墙 ♡') &&
+      labels.includes('娃衣收藏册') &&
+      labels.includes('留言便签 ✎') &&
+      labels.includes('音乐播放器 ♫') &&
+      labels.includes('拖动信封') &&
+      labels.includes('制作拍立得') &&
+      labels.includes('切换背景') &&
+      !labels.includes('看看收藏') &&
+      !labels.includes('发现小熊') &&
+      brand?.textContent?.trim() === 'PawCream' &&
+      getComputedStyle(brand).display !== 'none' &&
+      shortcutImages.every((image) => image && Number.parseFloat(getComputedStyle(image).opacity) === 0)
     )
   }, null, { timeout: 5000 })
 
   const toolbarAppearance = await appFrame.evaluate(() => {
     const toolbar = document.querySelector('section[aria-label^="PawCream Atelier Room"] nav[aria-label="PawCream Atelier toolbar"]')
-    const language = toolbar?.querySelector(':scope > div > div:first-child')
+    const brand = toolbar?.querySelector(':scope > strong')
     const controls = toolbar?.querySelector(':scope > div')
-    if (!toolbar || !language || !controls) throw new Error('Latest toolbar elements are incomplete')
+    const language = controls?.querySelector(':scope > div:first-child')
+    if (!toolbar || !brand || !controls || !language) throw new Error('Authoritative mobile toolbar elements are incomplete')
+    const brandRect = brand.getBoundingClientRect()
+    const controlsRect = controls.getBoundingClientRect()
+    const toolbarRect = toolbar.getBoundingClientRect()
     return {
       background: getComputedStyle(toolbar).backgroundColor,
       height: getComputedStyle(toolbar).height,
       languageWidth: getComputedStyle(language).width,
       columns: getComputedStyle(controls).gridTemplateColumns,
+      brandDisplay: getComputedStyle(brand).display,
+      brandText: brand.textContent?.trim(),
+      justifyContent: getComputedStyle(toolbar).justifyContent,
+      brandBeforeControls: brandRect.right < controlsRect.left,
+      controlsInsideToolbar: controlsRect.right <= toolbarRect.right + 1,
     }
   })
   if (
     toolbarAppearance.background !== 'rgba(241, 248, 253, 0.95)' ||
     toolbarAppearance.height !== '48px' ||
     toolbarAppearance.languageWidth !== '84px' ||
-    toolbarAppearance.columns !== '84px 68px 68px 76px 28px'
+    toolbarAppearance.columns !== '84px 68px 76px 28px' ||
+    toolbarAppearance.brandDisplay === 'none' ||
+    toolbarAppearance.brandText !== 'PawCream' ||
+    toolbarAppearance.justifyContent !== 'space-between' ||
+    !toolbarAppearance.brandBeforeControls ||
+    !toolbarAppearance.controlsInsideToolbar
   ) {
-    throw new Error('Latest XHS toolbar styling mismatch: ' + JSON.stringify(toolbarAppearance))
+    throw new Error('Authoritative mobile toolbar styling mismatch: ' + JSON.stringify(toolbarAppearance))
   }
+
   await appFrame.waitForFunction(() => {
     const stage = document.querySelector('section[aria-label^="PawCream Atelier Room"]')
     const lightOn = stage?.querySelector('img[data-pawcream-lightline="true"]')
@@ -274,8 +302,8 @@ try {
 
   console.log('PASS: cream background with the reference diamond polka-dot pattern')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
-  console.log('PASS: asset-aligned XHS guide labels replace the legacy fixed-position hint layer')
-  console.log('PASS: final segmented toolbar sizing and colors override the legacy blue overlay styles')
+  console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
+  console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')
   console.log('PASS: transparent overlay taps pass through to Light; LightOn is above the night veil and below the toolbar')
   console.log('PASS: all 53 return-wall photos load from the GitHub Pages subpath')
   console.log('PASS: login and registration show demo-only messaging')

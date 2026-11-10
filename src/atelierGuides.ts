@@ -11,27 +11,27 @@ const FUNCTION_LABELS: Record<GuideLanguage, Record<string, string>> = {
     Window: '品牌介绍',
     PawCream: '品牌介绍',
     'Wall cabinet': '看看收藏',
-    People: '作品展示册',
+    People: '公共照片墙 ♡',
     Message: '拖动信封',
     Instax: '制作拍立得',
-    'Sewing machine': '看看手作',
-    Note: '打开留言板',
+    'Sewing machine': '娃衣收藏册',
+    Note: '留言便签 ✎',
     Bear: '发现小熊',
-    Music: '播放音乐',
+    Music: '音乐播放器 ♫',
     Color: '切换背景',
   },
   en: {
     Window: 'About PawCream',
     PawCream: 'About PawCream',
     'Wall cabinet': 'Explore collection',
-    People: 'Open lookbook',
+    People: 'Photo wall ♡',
     Message: 'Move the letter',
-    Instax: 'Make an Instax',
-    'Sewing machine': 'Explore handmade',
-    Note: 'Open message board',
+    Instax: 'Make Instax',
+    'Sewing machine': 'outfit lookbook',
+    Note: 'Message notes ✎',
     Bear: 'Meet the bear',
-    Music: 'Play music',
-    Color: 'Change background',
+    Music: 'Music player ♫',
+    Color: 'Change color',
   },
 }
 
@@ -102,8 +102,12 @@ if (!isTuneMode) {
     const language = currentLanguage()
     const labels = FUNCTION_LABELS[language]
     const stageRect = stage.getBoundingClientRect()
+    const mobileLayout = stage.getAttribute('aria-label')?.endsWith('mobile layout') ?? false
     const images = Array.from(stage.querySelectorAll<HTMLImageElement>('img[alt]'))
-      .filter((image) => Boolean(labels[image.alt]))
+      .filter((image) =>
+        Boolean(labels[image.alt]) &&
+        !(mobileLayout && (image.alt === 'Wall cabinet' || image.alt === 'Bear')),
+      )
 
     const seen = new Set<string>()
     const entries: Array<{ key: string; label: string; x: number; y: number }> = []

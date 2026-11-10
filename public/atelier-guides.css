@@ -225,3 +225,19 @@ div[role="dialog"][aria-label="Sign in"] {
     min-height: 218px !important;
   }
 }
+
+/* Hide only the six pill-style shortcuts; keep room objects and hit areas unchanged. */
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="people"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="instax"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="sewing"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="note"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="music"] > img[alt],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  [data-atelier-asset="color"] > img[alt] {
+  opacity: 0 !important;
+}

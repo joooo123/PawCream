@@ -242,9 +242,8 @@ section[aria-label*="mobile layout"] > div[role="dialog"]:not([aria-modal="true"
 }
 
 /*
- * The live website loads the asset-aligned guide layer from atelierGuides.ts.
- * Keep the legacy fixed-position labels only in the offline mini-tool build,
- * where that script is intentionally not loaded.
+ * Hide the fixed-position guide markup embedded in the React scene whenever
+ * the asset-aligned guide layer is active, avoiding duplicate prompt labels.
  */
 section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
   > div[aria-label="房间功能提示"],
