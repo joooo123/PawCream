@@ -123,8 +123,43 @@ try {
     overlay.remove()
   })
 
-  const featureGuide = appFrame.locator('[aria-label="房间功能提示"]')
-  await featureGuide.getByText('品牌介绍', { exact: true }).waitFor({ state: 'visible', timeout: 5000 })
+  await appFrame.waitForFunction(() => {
+    const stage = document.querySelector('section[aria-label^="PawCream Atelier Room"]')
+    const legacyGuide = stage?.querySelector(':scope > div[aria-label="房间功能提示"], :scope > div[aria-label="Room feature guide"]')
+    const labelLayer = stage?.querySelector(':scope > .pawcream-guide-label-layer')
+    const labels = Array.from(labelLayer?.querySelectorAll('.pawcream-guide-label') ?? [])
+      .map((label) => label.textContent ?? '')
+    return Boolean(
+      stage?.classList.contains('pawcream-guides-active') &&
+      legacyGuide &&
+      getComputedStyle(legacyGuide).display === 'none' &&
+      labels.includes('看看收藏') &&
+      labels.includes('看看手作') &&
+      labels.includes('发现小熊') &&
+      labels.includes('拖动信封')
+    )
+  }, null, { timeout: 5000 })
+
+  const toolbarAppearance = await appFrame.evaluate(() => {
+    const toolbar = document.querySelector('section[aria-label^="PawCream Atelier Room"] nav[aria-label="PawCream Atelier toolbar"]')
+    const language = toolbar?.querySelector(':scope > div > div:first-child')
+    const controls = toolbar?.querySelector(':scope > div')
+    if (!toolbar || !language || !controls) throw new Error('Latest toolbar elements are incomplete')
+    return {
+      background: getComputedStyle(toolbar).backgroundColor,
+      height: getComputedStyle(toolbar).height,
+      languageWidth: getComputedStyle(language).width,
+      columns: getComputedStyle(controls).gridTemplateColumns,
+    }
+  })
+  if (
+    toolbarAppearance.background !== 'rgba(241, 248, 253, 0.95)' ||
+    toolbarAppearance.height !== '48px' ||
+    toolbarAppearance.languageWidth !== '84px' ||
+    toolbarAppearance.columns !== '84px 68px 68px 76px 28px'
+  ) {
+    throw new Error('Latest XHS toolbar styling mismatch: ' + JSON.stringify(toolbarAppearance))
+  }
   await appFrame.waitForFunction(() => {
     const stage = document.querySelector('section[aria-label^="PawCream Atelier Room"]')
     const lightOn = stage?.querySelector('img[data-pawcream-lightline="true"]')
@@ -239,7 +274,8 @@ try {
 
   console.log('PASS: cream background with the reference diamond polka-dot pattern')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
-  console.log('PASS: latest Atelier feature guide includes the brand introduction hint')
+  console.log('PASS: asset-aligned XHS guide labels replace the legacy fixed-position hint layer')
+  console.log('PASS: final segmented toolbar sizing and colors override the legacy blue overlay styles')
   console.log('PASS: transparent overlay taps pass through to Light; LightOn is above the night veil and below the toolbar')
   console.log('PASS: all 53 return-wall photos load from the GitHub Pages subpath')
   console.log('PASS: login and registration show demo-only messaging')

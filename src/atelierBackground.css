@@ -240,3 +240,15 @@ section[aria-label*="mobile layout"] > div[role="dialog"]:not([aria-modal="true"
   top: auto !important;
   bottom: 92px !important;
 }
+
+/*
+ * The live website loads the asset-aligned guide layer from atelierGuides.ts.
+ * Keep the legacy fixed-position labels only in the offline mini-tool build,
+ * where that script is intentionally not loaded.
+ */
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  > div[aria-label="房间功能提示"],
+section[aria-label^="PawCream Atelier Room"].pawcream-guides-active
+  > div[aria-label="Room feature guide"] {
+  display: none !important;
+}
