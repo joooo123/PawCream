@@ -61,7 +61,7 @@ try {
   })
   if (shell.backgroundColor !== 'rgb(255, 250, 240)') throw new Error('Cream background color mismatch: ' + shell.backgroundColor)
   if ((shell.backgroundImage.match(/radial-gradient/g) || []).length !== 2) throw new Error('Diamond blue polka-dot pattern is missing')
-  const dotRadii = [...shell.backgroundImage.matchAll(/radial-gradient\\((\\d+(?:\\.\\d+)?)px at/g)]
+  const dotRadii = [...shell.backgroundImage.matchAll(/radial-gradient\((\d+(?:\.\d+)?)px at/g)]
     .map((match) => Number(match[1]))
   if (dotRadii.length !== 2 || dotRadii.some((radius) => radius !== 11)) {
     throw new Error('Phone demo polka dots must be half the original diameter: ' + shell.backgroundImage)
