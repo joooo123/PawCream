@@ -42,8 +42,12 @@ type LetterTune = {
   enBodyHeight: number
   enBodySize: number
   bodyLineHeight: number
+  zhBodyLineHeight?: number
+  enBodyLineHeight?: number
   subtitleLeft: number
   subtitleTop: number
+  zhSubtitleTop?: number
+  enSubtitleTop?: number
   subtitleWidth: number
   subtitleHeight: number
   subtitleSize: number
@@ -61,7 +65,21 @@ const ENVELOPE_PAPER_URL = `${BASE_URL}assets/envelop/paper.png?v=d54ae4f8`
 const ENVELOPE_FRONT_URL = `${BASE_URL}assets/envelop/front.png?v=11bca0e4`
 const ENVELOPE_ASSET_URLS = [ENVELOPE_BACK_URL, ENVELOPE_PAPER_URL, ENVELOPE_FRONT_URL] as const
 const LANGUAGE_STORAGE_KEY = 'pawcream-language-v1'
-const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v2'
+const LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v18'
+const PREVIOUS_V17_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v17'
+const PREVIOUS_V16_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v16'
+const PREVIOUS_V15_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v15'
+const PREVIOUS_V14_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v14'
+const PREVIOUS_MOBILE_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v13'
+const PREVIOUS_DESKTOP_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v12'
+const PREVIOUS_40_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v10'
+const PREVIOUS_BODY_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v9'
+const PRIOR_FONT_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v8'
+const PREVIOUS_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v7'
+const LEGACY_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v6'
+const OLDER_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v5'
+const OLDEST_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v4'
+const OLDESTEST_LETTER_TUNE_STORAGE_KEY = 'pawcream-letter-tune-v3'
 const PAPER_START_DELAY_MS = 120
 const FORMAL_TYPE_GAP_MAX_MS = 30
 
@@ -102,40 +120,44 @@ function preloadEnvelopeAssets(): Promise<void> {
 
 const DEFAULT_TUNE: LetterTuneProfiles = {
   desktop: {
-    paperLeft: 11.5,
-    paperTop: -20,
-    paperWidth: 82,
-    paperHeight: 86,
+    paperLeft: 9,
+    paperTop: -16,
+    paperWidth: 86,
+    paperHeight: 89,
     paperScale: 0.88,
-    paperStretchX: 1,
+    paperStretchX: 1.14,
     paperRotate: 0,
-    startY: 35,
+    startY: 30,
     endY: 9,
-    textLeft: 18,
-    textTop: 13,
-    textWidth: 64,
-    textHeight: 54,
+    textLeft: 12,
+    textTop: 11,
+    textWidth: 76,
+    textHeight: 100,
     titleLeft: 0,
-    titleTop: 0,
+    titleTop: -2.5,
     titleWidth: 100,
     titleHeight: 18,
-    titleSize: 31.5,
+    titleSize: 3.8415,
     zhBodyLeft: 0,
-    zhBodyTop: 29,
+    zhBodyTop: 14,
     zhBodyWidth: 100,
-    zhBodyHeight: 64,
-    zhBodySize: 18.5,
+    zhBodyHeight: 76,
+    zhBodySize: 2.93293,
     enBodyLeft: 0,
-    enBodyTop: 29,
+    enBodyTop: 8,
     enBodyWidth: 100,
-    enBodyHeight: 64,
-    enBodySize: 18.5,
-    bodyLineHeight: 1.76,
+    enBodyHeight: 82,
+    enBodySize: 4.2,
+    bodyLineHeight: 1.5,
+    zhBodyLineHeight: 1.6,
+    enBodyLineHeight: 1.1,
     subtitleLeft: 0,
-    subtitleTop: 18,
+    subtitleTop: 8.5,
+    zhSubtitleTop: 8.5,
+    enSubtitleTop: 5.5,
     subtitleWidth: 100,
     subtitleHeight: 10,
-    subtitleSize: 21.5,
+    subtitleSize: 2.439,
     riseMs: 4000,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -143,39 +165,43 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
   },
   mobile: {
     paperLeft: 14,
-    paperTop: 5.5,
+    paperTop: 7.5,
     paperWidth: 75.5,
     paperHeight: 84,
     paperScale: 0.88,
-    paperStretchX: 1.0,
+    paperStretchX: 1.31,
     paperRotate: 0,
     startY: 5,
-    endY: -16,
-    textLeft: 19.5,
-    textTop: 16.5,
-    textWidth: 64.5,
-    textHeight: 56,
+    endY: -15,
+    textLeft: 10.5,
+    textTop: 11,
+    textWidth: 85,
+    textHeight: 100,
     titleLeft: 0,
-    titleTop: 0,
+    titleTop: -2.5,
     titleWidth: 100,
     titleHeight: 18,
-    titleSize: 19,
+    titleSize: 21,
     zhBodyLeft: 0,
-    zhBodyTop: 29,
+    zhBodyTop: 14,
     zhBodyWidth: 100,
     zhBodyHeight: 64,
     zhBodySize: 10.5,
-    enBodyLeft: 0,
-    enBodyTop: 29,
-    enBodyWidth: 100,
+    enBodyLeft: -5.5,
+    enBodyTop: 10.5,
+    enBodyWidth: 111.5,
     enBodyHeight: 64,
-    enBodySize: 10.5,
-    bodyLineHeight: 1.62,
+    enBodySize: 14.5,
+    bodyLineHeight: 1.1,
+    zhBodyLineHeight: 1.6,
+    enBodyLineHeight: 1.1,
     subtitleLeft: 0,
-    subtitleTop: 18,
+    subtitleTop: 7.5,
+    zhSubtitleTop: 8.5,
+    enSubtitleTop: 5.5,
     subtitleWidth: 100,
-    subtitleHeight: 10,
-    subtitleSize: 8,
+    subtitleHeight: 9,
+    subtitleSize: 11.5,
     riseMs: 1550,
     typeGapMs: 30,
     typeDelayZh: 58,
@@ -184,18 +210,18 @@ const DEFAULT_TUNE: LetterTuneProfiles = {
 }
 
 const COPY = {
-  zh: {
-    title: '关于 PawCream',
-    body: 'PawCream 是一间收集柔软日常的小小工作室。我们喜欢纸张、照片、旧物和那些来不及一下子说完的话，也相信每一点细小心情，都值得被温柔保存。希望你来到这里时，可以慢一点，也留下属于自己的痕迹。',
-    signature: 'soft things · slow days · little keepsakes',
-    close: '关闭品牌介绍',
+  "zh": {
+    "title": "关于 PawCream",
+    "body": "你好呀，欢迎来到 PawCream。这里是一间装满甜蜜的娃衣小店。我们喜欢把少女的颜色、甜甜的灵感和一点点童话心思，缝进每一件小衣服里。\n 愿每一次换装，都像拆开一盒期待已久的小甜点。\n            躲进糖分里，暂时逃离喧嚣的大人世界。\n                                甜蜜不止一点点，\n                                可爱也不止今天。",
+    "signature": "made with a little sugar & lots of love ♡",
+    "close": "关闭品牌介绍"
   },
-  en: {
-    title: 'About PawCream',
-    body: 'PawCream is a tiny atelier for soft everyday moments. We love paper, photographs, old objects, and thoughts that do not need to be said all at once. We believe even the smallest feelings deserve to be kept gently. We hope this little room lets you slow down and leave a trace of your own.',
-    signature: 'soft things · slow days · little keepsakes',
-    close: 'Close brand introduction',
-  },
+  "en": {
+    "title": "About PawCream",
+    "body": "Hello and welcome to PawCream. This is a sweet\ndoll-clothes shop. We stitch girly colors, sweet\nideas, and fairy-tale touches into each\npiece. Every outfit change is like unboxing a\nlong-awaited sweet. Hide in sweetness, escaping\nthe adult world for a while. Sweetness\nand cuteness linger beyond\ntoday.",
+    "signature": "made with a little sugar & lots of love ♡",
+    "close": "Close brand introduction"
+  }
 } as const
 
 function readLanguage(): Language {
@@ -207,9 +233,25 @@ function readTuneProfiles(): LetterTuneProfiles {
   if (typeof window === 'undefined') return DEFAULT_TUNE
   try {
     const saved = JSON.parse(window.localStorage.getItem(LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousV17 = JSON.parse(window.localStorage.getItem(PREVIOUS_V17_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousV16 = JSON.parse(window.localStorage.getItem(PREVIOUS_V16_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousV15 = JSON.parse(window.localStorage.getItem(PREVIOUS_V15_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousV14 = JSON.parse(window.localStorage.getItem(PREVIOUS_V14_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousMobile = JSON.parse(window.localStorage.getItem(PREVIOUS_MOBILE_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousDesktop = JSON.parse(window.localStorage.getItem(PREVIOUS_DESKTOP_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previous40 = JSON.parse(window.localStorage.getItem(PREVIOUS_40_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previousBody = JSON.parse(window.localStorage.getItem(PREVIOUS_BODY_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const priorFonts = JSON.parse(window.localStorage.getItem(PRIOR_FONT_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const previous = JSON.parse(window.localStorage.getItem(PREVIOUS_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const legacy = JSON.parse(window.localStorage.getItem(LEGACY_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const older = JSON.parse(window.localStorage.getItem(OLDER_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const oldest = JSON.parse(window.localStorage.getItem(OLDEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    const oldestest = JSON.parse(window.localStorage.getItem(OLDESTEST_LETTER_TUNE_STORAGE_KEY) || '{}') as Partial<LetterTuneProfiles>
+    // Use the new desktop reference layout; migrate only mobile settings from older versions.
+    const desktop = { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) }
     return {
-      desktop: { ...DEFAULT_TUNE.desktop, ...(saved.desktop || {}) },
-      mobile: { ...DEFAULT_TUNE.mobile, ...(saved.mobile || {}) },
+      desktop,
+      mobile: { ...DEFAULT_TUNE.mobile, ...(oldestest.mobile || {}), ...(oldest.mobile || {}), ...(older.mobile || {}), ...(legacy.mobile || {}), ...(previous.mobile || {}), ...(priorFonts.mobile || {}), ...(previousBody.mobile || {}), ...(previous40.mobile || {}), ...(previousDesktop.mobile || {}), ...(previousMobile.mobile || {}), ...(previousV14.mobile || {}), ...(previousV15.mobile || {}), ...(previousV16.mobile || {}), ...(previousV17.mobile || {}), ...(saved.mobile || {}) },
     }
   } catch {
     return DEFAULT_TUNE
@@ -263,6 +305,7 @@ export default function AtelierWithLetter(props: Props) {
   const [tuneProfiles, setTuneProfiles] = useState<LetterTuneProfiles>(readTuneProfiles)
   const [copyStatus, setCopyStatus] = useState('')
   const [dirty, setDirty] = useState(false)
+  const [desktopBottomMask, setDesktopBottomMask] = useState<string | null>(null)
 
   const query = useMemo(
     () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
@@ -274,6 +317,7 @@ export default function AtelierWithLetter(props: Props) {
   const mobile = props.deviceProfile === 'mobile'
   const activeProfile: DeviceProfile = mobile ? 'mobile' : 'desktop'
   const tune = tuneProfiles[activeProfile]
+  // Keep the brand message identical on both devices; only the tune profile changes layout and size.
   const copy = COPY[language]
   const titleLength = copy.title.length
   const totalTypingLength = titleLength + copy.body.length
@@ -351,7 +395,8 @@ export default function AtelierWithLetter(props: Props) {
     setLanguage(nextLanguage)
     setPreviewMode('end')
     setPaperRaised(true)
-    setTypedChars(COPY[nextLanguage].title.length + COPY[nextLanguage].body.length)
+    const nextBody = COPY[nextLanguage].body
+    setTypedChars(COPY[nextLanguage].title.length + nextBody.length)
   }
 
   const saveTune = () => {
@@ -374,6 +419,52 @@ export default function AtelierWithLetter(props: Props) {
     setCopyStatus('已恢复上次保存')
     window.setTimeout(() => setCopyStatus(''), 1600)
   }
+
+  // Clip the desktop scene at the bottommost non-transparent envelope pixel, per column.
+  useEffect(() => {
+    if (mobile) return
+    let cancelled = false
+    const image = new Image()
+    image.onload = () => {
+      if (cancelled) return
+      try {
+        const width = Math.min(image.naturalWidth, 1200)
+        const height = Math.round(width * 3 / 4)
+        const sample = document.createElement('canvas')
+        sample.width = width
+        sample.height = height
+        const context = sample.getContext('2d')
+        if (!context) return
+
+        // Match the foreground image's object-fit: contain in the 4:3 stage.
+        const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight)
+        const drawnWidth = image.naturalWidth * scale
+        const drawnHeight = image.naturalHeight * scale
+        context.drawImage(image, (width - drawnWidth) / 2, (height - drawnHeight) / 2, drawnWidth, drawnHeight)
+        const pixels = context.getImageData(0, 0, width, height).data
+        const mask = document.createElement('canvas')
+        mask.width = width
+        mask.height = height
+        const maskContext = mask.getContext('2d')
+        if (!maskContext) return
+        maskContext.fillStyle = '#000'
+
+        for (let x = 0; x < width; x += 1) {
+          for (let y = height - 1; y >= 0; y -= 1) {
+            if (pixels[(y * width + x) * 4 + 3] > 32) {
+              maskContext.fillRect(x, 0, 1, y + 1)
+              break
+            }
+          }
+        }
+        if (!cancelled) setDesktopBottomMask(mask.toDataURL('image/png'))
+      } catch {
+        // Retain the existing rectangular overflow clipping if canvas access fails.
+      }
+    }
+    image.src = ENVELOPE_FRONT_URL
+    return () => { cancelled = true }
+  }, [mobile])
 
   useEffect(() => {
     if (!letterTuneMode) return
@@ -525,9 +616,9 @@ export default function AtelierWithLetter(props: Props) {
             style={{
               position: 'relative',
               width: mobile
-                ? 'min(520px, calc(100vw - 18px))'
-                : 'min(820px, calc(100vw - 44px))',
-              maxHeight: 'calc(100svh - 18px)',
+                ? 'min(580px, calc(100vw - 8px))'
+                : 'min(820px, calc(100vw - 44px), calc((100svh - 44px) * 4 / 3))',
+              maxHeight: mobile ? 'calc(100svh - 18px)' : 'calc(100svh - 44px)',
               overflow: 'visible',
               padding: 0,
               border: 0,
@@ -540,13 +631,21 @@ export default function AtelierWithLetter(props: Props) {
             }}
           >
             <style>{`
+              .pawcream-envelope-dialog:not(.is-mobile) {
+                container-type: inline-size;
+              }
               .pawcream-envelope-stage {
                 position: relative;
+                container-type: inline-size;
                 width: 100%;
                 aspect-ratio: 4 / 3;
                 isolation: isolate;
                 filter: drop-shadow(0 22px 34px rgba(74,108,134,.16));
                 animation: pawcream-envelope-enter 360ms ease-out both;
+              }
+              .pawcream-envelope-dialog:not(.is-mobile) .pawcream-envelope-stage {
+                filter: drop-shadow(0 2.68cqw 4.15cqw rgba(74,108,134,.16));
+                overflow: clip;
               }
               .pawcream-envelope-layer {
                 position: absolute;
@@ -576,15 +675,16 @@ export default function AtelierWithLetter(props: Props) {
                 user-select: none;
                 pointer-events: none;
               }
+              .pawcream-envelope-text-wrap { position: absolute; z-index: 5; transform-origin: 50% 84%; pointer-events: none; }
               .pawcream-paper-copy {
                 position: absolute;
-                z-index: 2;
+                z-index: 1;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
                 align-items: stretch;
                 justify-content: flex-start;
-                overflow: hidden;
+                overflow: visible;
                 color: #5b798f;
                 pointer-events: none;
               }
@@ -597,8 +697,9 @@ export default function AtelierWithLetter(props: Props) {
                 text-align: center;
               }
               .pawcream-paper-body {
-                margin: 11px 0 0;
-                color: #648198;
+                margin: 2px 0 0;
+                white-space: pre-wrap;
+                color: #4c7188;
                 letter-spacing: .012em;
                 text-align: left;
               }
@@ -752,9 +853,6 @@ export default function AtelierWithLetter(props: Props) {
                 0%, 46% { opacity: 1; }
                 47%, 100% { opacity: 0; }
               }
-              @media (max-height: 690px) and (min-width: 701px) {
-                .pawcream-envelope-dialog { width: min(720px, calc(100vw - 44px)) !important; }
-              }
               @media (max-width: 700px) {
                 .pawcream-letter-tune-panel {
                   top: auto;
@@ -770,7 +868,17 @@ export default function AtelierWithLetter(props: Props) {
               }
             `}</style>
 
-            <div className="pawcream-envelope-stage">
+            <div style={{ transform: mobile ? 'translateX(-12px) scale(1.26)' : undefined, transformOrigin: 'center' }}><div
+              className="pawcream-envelope-stage"
+              style={mobile ? undefined : desktopBottomMask ? {
+                maskImage: `url("${desktopBottomMask}")`,
+                WebkitMaskImage: `url("${desktopBottomMask}")`,
+                maskSize: '100% 100%',
+                WebkitMaskSize: '100% 100%',
+                maskRepeat: 'no-repeat',
+                WebkitMaskRepeat: 'no-repeat',
+              } : { clipPath: 'inset(0 0 8% 0)' }}
+            >
               <img
                 src={ENVELOPE_BACK_URL}
                 alt=""
@@ -803,6 +911,24 @@ export default function AtelierWithLetter(props: Props) {
                   style={{ transform: `scaleX(${tune.paperStretchX})`, transformOrigin: 'center' }}
                 />
 
+              </div>
+
+              <div
+                className="pawcream-envelope-text-wrap"
+                style={{
+                  position: 'absolute',
+                  zIndex: mobile ? 5 : 3,
+                  clipPath: mobile ? undefined : 'inset(-100% -100% 0 -100%)',
+                  left: `${tune.paperLeft}%`,
+                  top: `${tune.paperTop}%`,
+                  width: `${tune.paperWidth}%`,
+                  height: `${tune.paperHeight}%`,
+                  transform: `translate3d(0, ${previewY}%, 0) rotate(${tune.paperRotate}deg) scale(${tune.paperScale})`,
+                  transition: previewMode === 'play'
+                    ? `transform ${tune.riseMs}ms cubic-bezier(.2,.76,.28,1)`
+                    : 'none',
+                }}
+              >
                 <div
                   className="pawcream-paper-copy"
                   style={{
@@ -824,8 +950,8 @@ export default function AtelierWithLetter(props: Props) {
                       width: `${tune.titleWidth}%`,
                       height: `${tune.titleHeight}%`,
                       margin: 0,
-                      overflow: 'hidden',
-                      fontSize: tune.titleSize,
+                      overflow: 'visible',
+                      fontSize: mobile ? tune.titleSize : `${tune.titleSize}cqw`,
                     }}
                   >
                     {visibleTitle}
@@ -837,12 +963,12 @@ export default function AtelierWithLetter(props: Props) {
                     style={{
                       position: 'absolute',
                       left: `${tune.subtitleLeft}%`,
-                      top: `${tune.subtitleTop}%`,
+                      top: `${language === 'zh' ? (tune.zhSubtitleTop ?? tune.subtitleTop) : (tune.enSubtitleTop ?? tune.subtitleTop)}%`,
                       width: `${tune.subtitleWidth}%`,
                       height: `${tune.subtitleHeight}%`,
                       margin: 0,
                       overflow: 'hidden',
-                      fontSize: tune.subtitleSize,
+                      fontSize: mobile ? tune.subtitleSize : `${tune.subtitleSize}cqw`,
                     }}
                   >
                     {copy.signature}
@@ -858,9 +984,12 @@ export default function AtelierWithLetter(props: Props) {
                       height: `${language === 'zh' ? tune.zhBodyHeight : tune.enBodyHeight}%`,
                       margin: 0,
                       overflow: 'hidden',
-                      fontSize: language === 'zh' ? tune.zhBodySize : tune.enBodySize,
-                      lineHeight: tune.bodyLineHeight,
-                      letterSpacing: language === 'zh' ? '.015em' : '.005em',
+                      fontSize: mobile
+                        ? (language === 'zh' ? tune.zhBodySize : tune.enBodySize)
+                        : `${language === 'zh' ? tune.zhBodySize : tune.enBodySize}cqw`,
+                      lineHeight: language === 'zh' ? (tune.zhBodyLineHeight ?? tune.bodyLineHeight) : (tune.enBodyLineHeight ?? tune.bodyLineHeight),
+                      letterSpacing: language === 'zh' ? '-.025em' : '.005em',
+                      textAlign: !mobile && language === 'en' ? 'center' : 'left',
                     }}
                   >
                     {visibleBody}
@@ -879,7 +1008,7 @@ export default function AtelierWithLetter(props: Props) {
                 decoding="async"
                 className="pawcream-envelope-layer pawcream-envelope-front"
               />
-            </div>
+            </div></div>
 
             <button
               type="button"
@@ -889,11 +1018,11 @@ export default function AtelierWithLetter(props: Props) {
               onClick={() => setOpen(false)}
               style={{
                 position: 'absolute',
-                top: mobile ? -2 : 4,
-                right: mobile ? -1 : 4,
+                top: mobile ? -2 : '0.49cqw',
+                right: mobile ? 8 : '0.49cqw',
                 zIndex: 8,
-                width: mobile ? 34 : 40,
-                height: mobile ? 34 : 40,
+                width: mobile ? 34 : '4.878cqw',
+                height: mobile ? 34 : '4.878cqw',
                 display: 'grid',
                 placeItems: 'center',
                 padding: 0,
@@ -903,7 +1032,7 @@ export default function AtelierWithLetter(props: Props) {
                 color: '#6f8ca2',
                 boxShadow: '0 5px 18px rgba(78,112,138,.11)',
                 cursor: 'pointer',
-                fontSize: mobile ? 20 : 24,
+                fontSize: mobile ? 20 : '2.927cqw',
                 lineHeight: 1,
               }}
             >
@@ -973,39 +1102,39 @@ export default function AtelierWithLetter(props: Props) {
               </fieldset>
 
               <fieldset>
-                <legend>标题 · 大小与位置</legend>
+                <legend>标题 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="标题左侧" value={tune.titleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleLeft', v)} />
                 <TuneControl label="标题顶部" value={tune.titleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleTop', v)} />
                 <TuneControl label="标题宽度" value={tune.titleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('titleWidth', v)} />
                 <TuneControl label="标题高度" value={tune.titleHeight} min={5} max={40} step={0.5} suffix="%" onChange={(v) => updateTune('titleHeight', v)} />
-                <TuneControl label="标题字号" value={tune.titleSize} min={8} max={48} step={0.5} suffix="px" onChange={(v) => updateTune('titleSize', v)} />
+                <TuneControl label="标题字号" value={tune.titleSize} min={mobile ? 8 : 1} max={mobile ? 48 : 6} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('titleSize', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>中文正文 · 大小与位置</legend>
+                <legend>中文正文 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="中文左侧" value={tune.zhBodyLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyLeft', v)} />
                 <TuneControl label="中文顶部" value={tune.zhBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyTop', v)} />
                 <TuneControl label="中文宽度" value={tune.zhBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyWidth', v)} />
                 <TuneControl label="中文高度" value={tune.zhBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('zhBodyHeight', v)} />
-                <TuneControl label="中文字体大小" value={tune.zhBodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('zhBodySize', v)} />
+                <TuneControl label="中文字体大小" value={tune.zhBodySize} min={mobile ? 6 : 0.75} max={mobile ? 30 : 3.75} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('zhBodySize', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>英文正文 · 大小与位置</legend>
+                <legend>英文正文 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="英文左侧" value={tune.enBodyLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyLeft', v)} />
                 <TuneControl label="英文顶部" value={tune.enBodyTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyTop', v)} />
                 <TuneControl label="英文宽度" value={tune.enBodyWidth} min={20} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyWidth', v)} />
                 <TuneControl label="英文高度" value={tune.enBodyHeight} min={10} max={90} step={0.5} suffix="%" onChange={(v) => updateTune('enBodyHeight', v)} />
-                <TuneControl label="英文字体大小" value={tune.enBodySize} min={6} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('enBodySize', v)} />
+                <TuneControl label="英文字体大小" value={tune.enBodySize} min={mobile ? 6 : 0.75} max={mobile ? 30 : 6} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('enBodySize', v)} />
               </fieldset>
 
               <fieldset>
-                <legend>副标题 · 大小与位置</legend>
+                <legend>副标题 · 画布宽度百分比字号与位置</legend>
                 <TuneControl label="副标题左侧" value={tune.subtitleLeft} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleLeft', v)} />
                 <TuneControl label="副标题顶部" value={tune.subtitleTop} min={0} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleTop', v)} />
                 <TuneControl label="副标题宽度" value={tune.subtitleWidth} min={10} max={100} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleWidth', v)} />
                 <TuneControl label="副标题高度" value={tune.subtitleHeight} min={5} max={30} step={0.5} suffix="%" onChange={(v) => updateTune('subtitleHeight', v)} />
-                <TuneControl label="副标题字号" value={tune.subtitleSize} min={5} max={30} step={0.5} suffix="px" onChange={(v) => updateTune('subtitleSize', v)} />
+                <TuneControl label="副标题字号" value={tune.subtitleSize} min={mobile ? 5 : 0.6} max={mobile ? 30 : 3.75} step={mobile ? 0.5 : 0.05} suffix={mobile ? "px" : "%"} onChange={(v) => updateTune('subtitleSize', v)} />
               </fieldset>
 
               <fieldset>
