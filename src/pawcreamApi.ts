@@ -62,7 +62,9 @@ type PreviewStoredNote = {
 export const AUTH_CHANGED_EVENT = 'pawcream:auth-changed'
 export const OPEN_SIGNIN_EVENT = 'pawcream:open-signin'
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/$/, '') ?? ''
+const API_BASE = import.meta.env.MODE === 'xhs-demo'
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/$/, '') ?? ''
 const PREVIEW_AUTH_STORAGE_KEY = 'pawcream-notes-preview-auth-v1'
 const PREVIEW_NOTES_STORAGE_KEY = 'pawcream-notes-preview-data-v2'
 

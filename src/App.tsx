@@ -3,6 +3,7 @@ import HomeScene from './components/HomeScene'
 import AtelierPlaceholder from './components/AtelierWithMusicAudio'
 import { ASSETS } from './sceneConfig'
 import AdminConsole from './components/AdminConsole'
+import PhoneDemoFrame from './components/PhoneDemoFrame'
 
 export type DeviceProfile = 'desktop' | 'mobile'
 
@@ -34,6 +35,10 @@ function warmImage(src: string) {
 
 export default function App() {
   const [scene, setScene] = useState<Scene>(() => getInitialScene())
+  const demoMode = useMemo(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1',
+    [],
+  )
   const tuneMode = useMemo(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tune') === '1',
     [],
@@ -116,6 +121,8 @@ export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
     return <AdminConsole />
   }
+
+  if (demoMode) return <PhoneDemoFrame />
 
   return (
     <div className={`pawcream-app pawcream-app--${scene}`}>

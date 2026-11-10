@@ -96,11 +96,15 @@ function webpReferences() {
 export default defineConfig(({ command, mode }) => ({
   plugins: [
     atelierTuningDefaults(),
-    command === 'build' && (mode === 'webp' || mode === 'server-webp') ? webpReferences() : null,
+    command === 'build' && (mode === 'webp' || mode === 'server-webp' || mode === 'xhs-demo') ? webpReferences() : null,
     react(),
   ],
-  // GitHub Pages uses `webp` mode at `/PawCream/`; server builds use root `/`.
-  base: command === 'build' && mode === 'webp' ? '/PawCream/' : '/',
+  // GitHub Pages main site and XHS demo use separate subpaths.
+  base: command === 'build' && mode === 'webp'
+    ? '/PawCream/'
+    : command === 'build' && mode === 'xhs-demo'
+      ? '/PawCream/xhs-demo/'
+      : '/',
   server: {
     host: '127.0.0.1',
     port: 5173,

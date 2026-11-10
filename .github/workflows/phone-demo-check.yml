@@ -1,0 +1,59 @@
+name: PawCream phone demo check
+
+on:
+  push:
+    branches:
+      - demo/xiaohongshu-phone
+  pull_request:
+    branches:
+      - demo/xiaohongshu-phone
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phone-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install WebP, ImageMagick, and font tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y webp imagemagick
+          python3 -m pip install --disable-pip-version-check fonttools brotli
+      - name: Install app dependencies
+        run: npm install --no-package-lock
+      - name: Optimize app assets, return photos, and fonts
+        run: |
+          npm run optimize:atelier
+          npm run optimize:home
+          npm run optimize:return-photos
+          python3 scripts/convert-fonts.py
+      - name: Install browser test dependency
+        run: npm install --no-save --no-package-lock playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build with backend API explicitly disabled
+        env:
+          VITE_API_BASE_URL: https://api-disabled.invalid/api
+        run: npm run build:xhs-demo
+      - name: Run real mobile iframe and photo-wall browser checks
+        env:
+          DEMO_BASE_PATH: /PawCream/xhs-demo
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pawcream-pages/PawCream/xhs-demo
+          cp -a dist/. /tmp/pawcream-pages/PawCream/xhs-demo/
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory /tmp/pawcream-pages > /tmp/pawcream-preview.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS 'http://127.0.0.1:4173/PawCream/xhs-demo/?demo=1' >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS 'http://127.0.0.1:4173/PawCream/xhs-demo/?demo=1' >/dev/null
+          node scripts/phone-demo-smoke.mjs

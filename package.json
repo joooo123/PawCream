@@ -9,6 +9,8 @@
     "optimize:home": "node scripts/optimize-home.mjs",
     "build": "tsc -b && vite build",
     "build:webp": "tsc -b && vite build --mode webp",
+    "build:xhs-demo": "tsc -b && vite build --mode xhs-demo",
+    "optimize:return-photos": "node scripts/optimize-return-photos.mjs",
     "build:server": "tsc -b && vite build --base=/",
     "build:server:webp": "tsc -b && vite build --mode server-webp",
     "preview": "vite preview"
