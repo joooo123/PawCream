@@ -324,11 +324,11 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           columns: 2; column-gap: 11px;
         }
         .pawcream-public-wall-overlay.is-mobile {
-          padding: 42px 8px 8px;
+          padding: 72px 8px 8px;
           place-items: start center;
         }
         .pawcream-public-wall.is-mobile {
-          max-height: calc(100dvh - 50px);
+          max-height: calc(100dvh - 80px);
         }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-grid.is-demo {
           columns: 2; column-gap: 11px;
@@ -348,7 +348,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
               {mobile ? '轻点照片预览' : '悬停照片预览，点击查看大图'}
             </div>
           </div>
-          <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close" onClick={onClose} aria-label="关闭公共返图墙" title="关闭">×</button>
+          <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close" onClick={onClose} aria-label="关闭公共返图墙">×</button>
         </header>
         <>
 
