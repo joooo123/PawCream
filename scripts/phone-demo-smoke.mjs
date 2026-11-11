@@ -53,6 +53,9 @@ try {
     return {
       backgroundColor: stageStyle.backgroundColor,
       backgroundImage: stageStyle.backgroundImage,
+      backgroundRepeat: stageStyle.backgroundRepeat,
+      backgroundSize: stageStyle.backgroundSize,
+      backgroundUrl: stageStyle.backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1] ?? '',
       bezelColor: deviceStyle.backgroundColor,
       bezelImage: deviceStyle.backgroundImage,
       width: rect.width,
@@ -60,11 +63,20 @@ try {
     }
   })
   if (shell.backgroundColor !== 'rgb(255, 250, 240)') throw new Error('Cream background color mismatch: ' + shell.backgroundColor)
-  if ((shell.backgroundImage.match(/radial-gradient/g) || []).length !== 2) throw new Error('Diamond blue polka-dot pattern is missing')
-  const dotRadii = [...shell.backgroundImage.matchAll(/radial-gradient\((\d+(?:\.\d+)?)px at/g)]
-    .map((match) => Number(match[1]))
-  if (dotRadii.length !== 2 || dotRadii.some((radius) => radius !== 5.5)) {
-    throw new Error('Phone demo polka dots must be half the current diameter: ' + shell.backgroundImage)
+  if (!shell.backgroundUrl.includes('demo-polka-bg')) {
+    throw new Error('Uploaded polka-dot background image is missing: ' + shell.backgroundImage)
+  }
+  if (shell.backgroundRepeat !== 'no-repeat' || shell.backgroundSize !== 'cover') {
+    throw new Error('Uploaded polka-dot background must cover the demo viewport without repeating: ' + JSON.stringify(shell))
+  }
+  const backgroundImageSize = await page.evaluate(async (src) => {
+    const image = new Image()
+    image.src = src
+    await image.decode()
+    return { width: image.naturalWidth, height: image.naturalHeight }
+  }, shell.backgroundUrl)
+  if (backgroundImageSize.width !== 1024 || backgroundImageSize.height !== 768) {
+    throw new Error('Uploaded polka-dot background image dimensions mismatch: ' + JSON.stringify(backgroundImageSize))
   }
   if (shell.bezelColor !== 'rgb(199, 224, 237)' || shell.bezelImage !== 'none') {
     throw new Error('Phone bezel must be a solid light blue, received ' + JSON.stringify(shell))
@@ -358,7 +370,7 @@ try {
     throw new Error('Browser runtime errors: ' + runtimeErrors.join(' | '))
   }
 
-  console.log('PASS: cream background with the reference diamond polka-dot pattern at half dot diameter')
+  console.log('PASS: cream background uses the uploaded polka-dot image with cover scaling')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
   console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')
