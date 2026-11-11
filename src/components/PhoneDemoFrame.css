@@ -7,11 +7,10 @@
   overflow: auto;
   padding: 24px;
   background-color: #fffaf0;
-  background-image:
-    radial-gradient(circle 5.5px at 40px 30px, rgba(216, 234, 247, .96) 0 5px, transparent 5.5px),
-    radial-gradient(circle 5.5px at 122px 112px, rgba(216, 234, 247, .96) 0 5px, transparent 5.5px);
-  background-size: 164px 164px;
-  background-position: 0 0, 0 0;
+  background-image: url('../assets/demo-polka-bg.webp');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 .pawcream-phone-demo__stage {
