@@ -63,8 +63,8 @@ try {
   if ((shell.backgroundImage.match(/radial-gradient/g) || []).length !== 2) throw new Error('Diamond blue polka-dot pattern is missing')
   const dotRadii = [...shell.backgroundImage.matchAll(/radial-gradient\((\d+(?:\.\d+)?)px at/g)]
     .map((match) => Number(match[1]))
-  if (dotRadii.length !== 2 || dotRadii.some((radius) => radius !== 11)) {
-    throw new Error('Phone demo polka dots must be half the original diameter: ' + shell.backgroundImage)
+  if (dotRadii.length !== 2 || dotRadii.some((radius) => radius !== 5.5)) {
+    throw new Error('Phone demo polka dots must be half the current diameter: ' + shell.backgroundImage)
   }
   if (shell.bezelColor !== 'rgb(199, 224, 237)' || shell.bezelImage !== 'none') {
     throw new Error('Phone bezel must be a solid light blue, received ' + JSON.stringify(shell))
@@ -278,16 +278,18 @@ try {
       overlayTop: overlayRect.top,
       headerTop: headerRect.top,
       closeText: close.textContent?.trim(),
+      closeTitle: close.getAttribute('title'),
       closeWidth: closeRect.width,
       closeHeight: closeRect.height,
       closeRadius: closeStyle.borderRadius,
     }
   })
   if (
-    wallLayout.paddingTop !== '42px' ||
-    wallLayout.wallTop < 42 ||
-    wallLayout.headerTop < 58 ||
+    wallLayout.paddingTop !== '72px' ||
+    wallLayout.wallTop < 72 ||
+    wallLayout.headerTop < 88 ||
     wallLayout.closeText !== '×' ||
+    wallLayout.closeTitle !== null ||
     wallLayout.closeWidth !== 38 ||
     wallLayout.closeHeight !== 38 ||
     wallLayout.closeRadius !== '50%'
@@ -318,11 +320,12 @@ try {
   const detailClose = detail.locator('.pawcream-public-wall-icon-close')
   const detailCloseStyle = await detailClose.evaluate((element) => ({
     text: element.textContent?.trim(),
+    title: element.getAttribute('title'),
     width: element.getBoundingClientRect().width,
     height: element.getBoundingClientRect().height,
     radius: getComputedStyle(element).borderRadius,
   }))
-  if (detailCloseStyle.text !== '×' || detailCloseStyle.width !== 38 ||
+  if (detailCloseStyle.text !== '×' || detailCloseStyle.title !== null || detailCloseStyle.width !== 38 ||
       detailCloseStyle.height !== 38 || detailCloseStyle.radius !== '50%') {
     throw new Error('Photo detail close button is not a circular ×: ' + JSON.stringify(detailCloseStyle))
   }

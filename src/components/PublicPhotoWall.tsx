@@ -319,11 +319,11 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           columns: 2; column-gap: 11px;
         }
         .pawcream-public-wall-overlay.is-mobile {
-          padding: 42px 8px 8px;
+          padding: 72px 8px 8px;
           place-items: start center;
         }
         .pawcream-public-wall.is-mobile {
-          max-height: calc(100dvh - 50px);
+          max-height: calc(100dvh - 80px);
         }
         .pawcream-public-wall.is-mobile .pawcream-public-wall-grid.is-demo {
           columns: 2; column-gap: 11px;
@@ -343,7 +343,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
               {mobile ? '轻点照片预览' : '悬停照片预览，点击查看大图'}
             </div>
           </div>
-          <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close" onClick={onClose} aria-label="关闭公共返图墙" title="关闭">×</button>
+          <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close" onClick={onClose} aria-label="关闭公共返图墙">×</button>
         </header>
         <>
 
@@ -426,7 +426,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           <div className="pawcream-public-wall-detail-inner" role="dialog" aria-modal="true"
             aria-label="返图详情" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close"
-              onClick={() => setDetail(null)} aria-label="关闭返图详情" title="关闭" style={{ justifySelf: 'end' }}>×</button>
+              onClick={() => setDetail(null)} aria-label="关闭返图详情" style={{ justifySelf: 'end' }}>×</button>
             {artwork(detailPhoto, 'detail')}
             <div style={{ textAlign: 'center', color: '#92778c', fontSize: 13 }}>
               {demoMode ? `精选返图 ${detailPhoto.id.replace('return-', '')} / ${displayedTotal}` : `@${detailPhoto.authorName} · ${detailPhoto.frameName} · ${new Date(detailPhoto.createdAt).toLocaleDateString('zh-CN')}`}
