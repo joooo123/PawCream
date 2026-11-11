@@ -431,7 +431,7 @@ export default function PublicPhotoWall({ mobile, onClose }: Props) {
           <div className="pawcream-public-wall-detail-inner" role="dialog" aria-modal="true"
             aria-label="返图详情" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="pawcream-public-wall-close pawcream-public-wall-icon-close"
-              onClick={() => setDetail(null)} aria-label="关闭返图详情" title="关闭" style={{ justifySelf: 'end' }}>×</button>
+              onClick={() => setDetail(null)} aria-label="关闭返图详情" style={{ justifySelf: 'end' }}>×</button>
             {artwork(detailPhoto, 'detail')}
             <div style={{ textAlign: 'center', color: '#92778c', fontSize: 13 }}>
               {demoMode ? `精选返图 ${detailPhoto.id.replace('return-', '')} / ${displayedTotal}` : `@${detailPhoto.authorName} · ${detailPhoto.frameName} · ${new Date(detailPhoto.createdAt).toLocaleDateString('zh-CN')}`}
