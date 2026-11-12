@@ -58,7 +58,7 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => value.includes('pawcream-cake-cursor') && value.includes('52 44')
+  const hasCakeCursor = (value) => value.includes('pawcream-cake-cursor') && value.includes('46 40')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
@@ -73,7 +73,7 @@ try {
   if (cursorSize.width !== 64 || cursorSize.height !== 64) {
     throw new Error('Cake-slice cursor must be a 64x64 transparent PNG: ' + JSON.stringify(cursorSize))
   }
-  const hotspotAlpha = await page.evaluate(async (src) => {
+  const cursorPixels = await page.evaluate(async (src) => {
     const image = new Image()
     image.src = src
     await image.decode()
@@ -83,10 +83,22 @@ try {
     const context = canvas.getContext('2d')
     if (!context) throw new Error('Cursor alpha test canvas is unavailable')
     context.drawImage(image, 0, 0)
-    return context.getImageData(52, 44, 1, 1).data[3]
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+    const hotspot = context.getImageData(46, 40, 1, 1).data
+    let darkFringePixels = 0
+    for (let i = 0; i < pixels.length; i += 4) {
+      const alpha = pixels[i + 3]
+      if (alpha >= 16 && alpha < 128 && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) < 40) {
+        darkFringePixels += 1
+      }
+    }
+    return { hotspotAlpha: hotspot[3], darkFringePixels }
   }, cursorUrl)
-  if (hotspotAlpha < 128) {
-    throw new Error('Cake-slice cursor hotspot must land on a visible pixel, alpha=' + hotspotAlpha)
+  if (cursorPixels.hotspotAlpha < 128) {
+    throw new Error('Cake-slice cursor hotspot must land on a visible pixel, alpha=' + cursorPixels.hotspotAlpha)
+  }
+  if (cursorPixels.darkFringePixels !== 0) {
+    throw new Error('Cake-slice cursor contains dark matte pixels on translucent edges: ' + cursorPixels.darkFringePixels)
   }
   const textEntryCursor = await appFrame.evaluate(() => {
     const input = document.createElement('input')
@@ -426,7 +438,7 @@ try {
   }
 
   console.log('PASS: cream background uses the uploaded polka-dot image with cover scaling')
-  console.log('PASS: cake-slice cursor uses a visible hotspot on the demo shell and mobile iframe; text fields retain text cursor')
+  console.log('PASS: cake-slice cursor is 30% smaller with a visible hotspot and clean translucent edges; text fields retain text cursor')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
   console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')
