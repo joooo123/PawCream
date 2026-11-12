@@ -58,7 +58,7 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => value.includes('pawcream-cake-cursor') && value.includes('61 42')
+  const hasCakeCursor = (value) => value.includes('pawcream-cake-cursor') && value.includes('52 44')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
@@ -72,6 +72,21 @@ try {
   }, cursorUrl)
   if (cursorSize.width !== 64 || cursorSize.height !== 64) {
     throw new Error('Cake-slice cursor must be a 64x64 transparent PNG: ' + JSON.stringify(cursorSize))
+  }
+  const hotspotAlpha = await page.evaluate(async (src) => {
+    const image = new Image()
+    image.src = src
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = image.naturalWidth
+    canvas.height = image.naturalHeight
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Cursor alpha test canvas is unavailable')
+    context.drawImage(image, 0, 0)
+    return context.getImageData(52, 44, 1, 1).data[3]
+  }, cursorUrl)
+  if (hotspotAlpha < 128) {
+    throw new Error('Cake-slice cursor hotspot must land on a visible pixel, alpha=' + hotspotAlpha)
   }
   const textEntryCursor = await appFrame.evaluate(() => {
     const input = document.createElement('input')
@@ -411,7 +426,7 @@ try {
   }
 
   console.log('PASS: cream background uses the uploaded polka-dot image with cover scaling')
-  console.log('PASS: cake-slice custom cursor is applied to demo shell and mobile iframe; text fields retain text cursor')
+  console.log('PASS: cake-slice cursor uses a visible hotspot on the demo shell and mobile iframe; text fields retain text cursor')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
   console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')
