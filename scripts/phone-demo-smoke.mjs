@@ -62,7 +62,7 @@ try {
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
-  const cursorUrl = cursorStyles.stage.split('url("')[1]?.split('")')[0]
+  const cursorUrl = cursorStyles.stage.split('url(')[1]?.split(')')[0]?.replaceAll('"', '').replaceAll("'", '')
   if (!cursorUrl) throw new Error('Cake-slice cursor image URL is missing')
   const cursorSize = await page.evaluate(async (src) => {
     const image = new Image()
