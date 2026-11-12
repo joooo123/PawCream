@@ -2,7 +2,7 @@
 html,
 body,
 body * {
-  cursor: url('./assets/pawcream-cake-cursor.png') 46 40, auto !important;
+  cursor: url('./assets/pawcream-cake-cursor.png') 10 28, auto !important;
 }
 
 /* Keep text-entry affordances familiar. */
