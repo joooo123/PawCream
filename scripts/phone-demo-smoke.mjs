@@ -43,6 +43,46 @@ try {
     throw new Error('Expected a 390x844 mobile viewport, received ' + JSON.stringify(viewport))
   }
 
+  const cursorStyles = await page.evaluate(() => {
+    const stage = document.querySelector('.pawcream-phone-demo')
+    const device = document.querySelector('.pawcream-phone-demo__device')
+    const frame = document.querySelector('iframe[title="PawCream mobile experience"]')
+    const frameBody = frame?.contentDocument?.body
+    const hotspot = frameBody?.querySelector('.house-hotspot')
+    if (!stage || !device || !frameBody || !hotspot) throw new Error('Custom cursor test elements are incomplete')
+    return {
+      outerBody: getComputedStyle(document.body).cursor,
+      stage: getComputedStyle(stage).cursor,
+      device: getComputedStyle(device).cursor,
+      iframeBody: getComputedStyle(frameBody).cursor,
+      mobileHotspot: getComputedStyle(hotspot).cursor,
+    }
+  })
+  const hasCakeCursor = (value) => value.includes('pawcream-cake-cursor') && value.includes('61 42')
+  if (!Object.values(cursorStyles).every(hasCakeCursor)) {
+    throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
+  }
+  const cursorUrl = cursorStyles.stage.match(/url\\(["']?(.*?)["']?\\)/)?.[1]
+  if (!cursorUrl) throw new Error('Cake-slice cursor image URL is missing')
+  const cursorSize = await page.evaluate(async (src) => {
+    const image = new Image()
+    image.src = src
+    await image.decode()
+    return { width: image.naturalWidth, height: image.naturalHeight }
+  }, cursorUrl)
+  if (cursorSize.width !== 64 || cursorSize.height !== 64) {
+    throw new Error('Cake-slice cursor must be a 64x64 transparent PNG: ' + JSON.stringify(cursorSize))
+  }
+  const textEntryCursor = await appFrame.evaluate(() => {
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.appendChild(input)
+    const cursor = getComputedStyle(input).cursor
+    input.remove()
+    return cursor
+  })
+  if (textEntryCursor !== 'text') throw new Error('Text fields must retain the text cursor: ' + textEntryCursor)
+
   const shell = await page.evaluate(() => {
     const stage = document.querySelector('.pawcream-phone-demo')
     const device = document.querySelector('.pawcream-phone-demo__device')
@@ -371,6 +411,7 @@ try {
   }
 
   console.log('PASS: cream background uses the uploaded polka-dot image with cover scaling')
+  console.log('PASS: cake-slice custom cursor is applied to demo shell and mobile iframe; text fields retain text cursor')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
   console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')

@@ -6,6 +6,7 @@ import './styles.css'
 import './atelierBackground.css'
 import './polka-overlays.css'
 import './toolbar-final.css'
+import './cursor.css'
 import './atelierAlphaHit'
 
 const atelierBackgroundUrl = `${import.meta.env.BASE_URL}assets/atelier/background.png`
