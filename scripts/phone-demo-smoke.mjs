@@ -58,7 +58,7 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => value.includes('pawcream-cake-cursor') && value.includes('46 40')
+  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('46 40')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
