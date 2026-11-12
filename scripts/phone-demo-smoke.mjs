@@ -58,7 +58,7 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('10 28')
+  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('9 18')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
@@ -84,22 +84,43 @@ try {
     if (!context) throw new Error('Cursor alpha test canvas is unavailable')
     context.drawImage(image, 0, 0)
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-    const hotspot = context.getImageData(10, 28, 1, 1).data
-    const tipRegion = context.getImageData(8, 26, 5, 5).data
+    const hotspot = context.getImageData(9, 18, 1, 1).data
+    const tipRegion = context.getImageData(6, 15, 7, 7).data
     const transparentCorner = context.getImageData(0, 0, 1, 1).data
     let tipRegionMaxAlpha = 0
     for (let i = 3; i < tipRegion.length; i += 4) tipRegionMaxAlpha = Math.max(tipRegionMaxAlpha, tipRegion[i])
     let darkFringePixels = 0
-    for (let i = 0; i < pixels.length; i += 4) {
-      const alpha = pixels[i + 3]
-      if (alpha > 0 && alpha < 128 && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) < 40) {
-        darkFringePixels += 1
+    let totalAlpha = 0
+    let weightedX = 0
+    let weightedY = 0
+    for (let y = 0; y < image.naturalHeight; y += 1) {
+      for (let x = 0; x < image.naturalWidth; x += 1) {
+        const i = (y * image.naturalWidth + x) * 4
+        const alpha = pixels[i + 3]
+        if (alpha > 0) {
+          totalAlpha += alpha
+          weightedX += x * alpha
+          weightedY += y * alpha
+        }
+        if (alpha > 0 && alpha < 128 && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) < 40) {
+          darkFringePixels += 1
+        }
       }
     }
-    return { hotspotAlpha: hotspot[3], tipRegionMaxAlpha, transparentCornerAlpha: transparentCorner[3], darkFringePixels }
+    return {
+      hotspotAlpha: hotspot[3],
+      tipRegionMaxAlpha,
+      transparentCornerAlpha: transparentCorner[3],
+      darkFringePixels,
+      artworkCentroidX: weightedX / totalAlpha,
+      artworkCentroidY: weightedY / totalAlpha,
+    }
   }, cursorUrl)
-  if (cursorPixels.hotspotAlpha === 0 || cursorPixels.tipRegionMaxAlpha < 128) {
+  if (cursorPixels.hotspotAlpha < 64 || cursorPixels.tipRegionMaxAlpha < 128) {
     throw new Error('Cake-slice cursor tip hotspot must align with visible cake artwork: ' + JSON.stringify(cursorPixels))
+  }
+  if (cursorPixels.artworkCentroidX < 17 || cursorPixels.artworkCentroidY < 26) {
+    throw new Error('Cake-slice cursor artwork must extend down-right from its upper-left hotspot: ' + JSON.stringify(cursorPixels))
   }
   if (cursorPixels.transparentCornerAlpha !== 0) {
     throw new Error('Cake-slice cursor must preserve transparent canvas pixels: ' + cursorPixels.transparentCornerAlpha)

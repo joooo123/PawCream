@@ -1,8 +1,8 @@
-/* PawCream cake-slice pointer for the desktop demo and its same-origin mobile iframe. */
+/* PawCream cake-slice pointer; its upper-left acute tip is the click hotspot. */
 html,
 body,
 body * {
-  cursor: url('./assets/pawcream-cake-cursor.png') 10 28, auto !important;
+  cursor: url('./assets/pawcream-cake-cursor.png') 9 18, auto !important;
 }
 
 /* Keep text-entry affordances familiar. */
