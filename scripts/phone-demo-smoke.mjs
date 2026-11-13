@@ -46,14 +46,22 @@ try {
   const cursorStyles = await page.evaluate(() => {
     const stage = document.querySelector('.pawcream-phone-demo')
     const device = document.querySelector('.pawcream-phone-demo__device')
+    const screen = document.querySelector('.pawcream-phone-demo__screen')
     const frame = document.querySelector('iframe[title="PawCream mobile experience"]')
     const frameBody = frame?.contentDocument?.body
     const hotspot = frameBody?.querySelector('.house-hotspot')
-    if (!stage || !device || !frameBody || !hotspot) throw new Error('Custom cursor test elements are incomplete')
+    if (!stage || !device || !screen || !frame || !frameBody || !hotspot) {
+      throw new Error('Custom cursor test elements are incomplete')
+    }
     return {
+      html: getComputedStyle(document.documentElement).cursor,
       outerBody: getComputedStyle(document.body).cursor,
       stage: getComputedStyle(stage).cursor,
       device: getComputedStyle(device).cursor,
+      deviceBefore: getComputedStyle(device, '::before').cursor,
+      deviceAfter: getComputedStyle(device, '::after').cursor,
+      screen: getComputedStyle(screen).cursor,
+      iframeElement: getComputedStyle(frame).cursor,
       iframeBody: getComputedStyle(frameBody).cursor,
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
@@ -90,43 +98,55 @@ try {
     let tipRegionMaxAlpha = 0
     for (let i = 3; i < tipRegion.length; i += 4) tipRegionMaxAlpha = Math.max(tipRegionMaxAlpha, tipRegion[i])
     let darkFringePixels = 0
+    let grayFringePixels = 0
     let totalAlpha = 0
     let weightedX = 0
     let weightedY = 0
     for (let y = 0; y < image.naturalHeight; y += 1) {
       for (let x = 0; x < image.naturalWidth; x += 1) {
         const i = (y * image.naturalWidth + x) * 4
+        const red = pixels[i]
+        const green = pixels[i + 1]
+        const blue = pixels[i + 2]
         const alpha = pixels[i + 3]
+        const maxChannel = Math.max(red, green, blue)
+        const minChannel = Math.min(red, green, blue)
         if (alpha > 0) {
           totalAlpha += alpha
           weightedX += x * alpha
           weightedY += y * alpha
         }
-        if (alpha > 0 && alpha < 128 && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) < 40) {
-          darkFringePixels += 1
+        if (alpha > 0 && alpha < 160 && maxChannel < 100) darkFringePixels += 1
+        if (alpha > 0 && alpha < 192 && maxChannel < 205 && maxChannel - minChannel < 22) {
+          grayFringePixels += 1
         }
       }
     }
+    const artworkCentroidX = weightedX / totalAlpha
+    const artworkCentroidY = weightedY / totalAlpha
+    const artworkTiltDegrees = Math.atan2(artworkCentroidY - 18, artworkCentroidX - 9) * 180 / Math.PI
     return {
       hotspotAlpha: hotspot[3],
       tipRegionMaxAlpha,
       transparentCornerAlpha: transparentCorner[3],
       darkFringePixels,
-      artworkCentroidX: weightedX / totalAlpha,
-      artworkCentroidY: weightedY / totalAlpha,
+      grayFringePixels,
+      artworkCentroidX,
+      artworkCentroidY,
+      artworkTiltDegrees,
     }
   }, cursorUrl)
   if (cursorPixels.hotspotAlpha < 64 || cursorPixels.tipRegionMaxAlpha < 128) {
     throw new Error('Cake-slice cursor tip hotspot must align with visible cake artwork: ' + JSON.stringify(cursorPixels))
   }
-  if (cursorPixels.artworkCentroidX < 17 || cursorPixels.artworkCentroidY < 26) {
-    throw new Error('Cake-slice cursor artwork must extend down-right from its upper-left hotspot: ' + JSON.stringify(cursorPixels))
+  if (cursorPixels.artworkTiltDegrees < 35 || cursorPixels.artworkTiltDegrees > 43) {
+    throw new Error('Cake-slice cursor must retain the increased 15-degree pointer tilt: ' + JSON.stringify(cursorPixels))
   }
   if (cursorPixels.transparentCornerAlpha !== 0) {
     throw new Error('Cake-slice cursor must preserve transparent canvas pixels: ' + cursorPixels.transparentCornerAlpha)
   }
-  if (cursorPixels.darkFringePixels !== 0) {
-    throw new Error('Cake-slice cursor contains dark matte pixels on translucent edges: ' + cursorPixels.darkFringePixels)
+  if (cursorPixels.darkFringePixels !== 0 || cursorPixels.grayFringePixels !== 0) {
+    throw new Error('Cake-slice cursor contains dark or gray translucent edge pixels: ' + JSON.stringify(cursorPixels))
   }
   const textEntryCursor = await appFrame.evaluate(() => {
     const input = document.createElement('input')
