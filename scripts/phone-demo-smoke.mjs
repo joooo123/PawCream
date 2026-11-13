@@ -124,8 +124,8 @@ try {
     const transparentCorner = context.getImageData(0, 0, 1, 1).data
     let tipRegionMaxAlpha = 0
     for (let i = 3; i < tipRegion.length; i += 4) tipRegionMaxAlpha = Math.max(tipRegionMaxAlpha, tipRegion[i])
+    // Canvas readback premultiplies alpha and zeroes RGB where alpha is 0; inspect visible translucent fringe only.
     let darkFringePixels = 0
-    let transparentDarkMattePixels = 0
     let totalAlpha = 0
     let weightedX = 0
     let weightedY = 0
@@ -140,7 +140,6 @@ try {
         }
         const maxRgb = Math.max(pixels[i], pixels[i + 1], pixels[i + 2])
         if (alpha > 0 && alpha < 128 && maxRgb < 40) darkFringePixels += 1
-        if (alpha === 0 && maxRgb < 60) transparentDarkMattePixels += 1
       }
     }
     return {
@@ -148,7 +147,6 @@ try {
       tipRegionMaxAlpha,
       transparentCornerAlpha: transparentCorner[3],
       darkFringePixels,
-      transparentDarkMattePixels,
       artworkCentroidX: weightedX / totalAlpha,
       artworkCentroidY: weightedY / totalAlpha,
       artworkAngleDeg: Math.atan2(weightedY / totalAlpha - 4, weightedX / totalAlpha - 4) * 180 / Math.PI,
@@ -166,9 +164,6 @@ try {
   }
   if (cursorPixels.darkFringePixels !== 0) {
     throw new Error('Cake-slice cursor contains dark matte pixels on translucent edges: ' + cursorPixels.darkFringePixels)
-  }
-  if (cursorPixels.transparentDarkMattePixels !== 0) {
-    throw new Error('Cake-slice cursor contains dark RGB matte in fully transparent pixels: ' + cursorPixels.transparentDarkMattePixels)
   }
   const textEntryCursor = await appFrame.evaluate(() => {
     const input = document.createElement('input')
