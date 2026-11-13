@@ -71,7 +71,7 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('15 11')
+  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('4 4')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell, pseudo-elements, and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
@@ -119,12 +119,13 @@ try {
     if (!context) throw new Error('Cursor alpha test canvas is unavailable')
     context.drawImage(image, 0, 0)
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-    const hotspot = context.getImageData(15, 11, 1, 1).data
-    const tipRegion = context.getImageData(12, 8, 7, 7).data
+    const hotspot = context.getImageData(4, 4, 1, 1).data
+    const tipRegion = context.getImageData(0, 0, 12, 12).data
     const transparentCorner = context.getImageData(0, 0, 1, 1).data
     let tipRegionMaxAlpha = 0
     for (let i = 3; i < tipRegion.length; i += 4) tipRegionMaxAlpha = Math.max(tipRegionMaxAlpha, tipRegion[i])
     let darkFringePixels = 0
+    let transparentDarkMattePixels = 0
     let totalAlpha = 0
     let weightedX = 0
     let weightedY = 0
@@ -137,9 +138,9 @@ try {
           weightedX += x * alpha
           weightedY += y * alpha
         }
-        if (alpha > 0 && alpha < 128 && Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) < 40) {
-          darkFringePixels += 1
-        }
+        const maxRgb = Math.max(pixels[i], pixels[i + 1], pixels[i + 2])
+        if (alpha > 0 && alpha < 128 && maxRgb < 40) darkFringePixels += 1
+        if (alpha === 0 && maxRgb < 60) transparentDarkMattePixels += 1
       }
     }
     return {
@@ -147,9 +148,10 @@ try {
       tipRegionMaxAlpha,
       transparentCornerAlpha: transparentCorner[3],
       darkFringePixels,
+      transparentDarkMattePixels,
       artworkCentroidX: weightedX / totalAlpha,
       artworkCentroidY: weightedY / totalAlpha,
-      artworkAngleDeg: Math.atan2(weightedY / totalAlpha - 11, weightedX / totalAlpha - 15) * 180 / Math.PI,
+      artworkAngleDeg: Math.atan2(weightedY / totalAlpha - 4, weightedX / totalAlpha - 4) * 180 / Math.PI,
     }
   }, cursorUrl)
   if (cursorPixels.hotspotAlpha === 0 || cursorPixels.tipRegionMaxAlpha < 128) {
@@ -164,6 +166,9 @@ try {
   }
   if (cursorPixels.darkFringePixels !== 0) {
     throw new Error('Cake-slice cursor contains dark matte pixels on translucent edges: ' + cursorPixels.darkFringePixels)
+  }
+  if (cursorPixels.transparentDarkMattePixels !== 0) {
+    throw new Error('Cake-slice cursor contains dark RGB matte in fully transparent pixels: ' + cursorPixels.transparentDarkMattePixels)
   }
   const textEntryCursor = await appFrame.evaluate(() => {
     const input = document.createElement('input')
