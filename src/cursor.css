@@ -7,7 +7,7 @@ body *,
 body *::before,
 body *::after,
 iframe {
-  cursor: url('./assets/pawcream-cake-cursor.png') 4 4, auto !important;
+  cursor: url('./assets/pawcream-cake-cursor.png') 15 11, auto !important;
 }
 
 /* Keep text-entry affordances familiar. */
