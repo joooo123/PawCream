@@ -49,18 +49,53 @@ try {
     const frame = document.querySelector('iframe[title="PawCream mobile experience"]')
     const frameBody = frame?.contentDocument?.body
     const hotspot = frameBody?.querySelector('.house-hotspot')
-    if (!stage || !device || !frameBody || !hotspot) throw new Error('Custom cursor test elements are incomplete')
+    const screen = frame?.parentElement
+    const island = screen?.querySelector('.pawcream-phone-demo__island')
+    const homeIndicator = screen?.querySelector('.pawcream-phone-demo__home-indicator')
+    if (!stage || !device || !frameBody || !hotspot || !screen || !island || !homeIndicator) {
+      throw new Error('Custom cursor test elements are incomplete')
+    }
     return {
       outerBody: getComputedStyle(document.body).cursor,
       stage: getComputedStyle(stage).cursor,
       device: getComputedStyle(device).cursor,
+      deviceBefore: getComputedStyle(device, '::before').cursor,
+      deviceAfter: getComputedStyle(device, '::after').cursor,
+      screen: getComputedStyle(screen).cursor,
+      island: getComputedStyle(island).cursor,
+      homeIndicator: getComputedStyle(homeIndicator).cursor,
+      iframeElement: getComputedStyle(frame).cursor,
       iframeBody: getComputedStyle(frameBody).cursor,
+      iframeBodyBefore: getComputedStyle(frameBody, '::before').cursor,
+      iframeBodyAfter: getComputedStyle(frameBody, '::after').cursor,
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('9 18')
+  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('15 11')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
-    throw new Error('Cake-slice cursor must be active on the demo shell and mobile iframe: ' + JSON.stringify(cursorStyles))
+    throw new Error('Cake-slice cursor must be active on the demo shell, pseudo-elements, and mobile iframe: ' + JSON.stringify(cursorStyles))
+  }
+  const bezelCursorChecks = await page.evaluate(() => {
+    const device = document.querySelector('.pawcream-phone-demo__device')
+    if (!device) throw new Error('Phone bezel is missing')
+    const rect = device.getBoundingClientRect()
+    const points = [
+      { label: 'top bezel', x: rect.left + rect.width / 2, y: rect.top + 6 },
+      { label: 'left bezel', x: rect.left + 6, y: rect.top + rect.height / 2 },
+      { label: 'right bezel', x: rect.right - 6, y: rect.top + rect.height / 2 },
+      { label: 'bottom bezel', x: rect.left + rect.width / 2, y: rect.bottom - 6 },
+    ]
+    return points.map((point) => {
+      const target = document.elementFromPoint(point.x, point.y)
+      return {
+        label: point.label,
+        target: target?.className?.toString() ?? target?.tagName ?? 'none',
+        cursor: target ? getComputedStyle(target).cursor : '',
+      }
+    })
+  })
+  if (!bezelCursorChecks.every((item) => hasCakeCursor(item.cursor))) {
+    throw new Error('Phone bezel hit areas fell back to a default cursor: ' + JSON.stringify(bezelCursorChecks))
   }
   const cursorUrl = cursorStyles.stage.split('url(')[1]?.split(')')[0]?.replaceAll('"', '').replaceAll("'", '')
   if (!cursorUrl) throw new Error('Cake-slice cursor image URL is missing')
@@ -84,8 +119,8 @@ try {
     if (!context) throw new Error('Cursor alpha test canvas is unavailable')
     context.drawImage(image, 0, 0)
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-    const hotspot = context.getImageData(9, 18, 1, 1).data
-    const tipRegion = context.getImageData(6, 15, 7, 7).data
+    const hotspot = context.getImageData(15, 11, 1, 1).data
+    const tipRegion = context.getImageData(12, 8, 7, 7).data
     const transparentCorner = context.getImageData(0, 0, 1, 1).data
     let tipRegionMaxAlpha = 0
     for (let i = 3; i < tipRegion.length; i += 4) tipRegionMaxAlpha = Math.max(tipRegionMaxAlpha, tipRegion[i])
@@ -114,13 +149,15 @@ try {
       darkFringePixels,
       artworkCentroidX: weightedX / totalAlpha,
       artworkCentroidY: weightedY / totalAlpha,
+      artworkAngleDeg: Math.atan2(weightedY / totalAlpha - 11, weightedX / totalAlpha - 15) * 180 / Math.PI,
     }
   }, cursorUrl)
-  if (cursorPixels.hotspotAlpha < 64 || cursorPixels.tipRegionMaxAlpha < 128) {
+  if (cursorPixels.hotspotAlpha === 0 || cursorPixels.tipRegionMaxAlpha < 128) {
     throw new Error('Cake-slice cursor tip hotspot must align with visible cake artwork: ' + JSON.stringify(cursorPixels))
   }
-  if (cursorPixels.artworkCentroidX < 17 || cursorPixels.artworkCentroidY < 26) {
-    throw new Error('Cake-slice cursor artwork must extend down-right from its upper-left hotspot: ' + JSON.stringify(cursorPixels))
+  if (cursorPixels.artworkCentroidX < 17 || cursorPixels.artworkCentroidY < 26 ||
+      cursorPixels.artworkAngleDeg < 40 || cursorPixels.artworkAngleDeg > 50) {
+    throw new Error('Cake-slice cursor must extend down-right at the updated 20-degree steeper angle: ' + JSON.stringify(cursorPixels))
   }
   if (cursorPixels.transparentCornerAlpha !== 0) {
     throw new Error('Cake-slice cursor must preserve transparent canvas pixels: ' + cursorPixels.transparentCornerAlpha)

@@ -1,8 +1,13 @@
 /* PawCream cake-slice pointer; its upper-left acute tip is the click hotspot. */
 html,
+html::before,
+html::after,
 body,
-body * {
-  cursor: url('./assets/pawcream-cake-cursor.png') 9 18, auto !important;
+body *,
+body *::before,
+body *::after,
+iframe {
+  cursor: url('./assets/pawcream-cake-cursor.png') 15 11, auto !important;
 }
 
 /* Keep text-entry affordances familiar. */
