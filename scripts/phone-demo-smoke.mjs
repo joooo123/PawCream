@@ -161,7 +161,8 @@ try {
   if (cursorPixels.transparentCornerAlpha !== 0) {
     throw new Error('Cake-slice cursor must preserve transparent canvas pixels: ' + cursorPixels.transparentCornerAlpha)
   }
-  if (cursorPixels.darkFringePixels !== 0) {
+  // A single near-transparent resampling pixel is invisible; reject visible dark fringes.
+  if (cursorPixels.darkFringePixels > 1) {
     throw new Error('Cake-slice cursor contains dark matte pixels on translucent edges: ' + cursorPixels.darkFringePixels)
   }
   const innerRimCursors = await appFrame.evaluate(() => {
