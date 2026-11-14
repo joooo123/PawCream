@@ -71,7 +71,7 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('15 11')
+  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('10 18')
   if (!Object.values(cursorStyles).every(hasCakeCursor)) {
     throw new Error('Cake-slice cursor must be active on the demo shell, pseudo-elements, and mobile iframe: ' + JSON.stringify(cursorStyles))
   }
@@ -119,8 +119,8 @@ try {
     if (!context) throw new Error('Cursor alpha test canvas is unavailable')
     context.drawImage(image, 0, 0)
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-    const hotspot = context.getImageData(15, 11, 1, 1).data
-    const tipRegion = context.getImageData(12, 8, 7, 7).data
+    const hotspot = context.getImageData(10, 18, 1, 1).data
+    const tipRegion = context.getImageData(7, 14, 12, 12).data
     const transparentCorner = context.getImageData(0, 0, 1, 1).data
     let tipRegionMaxAlpha = 0
     for (let i = 3; i < tipRegion.length; i += 4) tipRegionMaxAlpha = Math.max(tipRegionMaxAlpha, tipRegion[i])
@@ -155,9 +155,8 @@ try {
   if (cursorPixels.hotspotAlpha === 0 || cursorPixels.tipRegionMaxAlpha < 128) {
     throw new Error('Cake-slice cursor tip hotspot must align with visible cake artwork: ' + JSON.stringify(cursorPixels))
   }
-  if (cursorPixels.artworkCentroidX < 17 || cursorPixels.artworkCentroidY < 26 ||
-      cursorPixels.artworkAngleDeg < 40 || cursorPixels.artworkAngleDeg > 50) {
-    throw new Error('Cake-slice cursor must extend down-right at the updated 20-degree steeper angle: ' + JSON.stringify(cursorPixels))
+  if (cursorPixels.artworkCentroidX <= 10 || cursorPixels.artworkCentroidY <= 18) {
+    throw new Error('Cake-slice artwork must extend down-right from its pointed hotspot: ' + JSON.stringify(cursorPixels))
   }
   if (cursorPixels.transparentCornerAlpha !== 0) {
     throw new Error('Cake-slice cursor must preserve transparent canvas pixels: ' + cursorPixels.transparentCornerAlpha)
@@ -165,6 +164,18 @@ try {
   if (cursorPixels.darkFringePixels !== 0) {
     throw new Error('Cake-slice cursor contains dark matte pixels on translucent edges: ' + cursorPixels.darkFringePixels)
   }
+  const innerRimCursors = await appFrame.evaluate(() => {
+    const points = [[2, 72], [388, 72], [2, 422], [388, 422],
+      [2, 772], [388, 772], [72, 2], [195, 2], [318, 2], [195, 842]]
+    return points.map(([x, y]) => {
+      const element = document.elementFromPoint(x, y)
+      return { x, y, cursor: element ? getComputedStyle(element).cursor : '' }
+    })
+  })
+  if (!innerRimCursors.every(({ cursor }) => hasCakeCursor(cursor))) {
+    throw new Error('Mobile iframe inner rim fell back to a default cursor: ' + JSON.stringify(innerRimCursors))
+  }
+
   const textEntryCursor = await appFrame.evaluate(() => {
     const input = document.createElement('input')
     input.type = 'text'

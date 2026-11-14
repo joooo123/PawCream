@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './PhoneDemoFrame.css'
 
 const PHONE_WIDTH = 422
@@ -13,6 +13,32 @@ function getPhoneScale() {
 
 export default function PhoneDemoFrame() {
   const [scale, setScale] = useState(getPhoneScale)
+  const frameRef = useRef<HTMLIFrameElement>(null)
+
+  // Reapply the same cursor inside the same-origin mobile iframe.
+  const syncFrameCursor = useCallback(() => {
+    const iframe = frameRef.current
+    const doc = iframe?.contentDocument
+    if (!iframe || !doc?.head) return
+    const cursor = getComputedStyle(iframe).cursor
+    if (!cursor.includes('pawcream-cake-cursor')) return
+
+    let style = doc.getElementById('pawcream-frame-cursor-style') as HTMLStyleElement | null
+    if (!style) {
+      style = doc.createElement('style')
+      style.id = 'pawcream-frame-cursor-style'
+      doc.head.appendChild(style)
+    }
+    style.textContent = `
+      html, html::before, html::after,
+      body, body *, body *::before, body *::after {
+        cursor: ${cursor} !important;
+      }
+      input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']),
+      textarea, [contenteditable='true'] { cursor: text !important; }
+      button:disabled, [aria-disabled='true'] { cursor: not-allowed !important; }
+    `
+  }, [])
 
   const appUrl = useMemo(() => {
     const url = new URL(window.location.href)
@@ -41,6 +67,8 @@ export default function PhoneDemoFrame() {
         >
           <div className="pawcream-phone-demo__screen">
             <iframe
+              ref={frameRef}
+              onLoad={syncFrameCursor}
               src={appUrl}
               title="PawCream mobile experience"
               loading="eager"

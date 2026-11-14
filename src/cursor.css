@@ -1,4 +1,4 @@
-/* PawCream cake-slice pointer; its upper-left acute tip is the click hotspot. */
+/* Original cake artwork, resized without an added shadow; tip is the click hotspot. */
 html,
 html::before,
 html::after,
@@ -7,7 +7,7 @@ body *,
 body *::before,
 body *::after,
 iframe {
-  cursor: url('./assets/pawcream-cake-cursor.png') 15 11, auto !important;
+  cursor: url('./assets/pawcream-cake-cursor.png') 10 18, auto !important;
 }
 
 /* Keep text-entry affordances familiar. */

@@ -113,3 +113,11 @@
     scroll-behavior: auto;
   }
 }
+
+/* Cover rounded-screen and iframe seam with the same pointer. */
+.pawcream-phone-demo__screen,
+.pawcream-phone-demo__screen::before,
+.pawcream-phone-demo__screen::after,
+.pawcream-phone-demo__screen iframe {
+  cursor: url('../assets/pawcream-cake-cursor.png') 10 18, auto !important;
+}
