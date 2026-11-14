@@ -71,10 +71,8 @@ try {
       mobileHotspot: getComputedStyle(hotspot).cursor,
     }
   })
-  const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('10 18')
-  if (!hasCakeCursor(cursorStyles.outerBody) ||
-      !Object.entries(cursorStyles).filter(([name]) => name !== 'outerBody').every(([, cursor]) => cursor === 'none')) {
-    throw new Error('Native cursor must be hidden throughout the demo shell and iframe: ' + JSON.stringify(cursorStyles))
+  if (!Object.values(cursorStyles).every((cursor) => cursor === 'none')) {
+    throw new Error('Native cursor must be hidden throughout the demo page and iframe: ' + JSON.stringify(cursorStyles))
   }
   const bezelCursorChecks = await page.evaluate(() => {
     const device = document.querySelector('.pawcream-phone-demo__device')
@@ -98,8 +96,8 @@ try {
   if (!bezelCursorChecks.every((item) => item.cursor === 'none')) {
     throw new Error('Phone bezel must hide the native cursor: ' + JSON.stringify(bezelCursorChecks))
   }
-  const cursorUrl = cursorStyles.outerBody.split('url(')[1]?.split(')')[0]?.replaceAll('"', '').replaceAll("'", '')
-  if (!cursorUrl) throw new Error('Cake-slice cursor image URL is missing')
+  const cursorUrl = await page.locator('.pawcream-phone-demo__cursor').evaluate((image) => image.src)
+  if (!cursorUrl.includes('pawcream-cake-cursor')) throw new Error('Cake-slice cursor image URL is missing')
   const cursorSize = await page.evaluate(async (src) => {
     const image = new Image()
     image.src = src

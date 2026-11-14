@@ -114,11 +114,14 @@
   }
 }
 
-/* Hide the native cursor in demo mode; the outer overlay crosses iframe seams. */
-.pawcream-phone-demo,
-.pawcream-phone-demo *,
-.pawcream-phone-demo *::before,
-.pawcream-phone-demo *::after {
+/* Rounded/scaled frame hit tests can land on html/body, outside the phone node. */
+html:has(.pawcream-phone-demo),
+html:has(.pawcream-phone-demo)::before,
+html:has(.pawcream-phone-demo)::after,
+html:has(.pawcream-phone-demo) body,
+html:has(.pawcream-phone-demo) body *,
+html:has(.pawcream-phone-demo) body *::before,
+html:has(.pawcream-phone-demo) body *::after {
   cursor: none !important;
 }
 

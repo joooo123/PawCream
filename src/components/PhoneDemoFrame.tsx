@@ -64,11 +64,6 @@ export default function PhoneDemoFrame() {
     }
 
     const onOuterMove = (event: PointerEvent) => {
-      const element = event.target as Element | null
-      if (!element?.closest?.('.pawcream-phone-demo')) {
-        hide()
-        return
-      }
       show(event.clientX, event.clientY, event.target, event.pointerType)
     }
     const onInnerMove = (event: PointerEvent) => {
