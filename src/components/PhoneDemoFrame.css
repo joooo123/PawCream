@@ -114,10 +114,21 @@
   }
 }
 
-/* Cover rounded-screen and iframe seam with the same pointer. */
-.pawcream-phone-demo__screen,
-.pawcream-phone-demo__screen::before,
-.pawcream-phone-demo__screen::after,
-.pawcream-phone-demo__screen iframe {
-  cursor: url('../assets/pawcream-cake-cursor.png') 10 18, auto !important;
+/* Hide the native cursor in demo mode; the outer overlay crosses iframe seams. */
+.pawcream-phone-demo,
+.pawcream-phone-demo *,
+.pawcream-phone-demo *::before,
+.pawcream-phone-demo *::after {
+  cursor: none !important;
+}
+
+.pawcream-phone-demo__cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  width: 64px;
+  height: 64px;
+  visibility: hidden;
+  pointer-events: none;
 }

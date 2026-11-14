@@ -72,8 +72,9 @@ try {
     }
   })
   const hasCakeCursor = (value) => (value.includes('pawcream-cake-cursor') || value.includes('data:image/png;base64,')) && value.includes('10 18')
-  if (!Object.values(cursorStyles).every(hasCakeCursor)) {
-    throw new Error('Cake-slice cursor must be active on the demo shell, pseudo-elements, and mobile iframe: ' + JSON.stringify(cursorStyles))
+  if (!hasCakeCursor(cursorStyles.outerBody) ||
+      !Object.entries(cursorStyles).filter(([name]) => name !== 'outerBody').every(([, cursor]) => cursor === 'none')) {
+    throw new Error('Native cursor must be hidden throughout the demo shell and iframe: ' + JSON.stringify(cursorStyles))
   }
   const bezelCursorChecks = await page.evaluate(() => {
     const device = document.querySelector('.pawcream-phone-demo__device')
@@ -94,10 +95,10 @@ try {
       }
     })
   })
-  if (!bezelCursorChecks.every((item) => hasCakeCursor(item.cursor))) {
-    throw new Error('Phone bezel hit areas fell back to a default cursor: ' + JSON.stringify(bezelCursorChecks))
+  if (!bezelCursorChecks.every((item) => item.cursor === 'none')) {
+    throw new Error('Phone bezel must hide the native cursor: ' + JSON.stringify(bezelCursorChecks))
   }
-  const cursorUrl = cursorStyles.stage.split('url(')[1]?.split(')')[0]?.replaceAll('"', '').replaceAll("'", '')
+  const cursorUrl = cursorStyles.outerBody.split('url(')[1]?.split(')')[0]?.replaceAll('"', '').replaceAll("'", '')
   if (!cursorUrl) throw new Error('Cake-slice cursor image URL is missing')
   const cursorSize = await page.evaluate(async (src) => {
     const image = new Image()
@@ -173,8 +174,42 @@ try {
       return { x, y, cursor: element ? getComputedStyle(element).cursor : '' }
     })
   })
-  if (!innerRimCursors.every(({ cursor }) => hasCakeCursor(cursor))) {
-    throw new Error('Mobile iframe inner rim fell back to a default cursor: ' + JSON.stringify(innerRimCursors))
+  if (!innerRimCursors.every(({ cursor }) => cursor === 'none')) {
+    throw new Error('Mobile iframe inner rim must hide the native cursor: ' + JSON.stringify(innerRimCursors))
+  }
+
+  // Move the physical pointer around the outer bezel and every inner screen seam.
+  // Checking CSS alone missed the previous native-cursor fallback.
+  const frameBounds = await iframe.boundingBox()
+  const deviceBounds = await page.locator('.pawcream-phone-demo__device').boundingBox()
+  if (!frameBounds || !deviceBounds) throw new Error('Phone frame bounds are missing')
+  const pointerPoints = [
+    ['left bezel', deviceBounds.x + 7, deviceBounds.y + deviceBounds.height / 2],
+    ['left inner rim', frameBounds.x + 2, frameBounds.y + frameBounds.height / 2],
+    ['right inner rim', frameBounds.x + frameBounds.width - 2, frameBounds.y + frameBounds.height / 2],
+    ['top inner rim', frameBounds.x + frameBounds.width / 2, frameBounds.y + 2],
+    ['bottom inner rim', frameBounds.x + frameBounds.width / 2, frameBounds.y + frameBounds.height - 2],
+    ['top-left round corner', frameBounds.x + frameBounds.width * 0.085, frameBounds.y + frameBounds.height * 0.04],
+    ['bottom-right round corner', frameBounds.x + frameBounds.width * 0.915, frameBounds.y + frameBounds.height * 0.96],
+    ['center', frameBounds.x + frameBounds.width / 2, frameBounds.y + frameBounds.height / 2],
+  ]
+  for (const [label, x, y] of pointerPoints) {
+    await page.mouse.move(x, y)
+    const painted = await page.evaluate(() => {
+      const image = document.querySelector('.pawcream-phone-demo__cursor')
+      if (!image) return null
+      const rect = image.getBoundingClientRect()
+      return {
+        visible: getComputedStyle(image).visibility === 'visible',
+        pointerEvents: getComputedStyle(image).pointerEvents,
+        x: rect.x + 10,
+        y: rect.y + 18,
+      }
+    })
+    if (!painted?.visible || painted.pointerEvents !== 'none' ||
+        Math.abs(painted.x - x) > 2 || Math.abs(painted.y - y) > 2) {
+      throw new Error('Painted cursor missed ' + label + ': ' + JSON.stringify({ x, y, painted }))
+    }
   }
 
   const textEntryCursor = await appFrame.evaluate(() => {
@@ -515,7 +550,7 @@ try {
   }
 
   console.log('PASS: cream background uses the uploaded polka-dot image with cover scaling')
-  console.log('PASS: uploaded cake-slice cursor preserves aspect ratio and transparent pixels, has clean translucent edges, and anchors clicks at the triangular tip')
+  console.log('PASS: original cake cursor paints continuously across the iframe rim and rounded phone corners, without native fallback')
   console.log('PASS: solid light-blue phone bezel with exact 390x844 app viewport')
   console.log('PASS: authoritative mobile guide copy is asset-aligned; cabinet/bear labels are hidden and legacy prompts do not overlap')
   console.log('PASS: authoritative mobile toolbar keeps PawCream left and controls right in one 48px row')
